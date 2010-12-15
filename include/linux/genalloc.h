@@ -95,7 +95,6 @@ static inline int gen_pool_add(struct gen_pool *pool, unsigned long addr,
 	return gen_pool_add_virt(pool, addr, -1, size, nid);
 }
 extern void gen_pool_destroy(struct gen_pool *);
-extern unsigned long gen_pool_alloc(struct gen_pool *, size_t);
 extern void *gen_pool_dma_alloc(struct gen_pool *pool, size_t size,
 		dma_addr_t *dma);
 extern void gen_pool_free(struct gen_pool *, unsigned long, size_t);
@@ -123,6 +122,24 @@ extern struct gen_pool *dev_get_gen_pool(struct device *dev);
 
 bool addr_in_gen_pool(struct gen_pool *pool, unsigned long start,
 			size_t size);
+
+unsigned long __must_check
+gen_pool_alloc_aligned(struct gen_pool *pool, size_t size,
+                       unsigned alignment_order);
+
+/**
+ * gen_pool_alloc() - allocate special memory from the pool
+ * @pool:       Pool to allocate from.
+ * @size:       Number of bytes to allocate from the pool.
+ *
+ * Allocate the requested number of bytes from the specified pool.
+ * Uses a first-fit algorithm.
+ */
+static inline unsigned long __must_check
+gen_pool_alloc(struct gen_pool *pool, size_t size)
+{
+        return gen_pool_alloc_aligned(pool, size, 0);
+}
 
 #ifdef CONFIG_OF
 extern struct gen_pool *of_get_named_gen_pool(struct device_node *np,
