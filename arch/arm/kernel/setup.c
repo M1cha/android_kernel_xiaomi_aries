@@ -915,6 +915,9 @@ void __init setup_arch(char **cmdline_p)
 
 	parse_early_param();
 
+	if (mdesc->init_very_early)
+		mdesc->init_very_early();
+
 	early_paging_init(mdesc, lookup_processor_type(read_cpuid_id()));
 	setup_dma_zone(mdesc);
 	sanity_check_meminfo();
