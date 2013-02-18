@@ -5224,10 +5224,16 @@ static int __devexit iris_remove(struct platform_device *pdev)
 	return 0;
 }
 
+static const struct of_device_id iris_fm_match[] = {
+	{.compatible = "qcom,iris_fm"},
+	{}
+};
+
 static struct platform_driver iris_driver = {
 	.driver = {
 		.owner  = THIS_MODULE,
 		.name   = "iris_fm",
+		.of_match_table = iris_fm_match,
 	},
 	.remove = __devexit_p(iris_remove),
 };
