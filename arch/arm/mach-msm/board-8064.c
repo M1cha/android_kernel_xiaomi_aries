@@ -2583,6 +2583,11 @@ static int rf4ce_gpio_init(void)
 }
 late_initcall(rf4ce_gpio_init);
 
+	.config_gpio		= 4,
+	.uart_tx_gpio		= 14,
+	.uart_rx_gpio		= 15,
+	.uart_cts_gpio		= 16,
+	.uart_rfr_gpio		= 17,
 static struct platform_device *mpq_devices[] __initdata = {
 	&msm_device_sps_apq8064,
 	&mpq8064_device_qup_i2c_gsbi5,
@@ -3140,6 +3145,17 @@ static void __init apq8064_pm8917_pdata_fixup(void)
 	cdp_keys_data.buttons = cdp_keys_pm8917;
 	cdp_keys_data.nbuttons = ARRAY_SIZE(cdp_keys_pm8917);
 }
+
+static struct msm_serial_hs_platform_data apq8064_uartdm_gsbi4_pdata = {
+	.config_gpio	= 4,
+	.uart_tx_gpio	= 10,
+	.uart_rx_gpio	= 11,
+	.uart_cts_gpio	= 12,
+	.uart_rfr_gpio	= 13,
+};
+#else
+static struct msm_serial_hs_platform_data apq8064_uartdm_gsbi4_pdata;
+#endif
 
 static void __init apq8064ab_update_retention_spm(void)
 {

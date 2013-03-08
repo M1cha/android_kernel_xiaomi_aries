@@ -2817,6 +2817,18 @@ static void __init msm8930ab_update_retention_spm(void)
 	}
 }
 
+static struct msm_serial_hs_platform_data msm_uart_dm9_pdata = {
+	.config_gpio	= 4,
+	.uart_tx_gpio	= 93,
+	.uart_rx_gpio	= 94,
+	.uart_cts_gpio	= 95,
+	.uart_rfr_gpio	= 96,
+};
+#else
+static struct msm_serial_hs_platform_data msm_uart_dm9_pdata;
+#endif
+
+
 static void __init msm8930_cdp_init(void)
 {
 	if (socinfo_get_pmic_model() == PMIC_MODEL_PM8917)
