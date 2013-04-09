@@ -42,5 +42,13 @@ struct mdm_platform_data {
 	int no_a2m_errfatal_on_ssr;
 };
 
+struct mdm_driver_notif_info {
+	char name[50];
+	struct srcu_notifier_head mdm_driver_notif_rcvr_list;
+	struct list_head list;
+};
+
+struct mdm_driver_notif_info *mdm_driver_register_notifier(
+			const char *name, struct notifier_block *nb);
 #endif
 
