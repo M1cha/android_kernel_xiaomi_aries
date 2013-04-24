@@ -515,6 +515,13 @@ struct ion_allocation_data {
 	struct ion_handle *handle;
 };
 
+struct ion_allocation_data_compat {
+	size_t len;
+	size_t align;
+	unsigned int flags;
+	struct ion_handle *handle;
+};
+
 /**
  * struct ion_fd_data - metadata passed to/from userspace for a handle/fd pair
  * @handle:	a handle
@@ -561,6 +568,9 @@ struct ion_custom_data {
 #define ION_IOC_ALLOC		_IOWR(ION_IOC_MAGIC, 0, \
 				      struct ion_allocation_data)
 
+#define ION_IOC_ALLOC_COMPAT		_IOWR(ION_IOC_MAGIC, 0, \
+				      struct ion_allocation_data_compat)
+
 /**
  * DOC: ION_IOC_FREE - free memory
  *
@@ -598,6 +608,8 @@ struct ion_custom_data {
  */
 #define ION_IOC_IMPORT		_IOWR(ION_IOC_MAGIC, 5, struct ion_fd_data)
 
+#define ION_IOC_IMPORT_COMPAT		_IOWR(ION_IOC_MAGIC, 5, int)
+
 /**
  * DOC: ION_IOC_CUSTOM - call architecture specific ion ioctl
  *
@@ -606,5 +618,13 @@ struct ion_custom_data {
  */
 #define ION_IOC_CUSTOM		_IOWR(ION_IOC_MAGIC, 6, struct ion_custom_data)
 
+#define ION_IOC_CLEAN_CACHES_COMPAT		_IOWR(ION_IOC_MAGIC, 7, \
+						struct ion_flush_data)
+#define ION_IOC_INV_CACHES_COMPAT		_IOWR(ION_IOC_MAGIC, 8, \
+						struct ion_flush_data)
+#define ION_IOC_CLEAN_INV_CACHES_COMPAT		_IOWR(ION_IOC_MAGIC, 9, \
+						struct ion_flush_data)
+#define ION_IOC_GET_FLAGS_COMPAT		_IOWR(ION_IOC_MAGIC, 10, \
+						struct ion_flag_data)
 
 #endif /* _LINUX_ION_H */
