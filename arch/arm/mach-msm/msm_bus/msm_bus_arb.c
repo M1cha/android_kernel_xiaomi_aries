@@ -314,7 +314,7 @@ static int update_path(int curr, int pnode, uint64_t req_clk, uint64_t req_bw,
 	struct msm_bus_inode_info *info;
 	int next_pnode;
 	int64_t add_bw = req_bw - curr_bw;
-	unsigned bwsum = 0;
+	uint64_t bwsum = 0;
 	uint64_t req_clk_hz, curr_clk_hz, bwsum_hz;
 	int *master_tiers;
 	struct msm_bus_fabric_device *fabdev = msm_bus_get_fabric_device
@@ -398,7 +398,7 @@ static int update_path(int curr, int pnode, uint64_t req_clk, uint64_t req_bw,
 		/* Update Bandwidth */
 		fabdev->algo->update_bw(fabdev, hop, info, add_bw,
 			master_tiers, ctx);
-		bwsum = (uint16_t)*hop->link_info.sel_bw;
+		bwsum = *hop->link_info.sel_bw;
 		/* Update Fabric clocks */
 		curr_clk_hz = BW_TO_CLK_FREQ_HZ(hop->node_info->buswidth,
 			curr_clk);
