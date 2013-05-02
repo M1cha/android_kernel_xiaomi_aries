@@ -477,6 +477,7 @@ static bool __ref msm_pm_spm_power_collapse(
 	void *entry;
 	bool collapsed = 0;
 	int ret;
+	bool save_cpu_regs = !cpu || from_idle;
 	unsigned int saved_gic_cpu_ctrl;
 
 	saved_gic_cpu_ctrl = readl_relaxed(MSM_QGIC_CPU_BASE + GIC_CPU_CTRL);
@@ -493,8 +494,8 @@ static bool __ref msm_pm_spm_power_collapse(
 			MSM_SPM_MODE_POWER_COLLAPSE, notify_rpm);
 	WARN_ON(ret);
 
-	entry = (!cpu || from_idle) ?
-		msm_pm_collapse_exit : msm_secondary_startup;
+	entry = save_cpu_regs ?  msm_pm_collapse_exit : msm_secondary_startup;
+
 	msm_pm_boot_config_before_pc(cpu, virt_to_phys(entry));
 
 	if (MSM_PM_DEBUG_RESET_VECTOR & msm_pm_debug_mask)
@@ -506,7 +507,7 @@ static bool __ref msm_pm_spm_power_collapse(
 #ifdef CONFIG_VFP
 	vfp_pm_suspend();
 #endif
-	collapsed = msm_pm_collapse();
+	collapsed = save_cpu_regs ? msm_pm_collapse() : msm_pm_pc_hotplug();
 
 	if (from_idle && msm_pm_pc_reset_timer)
 		clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_EXIT, &cpu);
