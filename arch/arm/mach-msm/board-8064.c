@@ -908,6 +908,7 @@ static int phy_init_seq[] = {
 #define PMIC_GPIO_DP		27    /* PMIC GPIO for D+ change */
 #define PMIC_GPIO_DP_IRQ	PM8921_GPIO_IRQ(PM8921_IRQ_BASE, PMIC_GPIO_DP)
 #define MSM_MPM_PIN_USB1_OTGSESSVLD	40
+#define MSM_MPM_XO_WAKEUP_INT  60
 
 static struct msm_otg_platform_data msm_otg_pdata = {
 	.mode			= USB_OTG,
@@ -918,6 +919,7 @@ static struct msm_otg_platform_data msm_otg_pdata = {
 	.bus_scale_table	= &usb_bus_scale_pdata,
 	.phy_init_seq		= phy_init_seq,
 	.mpm_otgsessvld_int	= MSM_MPM_PIN_USB1_OTGSESSVLD,
+	.mpm_xo_wakeup_int	= MSM_MPM_XO_WAKEUP_INT,
 };
 
 static struct msm_usb_host_platform_data msm_ehci_host_pdata3 = {
