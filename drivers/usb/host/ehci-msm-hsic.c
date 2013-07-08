@@ -933,6 +933,7 @@ static int ehci_hsic_reset(struct usb_hcd *hcd)
 {
 	struct ehci_hcd *ehci = hcd_to_ehci(hcd);
 	struct msm_hsic_hcd *mehci = hcd_to_hsic(hcd);
+	struct msm_hsic_host_platform_data *pdata = mehci->dev->platform_data;
 	int retval;
 
 	mehci->timer = USB_HS_GPTIMER_BASE;
@@ -963,8 +964,12 @@ static int ehci_hsic_reset(struct usb_hcd *hcd)
 
 	/* bursts of unspecified length. */
 	writel_relaxed(0, USB_AHBBURST);
-	/* Use the AHB transactor */
-	writel_relaxed(0x08, USB_AHBMODE);
+	/* Use the AHB transactor and configure async bridge bypass */
+#define MSM_USB_ASYNC_BRIDGE_BYPASS BIT(31)
+	if (pdata && pdata->ahb_async_bridge_bypass)
+		writel_relaxed(0x08 | MSM_USB_ASYNC_BRIDGE_BYPASS, USB_AHBMODE);
+	else
+		writel_relaxed(0x08, USB_AHBMODE);
 	/* Disable streaming mode and select host mode */
 	writel_relaxed(0x13, USB_USBMODE);
 
