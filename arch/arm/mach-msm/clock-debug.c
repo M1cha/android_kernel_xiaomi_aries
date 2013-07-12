@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2007 Google, Inc.
- * Copyright (c) 2007-2012, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2007-2013, The Linux Foundation. All rights reserved.
  *
  * This software is licensed under the terms of the GNU General Public
  * License version 2, as published by the Free Software Foundation, and
@@ -21,9 +21,22 @@
 #include <linux/clk.h>
 #include <linux/list.h>
 #include <linux/clkdev.h>
+#include <linux/uaccess.h>
 #include <mach/clk-provider.h>
 
 #include "clock.h"
+
+static LIST_HEAD(clk_list);
+static DEFINE_SPINLOCK(clk_list_lock);
+
+static struct dentry *debugfs_base;
+static u32 debug_suspend;
+
+struct clk_table {
+	struct list_head node;
+	struct clk_lookup *clocks;
+	size_t num_clocks;
+};
 
 static int clock_debug_rate_set(void *data, u64 val)
 {
@@ -180,6 +193,83 @@ static const struct file_operations fmax_rates_fops = {
 	.release	= seq_release,
 };
 
+#define clock_debug_output(m, c, fmt, ...)		\
+do {							\
+	if (m)						\
+		seq_printf(m, fmt, ##__VA_ARGS__);	\
+	else if (c)					\
+		pr_cont(fmt, ##__VA_ARGS__);		\
+	else						\
+		pr_info(fmt, ##__VA_ARGS__);		\
+} while (0)
+
+static int clock_debug_print_clock(struct clk *c, struct seq_file *m)
+{
+	char *start = "";
+
+	if (!c || !c->prepare_count)
+		return 0;
+
+	clock_debug_output(m, 0, "\t");
+	do {
+		if (c->vdd_class)
+			clock_debug_output(m, 1, "%s%s:%u:%u [%ld, %lu]", start,
+				c->dbg_name, c->prepare_count, c->count,
+				c->rate, c->vdd_class->cur_level);
+		else
+			clock_debug_output(m, 1, "%s%s:%u:%u [%ld]", start,
+				c->dbg_name, c->prepare_count, c->count,
+				c->rate);
+		start = " -> ";
+	} while ((c = clk_get_parent(c)));
+
+	clock_debug_output(m, 1, "\n");
+
+	return 1;
+}
+
+/**
+ * clock_debug_print_enabled_clocks() - Print names of enabled clocks
+ *
+ */
+static void clock_debug_print_enabled_clocks(struct seq_file *m)
+{
+	struct clk_table *table;
+	unsigned long flags;
+	int i, cnt = 0;
+
+	clock_debug_output(m, 0, "Enabled clocks:\n");
+	spin_lock_irqsave(&clk_list_lock, flags);
+	list_for_each_entry(table, &clk_list, node) {
+		for (i = 0; i < table->num_clocks; i++)
+			cnt += clock_debug_print_clock(table->clocks[i].clk, m);
+	}
+	spin_unlock_irqrestore(&clk_list_lock, flags);
+
+	if (cnt)
+		clock_debug_output(m, 0, "Enabled clock count: %d\n", cnt);
+	else
+		clock_debug_output(m, 0, "No clocks enabled.\n");
+}
+
+static int enabled_clocks_show(struct seq_file *m, void *unused)
+{
+	clock_debug_print_enabled_clocks(m);
+	return 0;
+}
+
+static int enabled_clocks_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, enabled_clocks_show, inode->i_private);
+}
+
+static const struct file_operations enabled_clocks_fops = {
+	.open		= enabled_clocks_open,
+	.read		= seq_read,
+	.llseek		= seq_lseek,
+	.release	= seq_release,
+};
+
 static int list_rates_show(struct seq_file *m, void *unused)
 {
 	struct clk *clock = m->private;
@@ -216,15 +306,6 @@ static const struct file_operations list_rates_fops = {
 	.read		= seq_read,
 	.llseek		= seq_lseek,
 	.release	= seq_release,
-};
-
-static struct dentry *debugfs_base;
-static u32 debug_suspend;
-
-struct clk_table {
-	struct list_head node;
-	struct clk_lookup *clocks;
-	size_t num_clocks;
 };
 
 static int clock_debug_add(struct clk *clock)
@@ -279,8 +360,6 @@ error:
 	debugfs_remove_recursive(clk_dir);
 	return -ENOMEM;
 }
-static LIST_HEAD(clk_list);
-static DEFINE_SPINLOCK(clk_list_lock);
 
 /**
  * clock_debug_register() - Add additional clocks to clock debugfs hierarchy
@@ -330,6 +409,10 @@ int __init clock_debug_init(void)
 		return -ENOMEM;
 	}
 
+	if (!debugfs_create_file("enabled_clocks", S_IRUGO, debugfs_base, NULL,
+				&enabled_clocks_fops))
+		return -ENOMEM;
+
 	measure = clk_get_sys("debug", "measure");
 	if (IS_ERR(measure))
 		measure = NULL;
@@ -337,55 +420,13 @@ int __init clock_debug_init(void)
 	return 0;
 }
 
-static int clock_debug_print_clock(struct clk *c)
-{
-	char *start = "";
-
-	if (!c || !c->prepare_count)
-		return 0;
-
-	pr_info("\t");
-	do {
-		if (c->vdd_class)
-			pr_cont("%s%s:%u:%u [%ld, %lu]", start, c->dbg_name,
-				c->prepare_count, c->count, c->rate,
-				c->vdd_class->cur_level);
-		else
-			pr_cont("%s%s:%u:%u [%ld]", start, c->dbg_name,
-				c->prepare_count, c->count, c->rate);
-		start = " -> ";
-	} while ((c = clk_get_parent(c)));
-
-	pr_cont("\n");
-
-	return 1;
-}
-
-/**
- * clock_debug_print_enabled() - Print names of enabled clocks for suspend debug
- *
+/*
  * Print the names of enabled clocks and their parents if debug_suspend is set
  */
 void clock_debug_print_enabled(void)
 {
-	struct clk_table *table;
-	unsigned long flags;
-	int i, cnt = 0;
-
 	if (likely(!debug_suspend))
 		return;
 
-	pr_info("Enabled clocks:\n");
-	spin_lock_irqsave(&clk_list_lock, flags);
-	list_for_each_entry(table, &clk_list, node) {
-		for (i = 0; i < table->num_clocks; i++)
-			cnt += clock_debug_print_clock(table->clocks[i].clk);
-	}
-	spin_unlock_irqrestore(&clk_list_lock, flags);
-
-	if (cnt)
-		pr_info("Enabled clock count: %d\n", cnt);
-	else
-		pr_info("No clocks enabled.\n");
-
+	clock_debug_print_enabled_clocks(NULL);
 }
