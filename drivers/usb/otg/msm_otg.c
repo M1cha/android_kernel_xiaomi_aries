@@ -33,6 +33,7 @@
 #include <linux/usb/ulpi.h>
 #include <linux/usb/gadget.h>
 #include <linux/usb/hcd.h>
+#include <linux/usb/ehci_def.h>
 #include <linux/usb/quirks.h>
 #include <linux/usb/msm_hsusb.h>
 #include <linux/usb/msm_hsusb_hw.h>
@@ -940,7 +941,7 @@ static int msm_otg_resume(struct msm_otg *motg)
 	struct msm_otg_platform_data *pdata = motg->pdata;
 	int cnt = 0;
 	unsigned temp;
-	u32 phy_ctrl_val = 0;
+	u32 phy_ctrl_val = 0, portsc;
 	unsigned ret;
 
 	if (!atomic_read(&motg->in_lpm))
@@ -1023,8 +1024,17 @@ skip_phy_resume:
 			pdata->mpm_otgsessvld_int)
 			msm_mpm_set_pin_wake(pdata->mpm_otgsessvld_int, 0);
 	}
-	if (bus)
+	if (bus) {
 		set_bit(HCD_FLAG_HW_ACCESSIBLE, &(bus_to_hcd(bus))->flags);
+
+		if (motg->phy.state >= OTG_STATE_A_IDLE) {
+			portsc = readl_relaxed(USB_PORTSC);
+			portsc &= ~PORT_RWC_BITS;
+			portsc |= PORT_RESUME;
+			writel_relaxed(portsc, USB_PORTSC);
+			usb_hcd_resume_root_hub(bus_to_hcd(bus));
+		}
+	}
 
 	atomic_set(&motg->in_lpm, 0);
 
@@ -1181,6 +1191,7 @@ static void msm_otg_start_host(struct usb_otg *otg, int on)
 	struct msm_otg *motg = container_of(otg->phy, struct msm_otg, phy);
 	struct msm_otg_platform_data *pdata = motg->pdata;
 	struct usb_hcd *hcd;
+	struct usb_device *rhub;
 	int rc;
 
 	if (!otg->host)
@@ -1214,6 +1225,8 @@ static void msm_otg_start_host(struct usb_otg *otg, int on)
 			dev_dbg(otg->phy->dev, "unable to increase 3.3V rail\n");
 
 		usb_add_hcd(hcd, hcd->irq, IRQF_SHARED);
+		rhub = otg->host->root_hub;
+		device_init_wakeup(&rhub->dev, 1);
 	} else {
 		dev_dbg(otg->phy->dev, "host off\n");
 
@@ -4016,7 +4029,8 @@ static int msm_otg_pm_resume(struct device *dev)
 	dev_dbg(dev, "OTG PM resume\n");
 
 	atomic_set(&motg->pm_suspended, 0);
-	if (motg->async_int || motg->sm_work_pending) {
+	if (motg->async_int || motg->sm_work_pending ||
+			motg->phy.state >= OTG_STATE_A_IDLE) {
 		pm_runtime_get_noresume(dev);
 		ret = msm_otg_resume(motg);
 
