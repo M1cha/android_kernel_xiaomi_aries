@@ -31,6 +31,7 @@ VREG_CONSUMERS(L2) = {
 	REGULATOR_SUPPLY("dsi_vdda",		"mipi_dsi.1"),
 	REGULATOR_SUPPLY("mipi_csi_vdd",	"msm_csid.0"),
 	REGULATOR_SUPPLY("mipi_csi_vdd",	"msm_csid.1"), 
+	REGULATOR_SUPPLY("mipi_csi_vdd",	"msm_csid.2"),
 	REGULATOR_SUPPLY("dsi_pll_vdda",        "mdp.0"),
 };
 VREG_CONSUMERS(L3) = {
@@ -59,10 +60,12 @@ VREG_CONSUMERS(L7) = {
 VREG_CONSUMERS(L8) = {
 	REGULATOR_SUPPLY("8921_l8",		NULL),
 	REGULATOR_SUPPLY("cam_vana",		"4-001a"),
+	REGULATOR_SUPPLY("cam_vana",		"4-0010"),
 	REGULATOR_SUPPLY("cam_vana",		"4-0048"),
 	REGULATOR_SUPPLY("cam_vana",		"4-006c"),
 	REGULATOR_SUPPLY("cam_vana",		"4-0034"),
 	REGULATOR_SUPPLY("cam_vana",		"4-0020"),
+	REGULATOR_SUPPLY("cam_vana",		"4-006e"),
 	REGULATOR_SUPPLY("dsi_vci",			"mipi_dsi.1"),
 };
 VREG_CONSUMERS(L9) = {
@@ -76,12 +79,15 @@ VREG_CONSUMERS(L10) = {
 VREG_CONSUMERS(L11) = {
 	REGULATOR_SUPPLY("8921_l11",		NULL),
 	REGULATOR_SUPPLY("dsi1_avdd",		"mipi_dsi.1"),
-	REGULATOR_SUPPLY("cam1_vana",		"4-000d"), /* GSBI4, Slave Addr: 0x0d, imx111 */
-	REGULATOR_SUPPLY("cam2_vana",		"4-006e"), /* GSBI4, Slave Addr: 0x6e, imx119 */
 };
 VREG_CONSUMERS(L12) = {
-	REGULATOR_SUPPLY("cam1_vdig",		"4-000d"), /* GSBI4, Slave Addr: 0x0d, imx111 */
-	REGULATOR_SUPPLY("cam2_vdig",		"4-006e"), /* GSBI4, Slave Addr: 0x6e, imx119 */
+	REGULATOR_SUPPLY("cam_vdig",		"4-001a"),
+	REGULATOR_SUPPLY("cam_vdig",		"4-0010"),
+	REGULATOR_SUPPLY("cam_vdig",		"4-0048"),
+	REGULATOR_SUPPLY("cam_vdig",		"4-006c"),
+	REGULATOR_SUPPLY("cam_vdig",		"4-0034"),
+	REGULATOR_SUPPLY("cam_vdig",		"4-0020"),
+	REGULATOR_SUPPLY("cam_vdig",		"4-006e"),
 	REGULATOR_SUPPLY("8921_l12",		NULL),
 };
 VREG_CONSUMERS(L14) = {
@@ -91,39 +97,31 @@ VREG_CONSUMERS(L14) = {
 VREG_CONSUMERS(L15) = {
 	REGULATOR_SUPPLY("8921_l15",		NULL),
 	REGULATOR_SUPPLY("touch_vdd",		NULL),
+#ifdef CONFIG_SND_SOC_ES310
+	REGULATOR_SUPPLY("es310_vdd",		"audience_es310"),
+#endif
 };
 VREG_CONSUMERS(L16) = {
 	REGULATOR_SUPPLY("8921_l16",		NULL),
 	REGULATOR_SUPPLY("cam_vaf",		"4-001a"),
+	REGULATOR_SUPPLY("cam_vaf",		"4-0010"),
 	REGULATOR_SUPPLY("cam_vaf",		"4-0048"),
 	REGULATOR_SUPPLY("cam_vaf",		"4-006c"),
 	REGULATOR_SUPPLY("cam_vaf",		"4-0034"),
 	REGULATOR_SUPPLY("cam_vaf",		"4-0020"),
+	REGULATOR_SUPPLY("cam_vaf",		"4-006e"),
 	REGULATOR_SUPPLY("vibrator",		NULL),
 };
 VREG_CONSUMERS(L17) = {
 	REGULATOR_SUPPLY("8921_l17",		NULL),
-#if defined(CONFIG_IMX111)
-	REGULATOR_SUPPLY("cam1_vaf",	"4-000d"), /* GSBI4, Slave Addr: 0x0d, imx111 */
-#endif
 };
 VREG_CONSUMERS(L18) = {
 	REGULATOR_SUPPLY("8921_l18",		NULL),
 	REGULATOR_SUPPLY("slimport_dvdd",		NULL),
 };
-
-/* Power setting for 13M AF */
-#if defined(CONFIG_IMX091)
-VREG_CONSUMERS(L21) = {
-	REGULATOR_SUPPLY("8921_l21",		NULL),
-	REGULATOR_SUPPLY("cam1_vaf",	"4-000d"), /* GSBI4, Slave Addr: 0x0d, imx091 */
-};
-#else
 VREG_CONSUMERS(L21) = {
 	REGULATOR_SUPPLY("8921_l21",		NULL),
 };
-#endif
-
 VREG_CONSUMERS(L22) = {
 	REGULATOR_SUPPLY("8921_l22",		NULL),
 	REGULATOR_SUPPLY("touch_io",		NULL),
@@ -136,6 +134,7 @@ VREG_CONSUMERS(L23) = {
 	REGULATOR_SUPPLY("pll_vdd",		"pil_qdsp6v4.2"),
 	REGULATOR_SUPPLY("HSUSB_1p8",		"msm_ehci_host.0"),
 	REGULATOR_SUPPLY("HSUSB_1p8",		"msm_ehci_host.1"),
+	REGULATOR_SUPPLY("dsi_mi_vddio",	"mipi_dsi.1"),
 };
 VREG_CONSUMERS(L24) = {
 	REGULATOR_SUPPLY("8921_l24",		NULL),
@@ -209,15 +208,9 @@ VREG_CONSUMERS(S6) = {
 VREG_CONSUMERS(S7) = {
 	REGULATOR_SUPPLY("8921_s7",		NULL),
 };
-#if defined(CONFIG_IMX091)
 VREG_CONSUMERS(S8) = {
 	REGULATOR_SUPPLY("8921_s8",		NULL),
 };
-#else
-VREG_CONSUMERS(S8) = {
-	REGULATOR_SUPPLY("8921_s8",		NULL),
-};
-#endif
 VREG_CONSUMERS(LVS1) = {
 	REGULATOR_SUPPLY("8921_lvs1",		NULL),
 	REGULATOR_SUPPLY("iris_vddio",		"wcnss_wlan.0"),
@@ -234,8 +227,13 @@ VREG_CONSUMERS(LVS4) = {
 };
 VREG_CONSUMERS(LVS5) = {
 	REGULATOR_SUPPLY("8921_lvs5",		NULL),
-	REGULATOR_SUPPLY("cam1_vio",		"4-000d"), /* GSBI4, Slave Addr: 0x0d, imx111 */
-	REGULATOR_SUPPLY("cam2_vio",		"4-006e"), /* GSBI4, Slave Addr: 0x6e, imx119 */
+	REGULATOR_SUPPLY("cam_vio",		"4-001a"),
+	REGULATOR_SUPPLY("cam_vio",		"4-0010"),
+	REGULATOR_SUPPLY("cam_vio",		"4-0048"),
+	REGULATOR_SUPPLY("cam_vio",		"4-006c"),
+	REGULATOR_SUPPLY("cam_vio",		"4-0034"),
+	REGULATOR_SUPPLY("cam_vio",		"4-0020"),
+	REGULATOR_SUPPLY("cam_vio",		"4-006e"),
 };
 VREG_CONSUMERS(LVS6) = {
 	REGULATOR_SUPPLY("8921_lvs6",		NULL),
@@ -263,6 +261,10 @@ VREG_CONSUMERS(8821_S1) = {
 };
 VREG_CONSUMERS(EXT_DSV_LOAD) = {
 	REGULATOR_SUPPLY("ext_dsv_load",		NULL),
+};
+VREG_CONSUMERS(EXT_5P4V) = {
+	REGULATOR_SUPPLY("ext_5p4v",    NULL),
+	REGULATOR_SUPPLY("dsi_mi_vsp",    "mipi_dsi.1"),
 };
 
 #define PM8XXX_VREG_INIT(_id, _name, _min_uV, _max_uV, _modes, _ops, \
@@ -490,6 +492,7 @@ struct gpio_regulator_platform_data
 apq8064_gpio_regulator_pdata[] __devinitdata = {
 	/*	ID	vreg_name gpio_label	gpio		supply */
 	GPIO_VREG(EXT_DSV_LOAD, "ext_dsv_load", "ext_dsv_load_en", APQ8064_EXT_DSV_LOAD_EN_GPIO, NULL),
+	GPIO_VREG(EXT_5P4V, "ext_5p4v", "ext_5p4v_en", PM8921_GPIO_PM_TO_SYS(11), NULL),
 };
 
 /* SAW regulator constraints */
@@ -524,11 +527,8 @@ apq8064_rpm_regulator_init_data[] __devinitdata = {
 	RPM_SMPS(S3, 0, 1, 1,  500000, 1150000, NULL, 100000, 4p80, NONE, NONE),
 	RPM_SMPS(S4, 1, 1, 0, 1800000, 1800000, NULL, 100000, 1p60, AUTO, AUTO),
 	RPM_SMPS(S7, 0, 0, 0, 1300000, 1300000, NULL, 100000, 3p20, NONE, NONE),
-#if defined(CONFIG_IMX091)
-	RPM_SMPS(S8, 0, 1, 0, 1800000, 1800000, NULL, 100000, 1p60, NONE, NONE),
-#else
 	RPM_SMPS(S8, 0, 1, 0, 2200000, 2200000, NULL,      0, 1p60, NONE, NONE),
-#endif
+
 	/*	ID a_on pd ss min_uV   max_uV   supply    sys_uA init_ip */
 	RPM_LDO(L1,  1, 1, 0, 1100000, 1100000, "8921_s4",     0,  1000),
 	RPM_LDO(L2,  0, 1, 0, 1200000, 1200000, "8921_s4",     0,     0),
@@ -538,21 +538,17 @@ apq8064_rpm_regulator_init_data[] __devinitdata = {
 	RPM_LDO(L5,  0, 1, 0, 2950000, 2950000, NULL,          0,     0),
 	RPM_LDO(L6,  0, 1, 0, 3000000, 3000000, NULL,          0,     0),
 	RPM_LDO(L7,  0, 1, 0, 1850000, 2950000, NULL,          0,     0),
-	RPM_LDO(L8,  0, 1, 0, 2800000, 3000000, NULL,          0,     0),
+	RPM_LDO(L8,  0, 1, 0, 2700000, 3000000, NULL,          0,     0),
 	RPM_LDO(L9,  0, 1, 0, 3000000, 3000000, NULL,          0,     0),
 	RPM_LDO(L10, 0, 1, 0, 2900000, 2900000, NULL,          0,     0),
 	RPM_LDO(L11, 0, 1, 0, 2850000, 2850000, NULL,          0,     0),
-	RPM_LDO(L12, 0, 1, 0, 1200000, 1200000, "8921_s4",     0,     0),
+	RPM_LDO(L12, 0, 1, 0, 1050000, 1200000, "8921_s4",     0,     0),
 	RPM_LDO(L14, 0, 1, 0, 1800000, 1800000, NULL,          0,     0),
-	RPM_LDO(L15, 0, 1, 0, 3300000, 3300000, NULL,          0,    19),
+	RPM_LDO(L15, 0, 1, 0, 1800000, 2950000, NULL,          0,    19),
 	RPM_LDO(L16, 0, 1, 0, 2800000, 2800000, NULL,          0,     0),
 	RPM_LDO(L17, 0, 1, 0, 2800000, 2800000, NULL,          0,     0),
 	RPM_LDO(L18, 0, 1, 0, 1100000, 1100000, NULL,          0,     0),
-#if defined(CONFIG_IMX091)
-	RPM_LDO(L21, 0, 1, 0, 1800000, 1800000, "8921_s8",     0,     0),
-#else
 	RPM_LDO(L21, 0, 1, 0, 1050000, 1050000, NULL,          0,     0),
-#endif
 	RPM_LDO(L22, 0, 1, 0, 1800000, 1800000, NULL,          0,     0),
 	RPM_LDO(L23, 0, 1, 0, 1800000, 1800000, NULL,          0,     0),
 	RPM_LDO(L24, 0, 1, 1,  750000, 1150000, "8921_s1", 10000, 10000),
