@@ -244,6 +244,7 @@ static struct platform_device lge_hsd_device = {
 	},
 };
 
+#ifdef CONFIG_EARJACK_DEBUGGER
 #define GPIO_EARJACK_DEBUGGER_TRIGGER       PM8921_GPIO_PM_TO_SYS(13)
 static struct earjack_debugger_platform_data earjack_debugger_pdata = {
 	.gpio_trigger = GPIO_EARJACK_DEBUGGER_TRIGGER,
@@ -257,10 +258,13 @@ static struct platform_device earjack_debugger_device = {
 		.platform_data = &earjack_debugger_pdata,
 	},
 };
+#endif
 
 static struct platform_device *sound_devices[] __initdata = {
 	&lge_hsd_device,
+#ifdef CONFIG_EARJACK_DEBUGGER
 	&earjack_debugger_device,
+#endif
 };
 
 void __init lge_add_sound_devices(void)

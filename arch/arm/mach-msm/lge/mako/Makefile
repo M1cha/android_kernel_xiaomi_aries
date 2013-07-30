@@ -9,7 +9,10 @@ obj-$(CONFIG_MACH_APQ8064_MAKO) += board-mako.o \
 	board-mako-misc.o \
 	board-mako-sound.o \
 	board-mako-storage.o \
-	board-mako-nfc.o \
-	board-mako-earjack-debugger.o
+	board-mako-nfc.o
+
+ifdef CONFIG_EARJACK_DEBUGGER
+	obj-$(CONFIG_MACH_APQ8064_MAKO) += board-mako-earjack-debugger.o
+endif
 
 CFLAGS_board-mako-display.o += -Idrivers/video
