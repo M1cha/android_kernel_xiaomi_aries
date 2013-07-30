@@ -438,7 +438,7 @@ static __init void mako_fixup_wlc_gpio(void) {
 
 #else
 static int wireless_charger_is_plugged(void) { return 0; }
-static __init void mako_set_wlc_gpio(void) { }
+static __init void mako_fixup_wlc_gpio(void) { }
 #endif
 
 /*
