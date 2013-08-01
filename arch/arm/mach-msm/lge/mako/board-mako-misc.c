@@ -18,6 +18,7 @@
 #include <linux/io.h>
 #include <linux/kernel.h>
 #include <linux/android_vibrator.h>
+#include <linux/i2c/isa1200.h>
 #include <linux/platform_device.h>
 #include <linux/delay.h>
 #include <linux/gpio.h>
@@ -417,11 +418,64 @@ static void __init lge_add_i2c_anx7808_device(void)
 }
 #endif
 
+#ifdef CONFIG_HAPTIC_ISA1200
+#define ISA1200_HAP_EN_GPIO		PM8921_GPIO_PM_TO_SYS(33)
+#define ISA1200_HAP_LEN_GPIO	PM8921_GPIO_PM_TO_SYS(20)
+
+static struct isa1200_regulator isa1200_reg_data[] = {
+	{
+		.name = "vddp",
+		.min_uV = ISA_I2C_VTG_MIN_UV,
+		.max_uV = ISA_I2C_VTG_MAX_UV,
+		.load_uA = ISA_I2C_CURR_UA,
+	},
+};
+
+static struct isa1200_platform_data isa1200_1_pdata = {
+	.name = "vibrator",
+	.pwm_ch_id = 0,
+	.max_timeout = 15000,
+	.hap_en_gpio = ISA1200_HAP_EN_GPIO,
+	.hap_len_gpio = ISA1200_HAP_LEN_GPIO,
+	.mode_ctrl = PWM_INPUT_MODE,
+	.pwm_fd = {
+		.pwm_freq = 44800,
+	},
+	.smart_en = false,
+	.is_erm = true,
+	.ext_clk_en = false,
+	.chip_en = 1,
+	.duty = 90,
+	.regulator_info = isa1200_reg_data,
+	.num_regulators = ARRAY_SIZE(isa1200_reg_data),
+};
+
+static struct i2c_board_info i2c_isa1200_info[] __initdata = {
+	{
+		I2C_BOARD_INFO("isa1200_1", 0x90>>1),
+		.platform_data = &isa1200_1_pdata,
+	},
+};
+
+static struct i2c_registry i2c_isa1200_devices __initdata = {
+	I2C_FFA,
+	APQ_8064_GSBI1_QUP_I2C_BUS_ID,
+	i2c_isa1200_info,
+	ARRAY_SIZE(i2c_isa1200_info),
+};
+#endif
+
 void __init apq8064_init_misc(void)
 {
 	platform_add_devices(misc_devices, ARRAY_SIZE(misc_devices));
 
 #ifdef CONFIG_SLIMPORT_ANX7808
 	lge_add_i2c_anx7808_device();
+#endif
+
+#ifdef CONFIG_HAPTIC_ISA1200
+	i2c_register_board_info(i2c_isa1200_devices.bus,
+		i2c_isa1200_devices.info,
+		i2c_isa1200_devices.len);
 #endif
 }
