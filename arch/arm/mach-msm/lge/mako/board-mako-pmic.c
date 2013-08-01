@@ -396,7 +396,7 @@ static int apq8064_pm8921_therm_mitigation[] = {
 	1100,
 	700,
 	600,
-	400,
+	325,
 };
 
 static int batt_temp_ctrl_level[] = {
@@ -410,76 +410,20 @@ static int batt_temp_ctrl_level[] = {
 	-100,
 };
 
-#ifdef CONFIG_WIRELESS_CHARGER
-#define GPIO_WLC_ACTIVE        PM8921_GPIO_PM_TO_SYS(PM8921_GPIO_WLC_ACTIVE)
-#define GPIO_WLC_ACTIVE_11     PM8921_GPIO_PM_TO_SYS(PM8921_GPIO_WLC_ACTIVE_11)
-#define GPIO_WLC_STATE         PM8921_GPIO_PM_TO_SYS(26)
-
-static int wireless_charger_is_plugged(void);
-
-static struct bq51051b_wlc_platform_data bq51051b_wlc_pmic_pdata = {
-	.chg_state_gpio  = GPIO_WLC_STATE,
-	.active_n_gpio   = GPIO_WLC_ACTIVE,
-	.wlc_is_plugged  = wireless_charger_is_plugged,
-};
-
-struct platform_device wireless_charger = {
-	.name		= "bq51051b_wlc",
-	.id		= -1,
-	.dev = {
-		.platform_data = &bq51051b_wlc_pmic_pdata,
-	},
-};
-
-static int wireless_charger_is_plugged(void)
-{
-	static bool initialized = false;
-	unsigned int wlc_active_n = 0;
-	int ret = 0;
-
-	wlc_active_n = bq51051b_wlc_pmic_pdata.active_n_gpio;
-	if (!wlc_active_n) {
-		pr_warn("wlc : active_n gpio is not defined yet");
-		return 0;
-	}
-
-	if (!initialized) {
-		ret =  gpio_request_one(wlc_active_n, GPIOF_DIR_IN,
-				"active_n_gpio");
-		if (ret < 0) {
-			pr_err("wlc: active_n gpio request failed\n");
-			return 0;
-		}
-		initialized = true;
-	}
-
-	return !(gpio_get_value(wlc_active_n));
-}
-
-static __init void mako_fixup_wlc_gpio(void) {
-	if (lge_get_board_revno() >= HW_REV_1_1)
-		bq51051b_wlc_pmic_pdata.active_n_gpio = GPIO_WLC_ACTIVE_11;
-}
-
-#else
-static int wireless_charger_is_plugged(void) { return 0; }
-static __init void mako_fixup_wlc_gpio(void) { }
-#endif
-
 /*
  * Battery characteristic
  * Typ.2100mAh capacity, Li-Ion Polymer 3.8V
  * Battery/VDD voltage programmable range, 20mV steps.
  */
-#define MAX_VOLTAGE_MV		4360
+#define MAX_VOLTAGE_MV		4200
 #define CHG_TERM_MA		100
-#define MAX_BATT_CHG_I_MA	900
-#define WARM_BATT_CHG_I_MA	400
-#define VBATDET_DELTA_MV	50
+#define MAX_BATT_CHG_I_MA	1000
+#define WARM_BATT_CHG_I_MA	350
+#define VBATDET_DELTA_MV	20
 #define EOC_CHECK_SOC	1
 
 static struct pm8921_charger_platform_data apq8064_pm8921_chg_pdata __devinitdata = {
-	.safety_time  = 512,
+	.safety_time  = 480,
 	.update_time  = 60000,
 	.max_voltage  = MAX_VOLTAGE_MV,
 	.min_voltage  = 3200,
@@ -487,8 +431,9 @@ static struct pm8921_charger_platform_data apq8064_pm8921_chg_pdata __devinitdat
 	.resume_voltage_delta  = VBATDET_DELTA_MV,
 	.term_current  = CHG_TERM_MA,
 
-	.cool_temp  = INT_MIN,
-	.warm_temp  = INT_MIN,
+	.cool_temp  = 0,
+	.warm_temp  = 45,
+	.max_bat_chg_current  = 1000,
 	.cool_bat_chg_current  = 350,
 	.warm_bat_chg_current  = WARM_BATT_CHG_I_MA,
 	.cold_thr  = 1,
@@ -501,7 +446,7 @@ static struct pm8921_charger_platform_data apq8064_pm8921_chg_pdata __devinitdat
 	.thermal_mitigation  = apq8064_pm8921_therm_mitigation,
 	.thermal_levels  = ARRAY_SIZE(apq8064_pm8921_therm_mitigation),
 	.led_src_config  = LED_SRC_5V,
-	.rconn_mohm	 = 37,
+	.rconn_mohm	 = 50,
 	.eoc_check_soc  = EOC_CHECK_SOC,
 };
 
@@ -515,17 +460,14 @@ static struct pm8921_bms_platform_data
 apq8064_pm8921_bms_pdata __devinitdata = {
 	.battery_type  = BATT_UNKNOWN,
 	.r_sense  = 10,
-	.v_cutoff  = 3500,
+	.v_cutoff  = 3400,
 	.max_voltage_uv  = MAX_VOLTAGE_MV * 1000,
-	.rconn_mohm  = 37,
-	.shutdown_soc_valid_limit  = 20,
+	.rconn_mohm  = 50,
+	.shutdown_soc_valid_limit  = 10,
 	.adjust_soc_low_threshold  = 25,
 	.chg_term_ua  = CHG_TERM_MA * 1000,
 	.eoc_check_soc  = EOC_CHECK_SOC,
-	.bms_support_wlc  = 1,
-	.wlc_term_ua = 110000,
-	.wlc_max_voltage_uv = 4290000,
-	.wlc_is_plugged  = wireless_charger_is_plugged,
+	.bms_support_wlc  = 0,
 	.first_fixed_iavg_ma  = 500,
 };
 
@@ -735,7 +677,6 @@ void __init apq8064_init_pmic(void)
 	mako_fixed_keymap();
 	mako_set_adcmap();
 	mako_fixed_leds();
-	mako_fixup_wlc_gpio();
 
 	apq8064_device_ssbi_pmic1.dev.platform_data =
 		&apq8064_ssbi_pm8921_pdata;
