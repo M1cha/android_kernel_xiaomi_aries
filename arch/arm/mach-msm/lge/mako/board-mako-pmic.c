@@ -120,17 +120,32 @@ struct pm8xxx_mpp_init {
 
 /* Initial PM8921 GPIO configurations */
 static struct pm8xxx_gpio_init pm8921_gpios[] __initdata = {
-	PM8921_GPIO_INPUT(13, PM_GPIO_PULL_DN), /* EARJACK_DEBUGGER */
-	PM8921_GPIO_INPUT(14, PM_GPIO_PULL_DN), /* SLIMPORT_CBL_DET */
-	PM8921_GPIO_OUTPUT(15, 0, HIGH), /* ANX_P_DWN_CTL */
-	PM8921_GPIO_OUTPUT(16, 0, HIGH), /* ANX_AVDD33_EN */
-	PM8921_GPIO_OUTPUT(17, 0, HIGH), /* CAM_VCM_EN */
-	PM8921_GPIO_OUTPUT(19, 0, HIGH), /* AMP_EN_AMP */
-	PM8921_GPIO_OUTPUT(20, 0, HIGH), /* PMIC - FSA8008 EAR_MIC_BIAS_EN */
-	PM8921_GPIO_OUTPUT(31, 0, HIGH), /* PMIC - FSA8008_EAR_MIC_EN */
-	PM8921_GPIO_INPUT(32, PM_GPIO_PULL_UP_1P5), /* PMIC - FSA8008_EARPOL_DETECT */
-	PM8921_GPIO_OUTPUT(33, 0, HIGH), /* HAPTIC_EN */
-	PM8921_GPIO_OUTPUT(34, 0, HIGH), /* WCD_RESET_N */
+	PM8921_GPIO_INPUT(1, PM_GPIO_PULL_DN),
+	PM8921_GPIO_INPUT(2, PM_GPIO_PULL_DN),
+	PM8921_GPIO_OUTPUT(5, 0, HIGH), /* touchscreen power pin */
+	PM8921_GPIO_OUTPUT(8, 0, HIGH), /* touchscreen reset pin */
+	PM8921_GPIO_OUTPUT(9, 1, HIGH),
+	PM8921_GPIO_OUTPUT(10, 1, HIGH),
+	PM8921_GPIO_OUTPUT(11, 1, HIGH), /* LCD_DCDC_EN */
+	PM8921_GPIO_INPUT(12, PM_GPIO_PULL_NO), /* LCD DET ID */
+	PM8921_GPIO_OUTPUT(13, 1, HIGH), /* BL_LED_EN */
+	PM8921_GPIO_OUTPUT(14, 0, HIGH), /* MHL 1V8 */
+	PM8921_GPIO_INPUT(16, PM_GPIO_PULL_NO), /* MHL WAKEUP */
+	PM8921_GPIO_OUTPUT(19, 0, HIGH), /* MHL 3V3 */
+	PM8921_GPIO_OUTPUT(20, 0, HIGH),
+	PM8921_GPIO_OUTPUT(21, 0, HIGH), /* HDMI MHL level shift */
+	PM8921_GPIO_OUTPUT(22, 0, HIGH), /* MHL Reset */
+	PM8921_GPIO_OUTPUT_FUNC(24, 0, PM_GPIO_FUNC_2),
+	PM8921_GPIO_OUTPUT_BUFCONF(25, 1, LOW, CMOS), /* DISP_RESET_N */
+	PM8921_GPIO_OUTPUT(28, 0, HIGH),
+	PM8921_GPIO_OUTPUT(33, 0, HIGH),
+	PM8921_GPIO_OUTPUT(34, 1, MED),
+	PM8921_GPIO_INPUT(37, PM_GPIO_PULL_UP_30), /* Tabla Detection Pin */
+};
+
+/* Initial PM8921 MPP configurations */
+static struct pm8xxx_mpp_init pm8xxx_mpps[] __initdata = {
+	PM8921_MPP_INIT(7, D_OUTPUT, PM8921_MPP_DIG_LEVEL_S4, DOUT_CTRL_LOW),
 };
 
 #ifdef CONFIG_WIRELESS_CHARGER
@@ -158,6 +173,16 @@ void __init apq8064_pm8xxx_gpio_mpp_init(void)
 			break;
 		}
 	}
+
+	for (i = 0; i < ARRAY_SIZE(pm8xxx_mpps); i++) {
+		rc = pm8xxx_mpp_config(pm8xxx_mpps[i].mpp,
+					&pm8xxx_mpps[i].config);
+		if (rc) {
+			pr_err("%s: pm8xxx_mpp_config: rc=%d\n", __func__, rc);
+			break;
+		}
+	}
+
 #ifdef CONFIG_WIRELESS_CHARGER
 	if (lge_get_board_revno() >= HW_REV_1_1) {
 		for (i = 0; i < ARRAY_SIZE(pm8921_gpios_wlc_rev11); i++) {
