@@ -136,6 +136,7 @@ static void __init lge_add_i2c_tpa2028d_devices(void)
 				msm_i2c_audiosubsystem.len);
 }
 
+#ifdef CONFIG_SWITCH_FSA8008
 static void enable_external_mic_bias(int status)
 {
 	static struct regulator *reg_mic_bias = NULL;
@@ -228,6 +229,7 @@ static struct fsa8008_platform_data lge_hs_pdata = {
 
 static __init void mako_fixed_audio(void)
 {
+
 	if (lge_get_board_revno() >= HW_REV_1_0)
 		lge_hs_pdata.gpio_mic_bias_en = -1;
 	if (lge_get_board_revno() > HW_REV_1_0) {
@@ -243,6 +245,12 @@ static struct platform_device lge_hsd_device = {
 		.platform_data = &lge_hs_pdata,
 	},
 };
+#else
+int mako_console_stopped(void)
+{
+	return 0;
+}
+#endif
 
 #ifdef CONFIG_EARJACK_DEBUGGER
 #define GPIO_EARJACK_DEBUGGER_TRIGGER       PM8921_GPIO_PM_TO_SYS(13)
@@ -261,7 +269,9 @@ static struct platform_device earjack_debugger_device = {
 #endif
 
 static struct platform_device *sound_devices[] __initdata = {
+#ifdef CONFIG_SWITCH_FSA8008
 	&lge_hsd_device,
+#endif
 #ifdef CONFIG_EARJACK_DEBUGGER
 	&earjack_debugger_device,
 #endif
@@ -269,7 +279,9 @@ static struct platform_device *sound_devices[] __initdata = {
 
 void __init lge_add_sound_devices(void)
 {
+#ifdef CONFIG_SWITCH_FSA8008
 	mako_fixed_audio();
+#endif
 	lge_add_i2c_tpa2028d_devices();
 	platform_add_devices(sound_devices, ARRAY_SIZE(sound_devices));
 }
