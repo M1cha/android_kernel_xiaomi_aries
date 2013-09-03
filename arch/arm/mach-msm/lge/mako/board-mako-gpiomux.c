@@ -26,10 +26,34 @@
 #include "devices.h"
 #include "board-mako.h"
 
-static struct gpiomux_setting mbhc_hs_detect = {
-	.func = GPIOMUX_FUNC_1,
-	.drv = GPIOMUX_DRV_2MA,
+static struct gpiomux_setting anc_mclk_cfg = {
+	.func = GPIOMUX_FUNC_2,
+	.drv = GPIOMUX_DRV_4MA,
 	.pull = GPIOMUX_PULL_NONE,
+};
+
+static struct gpiomux_setting audio_36_active_cfg = {
+	.func = GPIOMUX_FUNC_GPIO,
+	.drv = GPIOMUX_DRV_8MA,
+	.pull = GPIOMUX_PULL_UP,
+};
+
+static struct gpiomux_setting audio_36_suspend_cfg = {
+	.func = GPIOMUX_FUNC_GPIO,
+	.drv = GPIOMUX_DRV_8MA,
+	.pull = GPIOMUX_PULL_DOWN,
+};
+
+static struct gpiomux_setting audio_38_active_cfg = {
+	.func = GPIOMUX_FUNC_GPIO,
+	.drv = GPIOMUX_DRV_8MA,
+	.pull = GPIOMUX_PULL_DOWN,
+};
+
+static struct gpiomux_setting audio_38_suspend_cfg = {
+	.func = GPIOMUX_FUNC_GPIO,
+	.drv = GPIOMUX_DRV_8MA,
+	.pull = GPIOMUX_PULL_UP,
 };
 
 static struct gpiomux_setting cdc_mclk = {
@@ -125,7 +149,7 @@ static struct gpiomux_setting hdmi_active_2_cfg = {
 #ifdef CONFIG_USB_EHCI_MSM_HSIC
 static struct gpiomux_setting hsic_act_cfg = {
 	.func = GPIOMUX_FUNC_1,
-	.drv = GPIOMUX_DRV_10MA,
+	.drv = GPIOMUX_DRV_8MA,
 	.pull = GPIOMUX_PULL_NONE,
 };
 
@@ -282,9 +306,24 @@ static struct msm_gpiomux_config apq8064_slimbus_config[] __initdata = {
 
 static struct msm_gpiomux_config apq8064_audio_codec_configs[] __initdata = {
 	{
+		.gpio = 34,
+		.settings = {
+			[GPIOMUX_ACTIVE] = &anc_mclk_cfg,
+			[GPIOMUX_SUSPENDED] = &anc_mclk_cfg,
+		},
+	},
+	{
+		.gpio = 36,
+		.settings = {
+			[GPIOMUX_ACTIVE] = &audio_36_active_cfg,
+			[GPIOMUX_SUSPENDED] = &audio_36_suspend_cfg,
+		},
+	},
+	{
 		.gpio = 38,
 		.settings = {
-			[GPIOMUX_SUSPENDED] = &mbhc_hs_detect,
+			[GPIOMUX_ACTIVE] = &audio_38_active_cfg,
+			[GPIOMUX_SUSPENDED] = &audio_38_suspend_cfg,
 		},
 	},
 	{
@@ -466,6 +505,178 @@ static struct msm_gpiomux_config apq8064_bcm2079x_nfc_configs[] __initdata = {
 };
 #endif
 
+static struct gpiomux_setting aries_0_active_cfg = {
+	.func = GPIOMUX_FUNC_1,
+	.drv = GPIOMUX_DRV_8MA,
+	.pull = GPIOMUX_PULL_NONE,
+};
+
+static struct gpiomux_setting aries_0_suspend_cfg = {
+	.func = GPIOMUX_FUNC_1,
+	.drv = GPIOMUX_DRV_2MA,
+	.pull = GPIOMUX_PULL_DOWN,
+};
+
+static struct gpiomux_setting aries_6_active_cfg = {
+	.func = GPIOMUX_FUNC_GPIO,
+	.drv = GPIOMUX_DRV_8MA,
+	.pull = GPIOMUX_PULL_UP,
+};
+
+static struct gpiomux_setting aries_6_suspend_cfg = {
+	.func = GPIOMUX_FUNC_GPIO,
+	.drv = GPIOMUX_DRV_2MA,
+	.pull = GPIOMUX_PULL_DOWN,
+};
+
+static struct gpiomux_setting aries_23_active_cfg = {
+	.func = GPIOMUX_FUNC_GPIO,
+	.drv = GPIOMUX_DRV_2MA,
+	.pull = GPIOMUX_PULL_UP,
+};
+
+static struct gpiomux_setting aries_23_suspend_cfg = {
+	.func = GPIOMUX_FUNC_GPIO,
+	.drv = GPIOMUX_DRV_2MA,
+	.pull = GPIOMUX_PULL_UP,
+};
+
+static struct gpiomux_setting aries_26_32_suspend_cfg = {
+	.func = GPIOMUX_FUNC_GPIO,
+	.drv = GPIOMUX_DRV_2MA,
+	.pull = GPIOMUX_PULL_NONE,
+};
+
+static struct gpiomux_setting aries_51_active_cfg = {
+	.func = GPIOMUX_FUNC_GPIO,
+	.drv = GPIOMUX_DRV_8MA,
+	.pull = GPIOMUX_PULL_UP,
+};
+
+static struct gpiomux_setting aries_51_52_suspend_cfg = {
+	.func = GPIOMUX_FUNC_2,
+	.drv = GPIOMUX_DRV_8MA,
+	.pull = GPIOMUX_PULL_NONE,
+};
+
+static struct gpiomux_setting aries_53_54_active_cfg = {
+	.func = GPIOMUX_FUNC_2,
+	.drv = GPIOMUX_DRV_12MA,
+	.pull = GPIOMUX_PULL_NONE,
+};
+
+static struct gpiomux_setting aries_53_54_suspend_cfg = {
+	.func = GPIOMUX_FUNC_2,
+	.drv = GPIOMUX_DRV_12MA,
+	.pull = GPIOMUX_PULL_NONE,
+};
+
+static struct gpiomux_setting aries_62_active_cfg = {
+	.func = GPIOMUX_FUNC_GPIO,
+	.drv = GPIOMUX_DRV_8MA,
+	.pull = GPIOMUX_PULL_DOWN,
+};
+
+static struct gpiomux_setting aries_62_suspend_cfg = {
+	.func = GPIOMUX_FUNC_GPIO,
+	.drv = GPIOMUX_DRV_8MA,
+	.pull = GPIOMUX_PULL_DOWN,
+};
+
+static struct gpiomux_setting aries_82_suspend_cfg = {
+	.func = GPIOMUX_FUNC_2,
+	.drv = GPIOMUX_DRV_8MA,
+	.pull = GPIOMUX_PULL_NONE,
+};
+
+static struct gpiomux_setting aries_83_suspend_cfg = {
+	.func = GPIOMUX_FUNC_1,
+	.drv = GPIOMUX_DRV_8MA,
+	.pull = GPIOMUX_PULL_NONE,
+};
+
+static struct msm_gpiomux_config apq8064_aries_configs[] = {
+	{
+		.gpio = 0,
+		.settings = {
+			[GPIOMUX_ACTIVE] = &aries_0_active_cfg,
+			[GPIOMUX_SUSPENDED] = &aries_0_suspend_cfg,
+		},
+	},
+	{
+		.gpio = 6,
+		.settings = {
+			[GPIOMUX_ACTIVE] = &aries_6_active_cfg,
+			[GPIOMUX_SUSPENDED] = &aries_6_suspend_cfg,
+		},
+	},
+	{
+		.gpio = 23,
+		.settings = {
+			[GPIOMUX_ACTIVE] = &aries_23_active_cfg,
+			[GPIOMUX_SUSPENDED] = &aries_23_suspend_cfg,
+		},
+	},
+	{
+		.gpio = 26,
+		.settings = {
+			[GPIOMUX_SUSPENDED] = &aries_26_32_suspend_cfg,
+		},
+	},
+	{
+		.gpio = 32,
+		.settings = {
+			[GPIOMUX_SUSPENDED] = &aries_26_32_suspend_cfg,
+		},
+	},
+	{
+		.gpio = 51,
+		.settings = {
+			[GPIOMUX_ACTIVE] = &aries_51_active_cfg,
+			[GPIOMUX_SUSPENDED] = &aries_51_52_suspend_cfg,
+		},
+	},
+	{
+		.gpio = 52,
+		.settings = {
+			[GPIOMUX_SUSPENDED] = &aries_51_52_suspend_cfg,
+		},
+	},
+	{
+		.gpio = 53,
+		.settings = {
+			[GPIOMUX_ACTIVE] = &aries_53_54_active_cfg,
+			[GPIOMUX_SUSPENDED] = &aries_53_54_suspend_cfg,
+		},
+	},
+	{
+		.gpio = 54,
+		.settings = {
+			[GPIOMUX_ACTIVE] = &aries_53_54_active_cfg,
+			[GPIOMUX_SUSPENDED] = &aries_53_54_suspend_cfg,
+		},
+	},
+	{
+		.gpio = 62,
+		.settings = {
+			[GPIOMUX_ACTIVE] = &aries_62_active_cfg,
+			[GPIOMUX_SUSPENDED] = &aries_62_suspend_cfg,
+		},
+	},
+	{
+		.gpio = 82,
+		.settings = {
+			[GPIOMUX_SUSPENDED] = &aries_82_suspend_cfg,
+		},
+	},
+	{
+		.gpio = 83,
+		.settings = {
+			[GPIOMUX_SUSPENDED] = &aries_83_suspend_cfg,
+		},
+	},
+};
+
 void __init apq8064_init_gpiomux(void)
 {
 	int rc;
@@ -475,6 +686,9 @@ void __init apq8064_init_gpiomux(void)
 		pr_err(KERN_ERR "msm_gpiomux_init failed %d\n", rc);
 		return;
 	}
+
+	msm_gpiomux_install(apq8064_aries_configs,
+			ARRAY_SIZE(apq8064_aries_configs));
 
 	msm_gpiomux_install(wcnss_5wire_interface,
 			ARRAY_SIZE(wcnss_5wire_interface));
