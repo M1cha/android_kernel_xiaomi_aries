@@ -257,8 +257,6 @@ static struct msm_panel_common_pdata mdp_pdata = {
 #else
 	.mem_hid = MEMTYPE_EBI1,
 #endif
-	/* for early backlight on for APQ8064 */
-	.cont_splash_enabled = 0x01,
 	.mdp_iommu_split_domain = 1,
 };
 
@@ -525,14 +523,8 @@ static int mipi_dsi_panel_power(int on)
 	return 0;
 }
 
-static char mipi_dsi_splash_is_enabled(void)
-{
-	return mdp_pdata.cont_splash_enabled;
-}
-
 static struct mipi_dsi_platform_data mipi_dsi_pdata = {
 	.dsi_power_save = mipi_dsi_panel_power,
-	.splash_is_enabled = mipi_dsi_splash_is_enabled,
 };
 
 static struct msm_bus_vectors dtv_bus_init_vectors[] = {
