@@ -305,15 +305,6 @@ static struct pm8xxx_led_config pm8921_led_configs[] = {
 	},
 };
 
-static __init void mako_fixed_leds(void) {
-	if (lge_get_board_revno() <= HW_REV_E) {
-		int i = 0;
-		for (i = 0; i < ARRAY_SIZE(pm8921_led_configs); i++)
-			pm8921_led_configs[i].pwm_adjust_brightness =
-				PM8XXX_LED_PWM_ADJUST_BRIGHTNESS_E;
-	}
-}
-
 static struct pm8xxx_led_platform_data apq8064_pm8921_leds_pdata = {
 		.led_core = &pm8921_led_core_pdata,
 		.configs = pm8921_led_configs,
@@ -675,7 +666,6 @@ void __init apq8064_init_pmic(void)
 
 	mako_fixed_keymap();
 	mako_set_adcmap();
-	mako_fixed_leds();
 
 	apq8064_device_ssbi_pmic1.dev.platform_data =
 		&apq8064_ssbi_pm8921_pdata;
