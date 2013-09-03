@@ -125,7 +125,6 @@ static struct pm8xxx_gpio_init pm8921_gpios[] __initdata = {
 	PM8921_GPIO_OUTPUT(5, 0, HIGH), /* touchscreen power pin */
 	PM8921_GPIO_OUTPUT(8, 0, HIGH), /* touchscreen reset pin */
 	PM8921_GPIO_OUTPUT(9, 1, HIGH),
-	PM8921_GPIO_OUTPUT(10, 1, HIGH),
 	PM8921_GPIO_OUTPUT(11, 1, HIGH), /* LCD_DCDC_EN */
 	PM8921_GPIO_INPUT(12, PM_GPIO_PULL_NO), /* LCD DET ID */
 	PM8921_GPIO_OUTPUT(13, 1, HIGH), /* BL_LED_EN */
