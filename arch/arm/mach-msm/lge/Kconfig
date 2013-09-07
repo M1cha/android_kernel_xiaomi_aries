@@ -44,4 +44,11 @@ config LGE_CRASH_HANDLER
 	help
 	  LGE Crash Handler
 
+config LGE_PRIMACONFIG_INTERFACE
+	bool "Support primaconfig interface"
+	default n
+	depends on MACH_LGE
+	help
+	  Interface to set mac address for prima wlan driver from userspace
+
 endmenu
