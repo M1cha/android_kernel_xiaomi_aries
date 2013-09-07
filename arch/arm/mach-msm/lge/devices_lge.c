@@ -246,3 +246,15 @@ void __init lge_add_qfprom_devices(void)
 	platform_device_register(&qfprom_device);
 }
 #endif
+
+#ifdef CONFIG_LGE_PRIMACONFIG_INTERFACE
+static struct platform_device primaconfig_device = {
+	.name = "primaconfig",
+	.id = -1,
+};
+void __init lge_add_primaconfig_devices(void)
+{
+	platform_device_register(&primaconfig_device);
+}
+#endif /* CONFIG_LGE_PRIMACONFIG_INTERFACE */
+

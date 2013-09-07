@@ -112,6 +112,11 @@ static inline void __init lge_add_panic_handler_devices(void)
 void __init lge_add_qfprom_devices(void);
 #endif
 
+#ifdef CONFIG_LGE_PRIMACONFIG_INTERFACE
+void __init lge_add_primaconfig_devices(void);
+#endif
+
+
 enum lge_boot_mode_type lge_get_boot_mode(void);
 int lge_get_factory_boot(void);
 
