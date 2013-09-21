@@ -28,6 +28,11 @@
 #include "board-mako.h"
 #include "board-mako-earjack-debugger.h"
 
+#include <linux/firmware.h>
+#include "firmware/audience-es310.h"
+#define ES310_FIRMWARE_NAME	"audience-es310.img"
+DECLARE_BUILTIN_FIRMWARE(ES310_FIRMWARE_NAME, firmware_audience_es310);
+
 #define ES310_ADDRESS (0x3E)
 
 #define GPIO_EAR_MIC_BIAS_EN        PM8921_GPIO_PM_TO_SYS(20)
@@ -78,6 +83,7 @@ static struct es310_platform_data audience_es310_pdata = {
 	.gpio_es310_wakeup = MITWO_GPIO_ES310_WAKEUP,
 	.gpio_es310_mic_switch = MITWO_GPIO_ES310_MIC_SWITCH,
 	.power_on = es310_power_setup,
+	.fw_name = ES310_FIRMWARE_NAME,
 };
 #endif
 
