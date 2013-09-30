@@ -661,6 +661,68 @@ struct platform_device apq8064_device_uart_gsbi7 = {
 	.resource	= resources_uart_gsbi7,
 };
 
+static struct resource resources_qup_i2c_gsbi7[] = {
+	{
+		.name	= "gsbi_qup_i2c_addr",
+		.start	= MSM_GSBI7_PHYS,
+		.end	= MSM_GSBI7_PHYS + 4 - 1,
+		.flags	= IORESOURCE_MEM,
+	},
+	{
+		.name	= "qup_phys_addr",
+		.start	= MSM_GSBI7_QUP_PHYS,
+		.end	= MSM_GSBI7_QUP_PHYS + MSM_QUP_SIZE - 1,
+		.flags	= IORESOURCE_MEM,
+	},
+	{
+		.name	= "qup_err_intr",
+		.start	= GSBI7_QUP_IRQ,
+		.end	= GSBI7_QUP_IRQ,
+		.flags	= IORESOURCE_IRQ,
+	},
+	{
+		.name	= "i2c_clk",
+		.start	= 85,
+		.end	= 85,
+		.flags	= IORESOURCE_IO,
+	},
+	{
+		.name	= "i2c_sda",
+		.start	= 84,
+		.end	= 84,
+		.flags	= IORESOURCE_IO,
+	},
+};
+
+struct platform_device apq8064_device_qup_i2c_gsbi7 = {
+	.name		= "qup_i2c",
+	.id		= 7,
+	.num_resources	= ARRAY_SIZE(resources_qup_i2c_gsbi7),
+	.resource	= resources_qup_i2c_gsbi7,
+};
+
+static struct resource resources_msm_cam_i2c_mux_gsbi7[] = {
+	{
+		.name   = "i2c_mux_rw",
+		.start  = 0x008003E8,
+		.end    = 0x008003E8 + SZ_8 - 1,
+		.flags  = IORESOURCE_MEM,
+	},
+	{
+		.name   = "i2c_mux_ctl",
+		.start  = 0x008020BC,
+		.end    = 0x008020BC + SZ_4 - 1,
+		.flags  = IORESOURCE_MEM,
+	},
+};
+
+struct platform_device apq8064_device_i2c_mux_gsbi7 = {
+	.name           = "msm_cam_i2c_mux",
+	.id             = 0,
+	.resource       = resources_msm_cam_i2c_mux_gsbi7,
+	.num_resources  = ARRAY_SIZE(resources_msm_cam_i2c_mux_gsbi7),
+};
+
 struct platform_device apq_pcm = {
 	.name	= "msm-pcm-dsp",
 	.id	= -1,
