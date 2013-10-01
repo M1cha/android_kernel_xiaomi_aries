@@ -20,6 +20,7 @@
 #include <linux/leds.h>
 #include <linux/leds-pm8xxx.h>
 #include <linux/mfd/pm8xxx/pm8xxx-adc.h>
+#include <linux/mfd/pm8xxx/pm8921-bms-xiaomi.h>
 #include <asm/mach-types.h>
 #include <asm/mach/mmc.h>
 #include <mach/msm_bus_board.h>
@@ -29,6 +30,7 @@
 #include <mach/socinfo.h>
 #include "devices.h"
 #include "board-aries.h"
+#include "board-aries-pmic.h"
 
 struct pm8xxx_gpio_init {
 	unsigned			gpio;
@@ -367,27 +369,28 @@ static int apq8064_pm8921_therm_mitigation[] = {
 #define CHG_TERM_MA		100
 static struct pm8921_charger_platform_data
 apq8064_pm8921_chg_pdata __devinitdata = {
+	.safety_time		= 480,
 	.update_time		= 60000,
 	.max_voltage		= MAX_VOLTAGE_MV,
 	.min_voltage		= 3200,
 	.uvd_thresh_voltage	= 4050,
-	.alarm_low_mv		= 3400,
-	.alarm_high_mv		= 4000,
-	.resume_voltage_delta	= 60,
-	.resume_charge_percent	= 99,
+	.resume_voltage_delta	= 20,
 	.term_current		= CHG_TERM_MA,
-	.cool_temp		= 10,
+	.cool_temp		= 0,
 	.warm_temp		= 45,
+	.batt_id_min		= 0x6000,
+	.batt_id_max		= 0x9500,
 	.temp_check_period	= 1,
-	.max_bat_chg_current	= 1100,
+	.max_bat_chg_current	= 1000,
 	.cool_bat_chg_current	= 350,
 	.warm_bat_chg_current	= 350,
 	.cool_bat_voltage	= 4100,
 	.warm_bat_voltage	= 4100,
+	.keep_btm_on_suspend	= 1,
 	.thermal_mitigation	= apq8064_pm8921_therm_mitigation,
 	.thermal_levels		= ARRAY_SIZE(apq8064_pm8921_therm_mitigation),
-	.rconn_mohm		= 18,
-	.enable_tcxo_warmup_delay = true,
+	.cold_thr		= PM_SMBC_BATT_TEMP_COLD_THR__HIGH,
+	.rconn_mohm		= 50,
 };
 
 static struct pm8xxx_ccadc_platform_data
@@ -399,24 +402,13 @@ apq8064_pm8xxx_ccadc_pdata = {
 static struct pm8921_bms_platform_data
 apq8064_pm8921_bms_pdata __devinitdata = {
 	.battery_type			= BATT_UNKNOWN,
-	.r_sense_uohm			= 10000,
+	.r_sense			= 10,
 	.v_cutoff			= 3400,
 	.max_voltage_uv			= MAX_VOLTAGE_MV * 1000,
-	.rconn_mohm			= 18,
+	.rconn_mohm			= 50, /* 25 mohm for each pin*/
 	.shutdown_soc_valid_limit	= 20,
 	.adjust_soc_low_threshold	= 25,
 	.chg_term_ua			= CHG_TERM_MA * 1000,
-	.normal_voltage_calc_ms		= 20000,
-	.low_voltage_calc_ms		= 1000,
-	.alarm_low_mv			= 3400,
-	.alarm_high_mv			= 4000,
-	.high_ocv_correction_limit_uv	= 50,
-	.low_ocv_correction_limit_uv	= 100,
-	.hold_soc_est			= 3,
-	.enable_fcc_learning		= 1,
-	.min_fcc_learning_soc		= 20,
-	.min_fcc_ocv_pc			= 30,
-	.min_fcc_learning_samples	= 5,
 };
 
 static unsigned int keymap[] = {
@@ -495,9 +487,17 @@ static struct msm_ssbi_platform_data apq8064_ssbi_pm8821_pdata __devinitdata = {
 	},
 };
 
+void __init aries_set_adcmap(void)
+{
+	pm8xxx_set_adcmap_btm_threshold(adcmap_btm_threshold,
+			ARRAY_SIZE(adcmap_btm_threshold));
+}
+
 void __init apq8064_init_pmic(void)
 {
 	pmic_reset_irq = PM8921_IRQ_BASE + PM8921_RESOUT_IRQ;
+
+	aries_set_adcmap();
 
 	apq8064_device_ssbi_pmic1.dev.platform_data =
 						&apq8064_ssbi_pm8921_pdata;
@@ -505,6 +505,4 @@ void __init apq8064_init_pmic(void)
 				&apq8064_ssbi_pm8821_pdata;
 	apq8064_pm8921_platform_data.num_regulators =
 					msm8064_pm8921_regulator_pdata_len;
-
-	apq8064_pm8921_bms_pdata.battery_type = BATT_PALLADIUM;
 }

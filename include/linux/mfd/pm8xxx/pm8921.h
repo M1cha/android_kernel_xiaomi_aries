@@ -29,9 +29,17 @@
 #include <linux/input/pmic8xxx-pwrkey.h>
 #include <linux/input/pmic8xxx-keypad.h>
 #include <linux/regulator/pm8xxx-regulator.h>
+#ifdef CONFIG_MACH_XIAOMI
+#include <linux/mfd/pm8xxx/pm8921-charger-xiaomi.h>
+#else
 #include <linux/mfd/pm8xxx/pm8921-charger.h>
+#endif
 #include <linux/mfd/pm8xxx/pm8xxx-adc.h>
+#ifdef CONFIG_MACH_XIAOMI
+#include <linux/mfd/pm8xxx/pm8921-bms-xiaomi.h>
+#else
 #include <linux/mfd/pm8xxx/pm8921-bms.h>
+#endif
 #include <linux/leds-pm8xxx.h>
 #include <linux/mfd/pm8xxx/vibrator.h>
 #include <linux/mfd/pm8xxx/ccadc.h>
