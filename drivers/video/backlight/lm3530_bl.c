@@ -29,6 +29,7 @@
 #include <linux/delay.h>
 #include <linux/gpio.h>
 #include <linux/mutex.h>
+#include <linux/time.h>
 
 #define I2C_BL_NAME             "lm3530"
 
@@ -38,6 +39,13 @@
 static DEFINE_MUTEX(backlight_mtx);
 
 static struct i2c_client *lm3530_i2c_client;
+
+static struct timespec lcd_power_on_time;
+static int wait_for_lcd = 0;
+static unsigned long backlight_duration = (HZ/10);
+static void bl_workqueue_handler(struct work_struct *work);
+static struct delayed_work backlight_worker;
+static int bl_new_level;
 
 struct lm3530_device {
 	struct i2c_client *client;
@@ -127,7 +135,7 @@ static void lm3530_set_main_current_level(struct i2c_client *client, int level)
 }
 
 static bool first_boot = true;
-static void lm3530_backlight_on(struct i2c_client *client, int level)
+static void do_lm3530_backlight_on(struct i2c_client *client, int level)
 {
 	struct lm3530_device *dev = i2c_get_clientdata(client);
 
@@ -150,6 +158,32 @@ static void lm3530_backlight_on(struct i2c_client *client, int level)
 	mutex_unlock(&backlight_mtx);
 }
 
+static void bl_workqueue_handler(struct work_struct *work)
+{
+	do_lm3530_backlight_on(lm3530_i2c_client, bl_new_level);
+	wait_for_lcd = 0;
+}
+static void lm3530_backlight_on(struct i2c_client *client, int level)
+{
+	struct timespec tv;
+	long wait_time_left;
+
+	if(wait_for_lcd) {
+		getnstimeofday(&tv);
+		wait_time_left = jiffies_to_msecs(backlight_duration) -
+						(tv.tv_nsec-lcd_power_on_time.tv_nsec)/1000/1000;
+		if(wait_time_left>0) {
+			pr_info("%s, ++ lm3530_backlight_on: wait for lcd\n",__func__);
+			cancel_delayed_work_sync(&backlight_worker);
+			bl_new_level = level;
+			schedule_delayed_work(&backlight_worker, msecs_to_jiffies(wait_time_left));
+			return;
+		}
+	}
+
+	do_lm3530_backlight_on(client, level);
+}
+
 static void lm3530_backlight_off(struct i2c_client *client)
 {
 	struct lm3530_device *dev = i2c_get_clientdata(client);
@@ -162,6 +196,9 @@ static void lm3530_backlight_off(struct i2c_client *client)
 		mutex_unlock(&backlight_mtx);
 		return;
 	}
+
+	cancel_delayed_work_sync(&backlight_worker);
+	wait_for_lcd = 0;
 
 	saved_main_lcd_level = cur_main_lcd_level;
 	lm3530_set_main_current_level(dev->client, 0);
@@ -203,6 +240,9 @@ void lm3530_lcd_backlight_pwm_disable(void)
 	if (backlight_status == BL_OFF)
 		return;
 
+	cancel_delayed_work_sync(&backlight_worker);
+	wait_for_lcd = 0;
+
 	lm3530_write_reg(client, 0x10, dev->max_current & 0x1F);
 }
 EXPORT_SYMBOL(lm3530_lcd_backlight_pwm_disable);
@@ -212,6 +252,13 @@ int lm3530_lcd_backlight_on_status(void)
 	return backlight_status;
 }
 EXPORT_SYMBOL(lm3530_lcd_backlight_on_status);
+
+void lm3530_lcd_power_on_notify(void)
+{
+	getnstimeofday(&lcd_power_on_time);
+	wait_for_lcd = 1;
+}
+EXPORT_SYMBOL(lm3530_lcd_power_on_notify);
 
 static int bl_set_intensity(struct backlight_device *bd)
 {
@@ -320,6 +367,8 @@ static int __devinit lm3530_probe(struct i2c_client *i2c_dev,
 	struct backlight_device *bl_dev;
 	struct backlight_properties props;
 	int err = 0;
+
+	INIT_DELAYED_WORK(&backlight_worker, bl_workqueue_handler);
 
 	pdata = i2c_dev->dev.platform_data;
 	if (!pdata)
