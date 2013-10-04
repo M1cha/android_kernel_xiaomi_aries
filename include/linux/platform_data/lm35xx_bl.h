@@ -19,6 +19,7 @@
 void lm3530_lcd_backlight_set_level( int level);
 void lm3530_lcd_backlight_pwm_disable(void);
 int lm3530_lcd_backlight_on_status(void);
+void lm3530_lcd_power_on_notify(void);
 #endif
 
 struct backlight_platform_data {
