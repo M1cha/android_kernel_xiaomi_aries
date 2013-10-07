@@ -227,6 +227,10 @@ static inline bool virtqueue_enable_cb_delayed(struct virtqueue *vq)
 	return vq->vq_ops->enable_cb_delayed(vq);
 }
 
+unsigned virtqueue_enable_cb_prepare(struct virtqueue *vq);
+
+bool virtqueue_poll(struct virtqueue *vq, unsigned);
+
 /**
  * virtqueue_detach_unused_buf - detach first unused buffer
  * @vq: the struct virtqueue we're talking about.
