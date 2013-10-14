@@ -6431,10 +6431,12 @@ void msm_axi_subdev_release(struct v4l2_subdev *sd)
 
 void msm_vfe_subdev_release(struct v4l2_subdev *sd)
 {
+#ifdef CONFIG_MSM_CAMERA_DEBUG
 	struct vfe32_ctrl_type *vfe32_ctrl =
 		(struct vfe32_ctrl_type *)v4l2_get_subdevdata(sd);
 	CDBG("vfe subdev release %p\n",
 		vfe32_ctrl->share_ctrl->vfebase);
+#endif
 }
 
 int msm_axi_set_low_power_mode(struct v4l2_subdev *sd, void *arg)
