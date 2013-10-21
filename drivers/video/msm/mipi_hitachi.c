@@ -53,6 +53,9 @@ static int mipi_hitachi_lcd_on(struct platform_device *pdev)
 		return ret;
 	}
 
+	if (mipi_hitachi_pdata->power_on_notify)
+		mipi_hitachi_pdata->power_on_notify();
+
 	pr_info("%s finished\n", __func__);
 	return 0;
 }

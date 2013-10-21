@@ -433,6 +433,7 @@ struct msm_panel_common_pdata {
 	char mdp_iommu_split_domain;
 	void (*bl_pwm_disable)(void);
 	int (*bl_on_status)(void);
+	void (*power_on_notify)(void);
 };
 
 
