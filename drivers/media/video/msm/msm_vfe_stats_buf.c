@@ -220,7 +220,7 @@ static int msm_stats_buf_prepare(struct msm_stats_bufq_ctrl *stats_ctrl,
 	}
 	if (ion_map_iommu(client, stats_buf->handle,
 			CAMERA_DOMAIN, GEN_POOL, SZ_4K,
-			0, &paddr, &len, UNCACHED, 0) < 0) {
+			0, &paddr, &len, 0, 0) < 0) {
 		rc = -EINVAL;
 		pr_err("%s: cannot map address", __func__);
 		goto out2;

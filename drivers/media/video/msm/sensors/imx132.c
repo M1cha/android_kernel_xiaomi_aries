@@ -18,7 +18,7 @@
 
 DEFINE_MUTEX(imx132_mut);
 static struct msm_sensor_ctrl_t imx132_s_ctrl;
-static int vendor;
+static int vendor = 0;
 
 static struct msm_camera_i2c_reg_conf imx132_start_settings[] = {
 	{0x0100, 0x01},
@@ -168,6 +168,7 @@ static struct v4l2_subdev_info imx132_subdev_info[] = {
 	.fmt = 1,
 	.order = 0,
 	},
+	/* more can be supported, to be added later */
 };
 
 static struct msm_camera_i2c_conf_array imx132_init_conf[] = {
@@ -183,6 +184,7 @@ static struct msm_camera_i2c_conf_array imx132_confs[] = {
 };
 
 static struct msm_sensor_output_info_t imx132_dimensions[] = {
+/*Sony 1952x1096,30fps*/
 	{
 		.x_output = 1952,
 		.y_output = 1096,
@@ -192,6 +194,7 @@ static struct msm_sensor_output_info_t imx132_dimensions[] = {
 		.op_pixel_clk = 269000000,
 		.binning_factor = 1,
 	},
+/*Sony 1952x1096,30fps*/
 	{
 		.x_output = 1952,
 		.y_output = 1096,
@@ -276,7 +279,7 @@ static int32_t imx132_write_exp_gain(struct msm_sensor_ctrl_t *s_ctrl,
 		s_ctrl->sensor_exp_gain_info->coarse_int_time_addr, line,
 		MSM_CAMERA_I2C_WORD_DATA);
 
-	if (gain > 224) {
+	if (gain > 224) { /* large than 8x gain, use digital gain*/
 		digital_gain_int = (gain & 0x00FF) - 224;
 		digital_gain = (digital_gain_int << 8) + ((gain & 0xFF00) >> 8);
 		gain = 224;
@@ -284,6 +287,7 @@ static int32_t imx132_write_exp_gain(struct msm_sensor_ctrl_t *s_ctrl,
 	msm_camera_i2c_write(s_ctrl->sensor_i2c_client,
 				s_ctrl->sensor_exp_gain_info->global_gain_addr, gain,
 				MSM_CAMERA_I2C_WORD_DATA);
+	/* update digital gain */
 	msm_camera_i2c_write(s_ctrl->sensor_i2c_client, 0x020E, digital_gain, MSM_CAMERA_I2C_WORD_DATA);
 	msm_camera_i2c_write(s_ctrl->sensor_i2c_client, 0x0210, digital_gain, MSM_CAMERA_I2C_WORD_DATA);
 	msm_camera_i2c_write(s_ctrl->sensor_i2c_client, 0x0212, digital_gain, MSM_CAMERA_I2C_WORD_DATA);
@@ -313,30 +317,37 @@ static int32_t imx132_match_id(struct msm_sensor_ctrl_t *s_ctrl)
 		return -ENODEV;
 	}
 	if (vendor == 0) {
+		/* read otp for vendor */
 		msm_camera_i2c_read(s_ctrl->sensor_i2c_client, 0x351F, &chipid, MSM_CAMERA_I2C_BYTE_DATA);
+		pr_info("0x351F: 0x%04x", chipid);
 		if ((chipid & 0x07) == 5) {
-			vendor = 2;
+			vendor = 2; /* LITEON */
 			goto init_probe_done;
 		} else if ((chipid & 0x07) == 6) {
-			vendor = 3 ;
+			vendor = 3 ;/*LITEON1*/
 			goto init_probe_done;
 		}
+		/* 2nd slot */
 		msm_camera_i2c_read(s_ctrl->sensor_i2c_client, 0x351E, &chipid, MSM_CAMERA_I2C_BYTE_DATA);
+		pr_info("0x351E: 0x%04x", chipid);
 		if ((chipid & 0x70) == 0x50) {
-			vendor = 2;
+			vendor = 2; /* LITEON */
 			goto init_probe_done;
 		} else if ((chipid & 0x70) == 0x60) {
-			vendor = 3;
+			vendor = 3; /* LITEON1 */
 			goto init_probe_done;
 		}
+		/* 3rd slot */
 		msm_camera_i2c_read(s_ctrl->sensor_i2c_client, 0x3517, &chipid, MSM_CAMERA_I2C_BYTE_DATA);
+		pr_info("0x3517: 0x%04x", chipid);
 		if ((chipid & 0x1C) == 0x14) {
-			vendor = 2;
+			vendor = 2; /* LITEON */
 			goto init_probe_done;
 		} else if ((chipid & 0x1C) == 0x18) {
-			vendor = 3;
+			vendor = 3; /* LITEON1 */
 			goto init_probe_done;
 		}
+		/* then, SUNNY's module */
 		vendor = 1;
 	}
 init_probe_done:
@@ -395,6 +406,7 @@ static struct msm_sensor_fn_t imx132_func_tbl = {
 	.sensor_config = msm_sensor_config,
 	.sensor_power_up = msm_sensor_power_up,
 	.sensor_power_down = msm_sensor_power_down,
+//	.sensor_adjust_frame_lines = msm_sensor_adjust_frame_lines,
 	.sensor_get_csi_params = msm_sensor_get_csi_params,
 	.sensor_match_id = imx132_match_id,
 };

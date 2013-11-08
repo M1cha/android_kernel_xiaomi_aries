@@ -18,6 +18,7 @@
 
 DEFINE_MUTEX(imx135_mut);
 
+/* Register addresses for HDR control */
 #define SHORT_SHUTTER_WORD_ADDR		0x0230
 #define SHORT_GAIN_BYTE_ADDR		0x0233
 #define ABS_GAIN_R_WORD_ADDR		0x0714
@@ -40,7 +41,7 @@ DEFINE_MUTEX(imx135_mut);
 #define DBG_SEL                     0x4476
 #define LSC_TABLE_LEN_BYTES			504
 #define IMX135_TC_SWITCH_ENABLE 0
-static uint16_t luma_delta_hys;
+static uint16_t luma_delta_hys = 0;
 
 static struct msm_sensor_ctrl_t imx135_s_ctrl;
 
@@ -61,6 +62,7 @@ static struct msm_camera_i2c_reg_conf imx135_groupoff_settings[] = {
 };
 
 static struct msm_camera_i2c_reg_conf imx135_recommend_settings[] = {
+/* Global Settings */
 	{0x0101, 0x00},
 	{0x0105, 0x01},
 	{0x0110, 0x00},
@@ -91,9 +93,11 @@ static struct msm_camera_i2c_reg_conf imx135_recommend_settings[] = {
 	{0x3494, 0x1E},
 	{0x3511, 0x8F},
 	{0x364F, 0x2D},
+	/*Defect Correction Recommended Setting */
 	{0x380A, 0x00},
 	{0x380B, 0x00},
 	{0x4103, 0x00},
+	/*Color Artifact Recommended Setting */
 	{0x4243, 0x9A},
 	{0x4330, 0x01},
 	{0x4331, 0x90},
@@ -108,6 +112,7 @@ static struct msm_camera_i2c_reg_conf imx135_recommend_settings[] = {
 	{0x4341, 0x58},
 	{0x4342, 0x03},
 	{0x4343, 0x52},
+	/*Moiré reduction Parameter Setting	*/
 	{0x4364, 0x0B},
 	{0x4368, 0x00},
 	{0x4369, 0x0F},
@@ -116,7 +121,9 @@ static struct msm_camera_i2c_reg_conf imx135_recommend_settings[] = {
 	{0x436C, 0x00},
 	{0x436D, 0x00},
 	{0x436E, 0x00},
+	/* RGB Filter Recommended Setting */
 	{0x436F, 0x06},
+	/*CNR parameter setting	*/
 	{0x4281, 0x21},
 	{0x4282, 0x18},
 	{0x4283, 0x04},
@@ -135,9 +142,11 @@ static struct msm_camera_i2c_reg_conf imx135_recommend_settings[] = {
 	{0x42A6, 0xDF},
 	{0x42A7, 0xB7},
 	{0x42AF, 0x03},
+	/*ARNR Parameter Setting*/
 	{0x4207, 0x03},
 	{0x4216, 0x08},
 	{0x4217, 0x08},
+	/*DLC Parameter Setting*/
 	{0x4218, 0x00},
 	{0x421B, 0x20},
 	{0x421F, 0x04},
@@ -154,6 +163,7 @@ static struct msm_camera_i2c_reg_conf imx135_recommend_settings[] = {
 	{0x4239, 0x4E},
 	{0x423A, 0xFC},
 	{0x423B, 0xFD},
+	/*HDR Setting*/
 	{0x4300, 0x00},
 	{0x4316, 0x12},
 	{0x4317, 0x22},
@@ -237,7 +247,9 @@ static struct msm_camera_i2c_reg_conf imx135_recommend_settings[] = {
 	{0x446C, 0x00},
 	{0x446D, 0x00},
 	{0x446E, 0x00},
+	/*LSC Setting*/
 	{0x452A, 0x02},
+	/*White Balance Setting */
 	{0x0712, 0x01},
 	{0x0713, 0x00},
 	{0x0714, 0x01},
@@ -246,10 +258,12 @@ static struct msm_camera_i2c_reg_conf imx135_recommend_settings[] = {
 	{0x0717, 0x00},
 	{0x0718, 0x01},
 	{0x0719, 0x00},
+	/*Shading setting*/
 	{0x4500, 0x1F},
 };
 
 static struct msm_camera_i2c_reg_conf imx135_60fps_settings[] = {
+//Clock Setting
 	{0x011E, 0x18},
 	{0x011F, 0x00},
 	{0x0301, 0x05},
@@ -261,6 +275,7 @@ static struct msm_camera_i2c_reg_conf imx135_60fps_settings[] = {
 	{0x030D, 0x50},
 	{0x030E, 0x01},
 	{0x3A06, 0x12},
+//Mode setting
 	{0x0108, 0x03},
 	{0x0112, 0x0A},
 	{0x0113, 0x0A},
@@ -277,12 +292,14 @@ static struct msm_camera_i2c_reg_conf imx135_60fps_settings[] = {
 	{0x4082, 0x00},
 	{0x4083, 0x00},
 	{0x7006, 0x04},
+//OptionnalFunction setting
 	{0x0700, 0x00},
 	{0x3A63, 0x00},
 	{0x4100, 0xF8},
 	{0x4203, 0xFF},
 	{0x4344, 0x00},
 	{0x441C, 0x01},
+//Size setting
 	{0x0340, 0x04},
 	{0x0341, 0x9A},
 	{0x0342, 0x11},
@@ -319,6 +336,7 @@ static struct msm_camera_i2c_reg_conf imx135_60fps_settings[] = {
 	{0x4086, 0x02},
 	{0x4087, 0xE0},
 	{0x4400, 0x00},
+//Global Timing Setting
 	{0x0830, 0x67},
 	{0x0831, 0x1F},
 	{0x0832, 0x47},
@@ -330,8 +348,10 @@ static struct msm_camera_i2c_reg_conf imx135_60fps_settings[] = {
 	{0x0839, 0x1F},
 	{0x083A, 0x17},
 	{0x083B, 0x02},
+//Integration Time Setting
 	{0x0202, 0x04},
 	{0x0203, 0x96},
+//Gain Setting
 	{0x0205, 0x00},
 	{0x020E, 0x01},
 	{0x020F, 0x00},
@@ -341,6 +361,7 @@ static struct msm_camera_i2c_reg_conf imx135_60fps_settings[] = {
 	{0x0213, 0x00},
 	{0x0214, 0x01},
 	{0x0215, 0x00},
+//HDR Setting
 	{0x0230, 0x00},
 	{0x0231, 0x00},
 	{0x0233, 0x00},
@@ -358,6 +379,7 @@ static struct msm_camera_i2c_reg_conf imx135_60fps_settings[] = {
 };
 
 static struct msm_camera_i2c_reg_conf imx135_90fps_settings[] = {
+//Clock Setting
 	{0x011E, 0x18},
 	{0x011F, 0x00},
 	{0x0301, 0x05},
@@ -369,6 +391,7 @@ static struct msm_camera_i2c_reg_conf imx135_90fps_settings[] = {
 	{0x030D, 0x64},
 	{0x030E, 0x01},
 	{0x3A06, 0x12},
+//Mode setting
 	{0x0108, 0x03},
 	{0x0112, 0x0A},
 	{0x0113, 0x0A},
@@ -385,12 +408,14 @@ static struct msm_camera_i2c_reg_conf imx135_90fps_settings[] = {
 	{0x4082, 0x01},
 	{0x4083, 0x01},
 	{0x7006, 0x04},
+//OptionnalFunction setting
 	{0x0700, 0x00},
 	{0x3A63, 0x00},
 	{0x4100, 0xF8},
 	{0x4203, 0xFF},
 	{0x4344, 0x00},
 	{0x441C, 0x01},
+//Size setting
 	{0x0340, 0x03},
 	{0x0341, 0x08},
 	{0x0342, 0x11},
@@ -427,6 +452,7 @@ static struct msm_camera_i2c_reg_conf imx135_90fps_settings[] = {
 	{0x4086, 0x00},
 	{0x4087, 0x00},
 	{0x4400, 0x00},
+//Global Timing Setting
 	{0x0830, 0x67},
 	{0x0831, 0x1F},
 	{0x0832, 0x47},
@@ -438,8 +464,10 @@ static struct msm_camera_i2c_reg_conf imx135_90fps_settings[] = {
 	{0x0839, 0x1F},
 	{0x083A, 0x17},
 	{0x083B, 0x02},
+//Integration Time Setting
 	{0x0202, 0x03},
 	{0x0203, 0x04},
+//Gain Setting
 	{0x0205, 0x00},
 	{0x020E, 0x01},
 	{0x020F, 0x00},
@@ -449,6 +477,7 @@ static struct msm_camera_i2c_reg_conf imx135_90fps_settings[] = {
 	{0x0213, 0x00},
 	{0x0214, 0x01},
 	{0x0215, 0x00},
+//HDR Setting
 	{0x0230, 0x00},
 	{0x0231, 0x00},
 	{0x0233, 0x00},
@@ -974,6 +1003,7 @@ static struct msm_camera_i2c_reg_conf imx135_LSCTable_settings[] = {
 };
 
 static struct msm_camera_i2c_reg_conf imx135_snap_settings[] = {
+	/* Clock Setting	*/
 	{0x011E, 0x18},
 	{0x011F, 0x00},
 	{0x0301, 0x05},
@@ -985,6 +1015,7 @@ static struct msm_camera_i2c_reg_conf imx135_snap_settings[] = {
 	{0x030D, 0x64},
 	{0x030E, 0x01},
 	{0x3A06, 0x11},
+	/* Mode setting */
 	{0x0108, 0x03},
 	{0x0112, 0x0A},
 	{0x0113, 0x0A},
@@ -1001,12 +1032,14 @@ static struct msm_camera_i2c_reg_conf imx135_snap_settings[] = {
 	{0x4082, 0x01},
 	{0x4083, 0x01},
 	{0x7006, 0x04},
+	/* OptionalFunction setting */
 	{0x0700, 0x00},
 	{0x3A63, 0x00},
 	{0x4100, 0xE8},
 	{0x4203, 0xFF},
 	{0x4344, 0x00},
 	{0x441C, 0x01},
+	/* Size setting	*/
 	{0x0340, 0x0C},
 	{0x0341, 0x46},
 	{0x0342, 0x11},
@@ -1043,6 +1076,7 @@ static struct msm_camera_i2c_reg_conf imx135_snap_settings[] = {
 	{0x4086, 0x00},
 	{0x4087, 0x00},
 	{0x4400, 0x00},
+	/* Global Timing Setting */
 	{0x0830, 0x7F},
 	{0x0831, 0x37},
 	{0x0832, 0x5F},
@@ -1054,8 +1088,10 @@ static struct msm_camera_i2c_reg_conf imx135_snap_settings[] = {
 	{0x0839, 0x1F},
 	{0x083A, 0x17},
 	{0x083B, 0x02},
+	/* Integration Time Setting */
 	{0x0202, 0x0C},
 	{0x0203, 0x42},
+	/* Gain Setting	*/
 	{0x0205, 0x00},
 	{0x020E, 0x01},
 	{0x020F, 0x00},
@@ -1065,6 +1101,7 @@ static struct msm_camera_i2c_reg_conf imx135_snap_settings[] = {
 	{0x0213, 0x00},
 	{0x0214, 0x01},
 	{0x0215, 0x00},
+	/* HDR Setting */
 	{0x0230, 0x00},
 	{0x0231, 0x00},
 	{0x0233, 0x00},
@@ -1082,6 +1119,7 @@ static struct msm_camera_i2c_reg_conf imx135_snap_settings[] = {
 };
 
 static struct msm_camera_i2c_reg_conf imx135_hdr_settings[] = {
+	/* Clock Setting */
 	{0x011E, 0x18},
 	{0x011F, 0x00},
 	{0x0301, 0x05},
@@ -1093,6 +1131,7 @@ static struct msm_camera_i2c_reg_conf imx135_hdr_settings[] = {
 	{0x030D, 0x64},
 	{0x030E, 0x01},
 	{0x3A06, 0x12},
+	/* Mode setting	*/
 	{0x0108, 0x03},
 	{0x0112, 0x0E},
 	{0x0113, 0x0A},
@@ -1109,12 +1148,14 @@ static struct msm_camera_i2c_reg_conf imx135_hdr_settings[] = {
 	{0x4082, 0x01},
 	{0x4083, 0x01},
 	{0x7006, 0x04},
+	/* OptionnalFunction setting */
 	{0x0700, 0x01},
 	{0x3A63, 0x00},
 	{0x4100, 0xF8},
 	{0x4203, 0xFF},
 	{0x4344, 0x00},
 	{0x441C, 0x01},
+	/* Size setting	*/
 	{0x0340, 0x09},
 	{0x0341, 0x1C},
 	{0x0342, 0x11},
@@ -1151,6 +1192,7 @@ static struct msm_camera_i2c_reg_conf imx135_hdr_settings[] = {
 	{0x4086, 0x00},
 	{0x4087, 0x00},
 	{0x4400, 0x00},
+	/*Global Timing Setting	*/
 	{0x0830, 0x67},
 	{0x0831, 0x1F},
 	{0x0832, 0x47},
@@ -1162,8 +1204,10 @@ static struct msm_camera_i2c_reg_conf imx135_hdr_settings[] = {
 	{0x0839, 0x1F},
 	{0x083A, 0x17},
 	{0x083B, 0x02},
+	/*Integration Time Setting*/
 	{0x0202, 0x0C},
 	{0x0203, 0x44},
+	/*Gain Setting */
 	{0x0205, 0xE0},
 	{0x020E, 0x01},
 	{0x020F, 0x00},
@@ -1173,12 +1217,13 @@ static struct msm_camera_i2c_reg_conf imx135_hdr_settings[] = {
 	{0x0213, 0x00},
 	{0x0214, 0x01},
 	{0x0215, 0x00},
+	/* HDR Setting */
 	{0x0230, 0x01},
 	{0x0231, 0x88},
 	{0x0233, 0xE0},
 	{0x0234, 0x00},
 	{0x0235, 0x40},
-	{0x0238, 0x01},
+	{0x0238, 0x01}, /*Direct 1 / Auto 0*/
 	{0x0239, 0x04},
 	{0x023B, 0x03},
 	{0x023C, 0x01},
@@ -1196,6 +1241,7 @@ static struct v4l2_subdev_info imx135_subdev_info[] = {
 	.fmt		= 1,
 	.order		= 0,
 	},
+	/* more can be supported, to be added later */
 };
 
 static struct msm_camera_i2c_conf_array imx135_init_conf[] = {
@@ -1219,6 +1265,7 @@ static struct msm_camera_i2c_conf_array imx135_confs[] = {
 };
 
 static struct msm_sensor_output_info_t imx135_dimensions[] = {
+	/* RES0 snapshot(FULL SIZE) */
 	{
 		.x_output = 4208,
 		.y_output = 3120,
@@ -1228,6 +1275,7 @@ static struct msm_sensor_output_info_t imx135_dimensions[] = {
 		.op_pixel_clk = 319680000,
 		.binning_factor = 1,
 	},
+	/* RES0 snapshot(FULL SIZE)  for preview */
 	{
 		.x_output = 4208,
 		.y_output = 3120,
@@ -1237,6 +1285,7 @@ static struct msm_sensor_output_info_t imx135_dimensions[] = {
 		.op_pixel_clk = 319680000,
 		.binning_factor = 1,
 	},
+	/* RES2 16:9 HDR movie mode */
 	{
 		.x_output = 1920,
 		.y_output = 1088,
@@ -1246,6 +1295,7 @@ static struct msm_sensor_output_info_t imx135_dimensions[] = {
 		.op_pixel_clk = 319600000,
 		.binning_factor = 1,
 	},
+	/* RES3 high frame rate 60 fps */
 	{
 		.x_output = 1312,
 		.y_output = 736,
@@ -1255,6 +1305,7 @@ static struct msm_sensor_output_info_t imx135_dimensions[] = {
 		.op_pixel_clk = 319600000,
 		.binning_factor = 1,
 	},
+	/* RES4 high frame rate 90 fps */
 	{
 		.x_output = 1312,
 		.y_output = 736,
@@ -1350,7 +1401,7 @@ static struct v4l2_subdev_ops imx135_subdev_ops = {
 	.video  = &imx135_subdev_video_ops,
 };
 
-static uint16_t otp_readed;
+static uint16_t otp_readed = 0;
 static uint16_t r_over_g, b_over_g, b_over_r;
 static int32_t imx135_match_id(struct msm_sensor_ctrl_t *s_ctrl)
 {
@@ -1378,6 +1429,7 @@ static int32_t imx135_match_id(struct msm_sensor_ctrl_t *s_ctrl)
 		return -ENODEV;
 	}
 
+	/* Read Module Vendor */
 	for (i = 2; i >= 0; i--) {
 		msm_camera_i2c_write(s_ctrl->sensor_i2c_client, 0x3B02, 10+i , MSM_CAMERA_I2C_BYTE_DATA);
 		msm_camera_i2c_write(s_ctrl->sensor_i2c_client, 0x3B00, 0x01, MSM_CAMERA_I2C_BYTE_DATA);
@@ -1429,7 +1481,7 @@ static int32_t imx135_write_exp_gain(struct msm_sensor_ctrl_t *s_ctrl,
 		s_ctrl->sensor_exp_gain_info->coarse_int_time_addr, line,
 		MSM_CAMERA_I2C_WORD_DATA);
 
-	if (gain > 224) {
+	if (gain > 224) { /* large than 8x gain, use digital gain*/
 		digital_gain_int = (gain & 0x00FF) - 224;
 		digital_gain = (digital_gain_int << 8) + ((gain & 0xFF00) >> 8);
 		gain = 224;
@@ -1437,6 +1489,7 @@ static int32_t imx135_write_exp_gain(struct msm_sensor_ctrl_t *s_ctrl,
 	msm_camera_i2c_write(s_ctrl->sensor_i2c_client,
 				s_ctrl->sensor_exp_gain_info->global_gain_addr, gain,
 				MSM_CAMERA_I2C_BYTE_DATA);
+	/* update digital gain */
 	msm_camera_i2c_write(s_ctrl->sensor_i2c_client, 0x020E, digital_gain, MSM_CAMERA_I2C_WORD_DATA);
 	msm_camera_i2c_write(s_ctrl->sensor_i2c_client, 0x0210, digital_gain, MSM_CAMERA_I2C_WORD_DATA);
 	msm_camera_i2c_write(s_ctrl->sensor_i2c_client, 0x0212, digital_gain, MSM_CAMERA_I2C_WORD_DATA);
@@ -1470,12 +1523,12 @@ int32_t imx135_write_exp_gain_hdr(struct msm_sensor_ctrl_t *s_ctrl,
 	luma_delta = fgain;
 	fgain = Q8*256/(256-gain);
 
-	if (fgain < Q8 * 2) {
+	if (fgain < Q8 * 2) { /* make long exp to time of 3, by gain trade-off */
 		ev = line * fgain;
 		r  = line / shortshutter_expratio;
-		line = r * shortshutter_expratio;
-		fgain  = ev / line;
-		gain = 256 - (256 * Q8 / fgain);
+		line = r * shortshutter_expratio;	/* make exp is time of 8 */
+		fgain  = ev / line;					/* get fgain */
+		gain = 256 - (256 * Q8 / fgain);	/* get reg gain */
 
 		shortshutter = line / 8;
 		shortshutter_gain = gain;
@@ -1507,6 +1560,7 @@ int32_t imx135_write_exp_gain_hdr(struct msm_sensor_ctrl_t *s_ctrl,
 		s_ctrl->sensor_exp_gain_info->global_gain_addr, gain,
 	MSM_CAMERA_I2C_BYTE_DATA);
 
+	/* temp: short exp gain for HDR */
 	if (s_ctrl->curr_res == MSM_SENSOR_RES_2) {
 		msm_camera_i2c_write(s_ctrl->sensor_i2c_client,
 				SHORT_GAIN_BYTE_ADDR, shortshutter_gain,
@@ -1569,6 +1623,7 @@ int32_t imx135_write_exp_gain_hdr(struct msm_sensor_ctrl_t *s_ctrl,
 	return 0;
 }
 
+/* For Video HDR */
 int32_t imx135_hdr_update(struct msm_sensor_ctrl_t *s_ctrl,
 						  struct sensor_hdr_update_parm_t *update_parm)
 {
@@ -1584,17 +1639,20 @@ int32_t imx135_hdr_update(struct msm_sensor_ctrl_t *s_ctrl,
 							 MSM_CAMERA_I2C_WORD_DATA);
 		break;
 	case SENSOR_HDR_UPDATE_LSC:
+		/* step1: write knot points to LSC table */
 		for (i = 0; i < LSC_TABLE_LEN_BYTES; i++) {
 			msm_camera_i2c_write(s_ctrl->sensor_i2c_client,
 						 LSC_TABLE_START_ADDR + i, update_parm->lsc_table[i],
 						 MSM_CAMERA_I2C_BYTE_DATA);
 		}
+		/* step2: LSC enable */
 		msm_camera_i2c_write(s_ctrl->sensor_i2c_client,
 							 EN_LSC_BYTE_ADDR, 0x1F,
 							 MSM_CAMERA_I2C_BYTE_DATA);
 		msm_camera_i2c_write(s_ctrl->sensor_i2c_client,
 							 LSC_ENABLE_BYTE_ADDR, 0x01,
 							 MSM_CAMERA_I2C_BYTE_DATA);
+		/* step3: RAM_SEL_TOGGLE */
 		msm_camera_i2c_write(s_ctrl->sensor_i2c_client,
 							 RAM_SEL_TOGGLE_BYTE_ADDR, 0x01,
 							 MSM_CAMERA_I2C_BYTE_DATA);
@@ -1624,8 +1682,9 @@ static struct msm_sensor_fn_t imx135_func_tbl = {
 	.sensor_config = msm_sensor_config,
 	.sensor_power_up = msm_sensor_power_up,
 	.sensor_power_down = msm_sensor_power_down,
+//	.sensor_adjust_frame_lines = msm_sensor_adjust_frame_lines1,
 	.sensor_get_csi_params = msm_sensor_get_csi_params,
-	.sensor_hdr_update = imx135_hdr_update,
+	.sensor_hdr_update = imx135_hdr_update, /* For Video HDR */
 	.sensor_match_id   = imx135_match_id,
 };
 
