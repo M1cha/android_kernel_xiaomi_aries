@@ -463,7 +463,7 @@ int32_t msm_sensor_config(struct msm_sensor_ctrl_t *s_ctrl, void __user *argp)
 				s_ctrl->prev_gain = cdata.cfg.exp_gain.gain;
 				s_ctrl->prev_line = cdata.cfg.exp_gain.line;
 			} else {
-				if (s_ctrl->curr_res == 2) {
+				if(s_ctrl->curr_res == 2) { /* VideoHDR */
 					rc = s_ctrl->func_tbl->
 						sensor_write_exp_gain_hdr(
 								s_ctrl,
@@ -530,7 +530,7 @@ int32_t msm_sensor_config(struct msm_sensor_ctrl_t *s_ctrl, void __user *argp)
 
 		case CFG_SET_EFFECT:
 			break;
-		case CFG_HDR_UPDATE:
+		case CFG_HDR_UPDATE:	/* For Video HDR */
 			if (s_ctrl->func_tbl->
 			sensor_hdr_update == NULL) {
 				rc = -EFAULT;
@@ -760,7 +760,7 @@ int32_t msm_sensor_match_id(struct msm_sensor_ctrl_t *s_ctrl)
 		return rc;
 	}
 
-	CDBG("msm_sensor id: %d\n", chipid);
+	CDBG("msm_sensor id: 0x%04x req_id:0x%04x\n", chipid, s_ctrl->sensor_id_info->sensor_id);
 	if (chipid != s_ctrl->sensor_id_info->sensor_id) {
 		pr_err("msm_sensor_match_id chip id doesnot match\n");
 		return -ENODEV;

@@ -163,7 +163,7 @@ static int wfd_allocate_ion_buffer(struct ion_client *client,
 	alloc_regions |= secure ? ION_SECURE :
 				ION_HEAP(ION_IOMMU_HEAP_ID);
 	handle = ion_alloc(client,
-			mregion->size, SZ_4K, alloc_regions);
+			mregion->size, SZ_4K, alloc_regions, ION_FLAG_CACHED);
 
 	if (IS_ERR_OR_NULL(handle)) {
 		WFD_MSG_ERR("Failed to allocate input buffer\n");
@@ -171,7 +171,7 @@ static int wfd_allocate_ion_buffer(struct ion_client *client,
 		goto alloc_fail;
 	}
 
-	kvaddr = ion_map_kernel(client, handle, secure ? UNCACHED : CACHED);
+	kvaddr = ion_map_kernel(client, handle);
 
 	if (IS_ERR_OR_NULL(kvaddr)) {
 		WFD_MSG_ERR("Failed to get virtual addr\n");
@@ -613,7 +613,11 @@ static int mdp_output_thread(void *data)
 				WFD_STAT_EVENT_VSG_QUEUE);
 		}
 	}
-	WFD_MSG_DBG("Exiting the thread\n");
+	if (rc && !kthread_should_stop()) {
+		set_current_state(TASK_UNINTERRUPTIBLE);
+		schedule_timeout(MAX_SCHEDULE_TIMEOUT);
+	}
+	WFD_MSG_ERR("Exiting the thread\n");
 	return rc;
 }
 
@@ -1432,6 +1436,7 @@ static int wfd_close(struct file *filp)
 			WFD_MSG_ERR("Failed to CLOSE vsg subdev: %d\n", rc);
 
 		wfd_stats_deinit(&inst->stats);
+		pr_err("freeing inst %p", inst);
 		kfree(inst);
 	}
 

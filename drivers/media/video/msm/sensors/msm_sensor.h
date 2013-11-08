@@ -148,7 +148,7 @@ struct msm_sensor_fn_t {
 	int32_t (*sensor_get_csi_params)(struct msm_sensor_ctrl_t *,
 		struct csi_lane_params_t *);
 	int32_t (*sensor_hdr_update)(struct msm_sensor_ctrl_t *,
-		struct sensor_hdr_update_parm_t *);
+		struct sensor_hdr_update_parm_t *);	/* For Video HDR */
 };
 
 struct msm_sensor_csi_info {
