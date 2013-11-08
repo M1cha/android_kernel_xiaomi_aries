@@ -36,30 +36,32 @@ static struct msm_camera_i2c_reg_conf imx175_groupoff_settings[] = {
 };
 
 static struct msm_camera_i2c_reg_conf imx175_snap_settings[] = {
-	{0x0301, 0x05},
-	{0x0303, 0x01},
-	{0x0305, 0x06},
-	{0x0309, 0x05},
-	{0x030B, 0x01},
-	{0x030C, 0x00},
-	{0x030D, 0x87},
-	{0x0202, 0x09},
-	{0x0203, 0xAD},
-	{0x0340, 0x09},
-	{0x0341, 0xD0},
-	{0x0342, 0x0D},
-	{0x0343, 0x70},
-	{0x0344, 0x00},
+	// IMX175_8M_25fps_3264x2448
+	{0x0301, 0x05}, //vt_pix_clk_div
+	{0x0303, 0x01}, //vt_sys_clk_div
+	{0x0305, 0x06}, //pre_pll_clk_di
+	{0x0309, 0x05}, //OPPXCK_DIV
+	{0x030B, 0x01}, //OPSYCK_DIV
+	{0x030C, 0x00}, //PLL_OP_MPY
+	{0x030D, 0x87}, //PLL_OP_MPY
+	//{0x030E, 0x01}, //PLL_SOLO_DRIVE
+	{0x0202, 0x09}, // shutter
+	{0x0203, 0xAD}, // shutter
+	{0x0340, 0x09}, // frame_length_lines [15:8]
+	{0x0341, 0xD0}, // frame_length_lines [7:0]
+	{0x0342, 0x0D}, // line_length_pck [15:8]
+	{0x0343, 0x70}, // line_length_pck [7:0]
+	{0x0344, 0x00}, // x_start
 	{0x0345, 0x08},
-	{0x0346, 0x00},
+	{0x0346, 0x00}, // y_start
 	{0x0347, 0x08},
-	{0x0348, 0x0C},
+	{0x0348, 0x0C}, // x_end
 	{0x0349, 0xC7},
-	{0x034A, 0x09},
+	{0x034A, 0x09}, // y_end
 	{0x034B, 0x97},
-	{0x034C, 0x0C},
+	{0x034C, 0x0C}, // x_size
 	{0x034D, 0xC0},
-	{0x034E, 0x09},
+	{0x034E, 0x09}, // y_size
 	{0x034F, 0x90},
 	{0x0390, 0x00},
 	{0x3344, 0x4F},
@@ -86,30 +88,32 @@ static struct msm_camera_i2c_reg_conf imx175_snap_settings[] = {
 };
 
 static struct msm_camera_i2c_reg_conf imx175_prev_settings[] = {
-	{0x0301, 0x05},
-	{0x0303, 0x01},
-	{0x0305, 0x06},
-	{0x0309, 0x05},
-	{0x030B, 0x01},
-	{0x030C, 0x00},
-	{0x030D, 0x87},
-	{0x0202, 0x09},
-	{0x0203, 0xAD},
-	{0x0340, 0x09},
-	{0x0341, 0xD0},
-	{0x0342, 0x0D},
-	{0x0343, 0x70},
-	{0x0344, 0x00},
+	//IMX175_8M_25fps_3264x2448
+	{0x0301, 0x05}, //vt_pix_clk_div
+	{0x0303, 0x01}, //vt_sys_clk_div
+	{0x0305, 0x06}, //pre_pll_clk_di
+	{0x0309, 0x05}, //OPPXCK_DIV
+	{0x030B, 0x01}, //OPSYCK_DIV
+	{0x030C, 0x00}, //PLL_OP_MPY
+	{0x030D, 0x87}, //PLL_OP_MPY
+	//{0x030E, 0x01}, //PLL_SOLO_DRIVE
+	{0x0202, 0x09}, // shutter
+	{0x0203, 0xAD}, // shutter
+	{0x0340, 0x09}, // frame_length_lines [15:8]
+	{0x0341, 0xD0}, // frame_length_lines [7:0]
+	{0x0342, 0x0D}, // line_length_pck [15:8]
+	{0x0343, 0x70}, // line_length_pck [7:0]
+	{0x0344, 0x00}, // x_start
 	{0x0345, 0x08},
-	{0x0346, 0x00},
+	{0x0346, 0x00}, // y_start
 	{0x0347, 0x08},
-	{0x0348, 0x0C},
+	{0x0348, 0x0C}, // x_end
 	{0x0349, 0xC7},
-	{0x034A, 0x09},
+	{0x034A, 0x09}, // y_end
 	{0x034B, 0x97},
-	{0x034C, 0x0C},
+	{0x034C, 0x0C}, // x_size
 	{0x034D, 0xC0},
-	{0x034E, 0x09},
+	{0x034E, 0x09}, // y_size
 	{0x034F, 0x90},
 	{0x0390, 0x00},
 	{0x3344, 0x4F},
@@ -319,6 +323,7 @@ static struct v4l2_subdev_info imx175_subdev_info[] = {
 	.fmt = 1,
 	.order = 0,
 	},
+	/* more can be supported, to be added later */
 };
 
 static struct msm_camera_i2c_conf_array imx175_init_conf[] = {
@@ -343,6 +348,7 @@ static struct msm_camera_i2c_conf_array imx175_confs[] = {
 };
 
 static struct msm_sensor_output_info_t imx175_dimensions[] = {
+/*Sony 3264x2448,25fps*/
 	{
 		.x_output = 0xCC0,
 		.y_output = 0x990,
@@ -352,6 +358,7 @@ static struct msm_sensor_output_info_t imx175_dimensions[] = {
 		.op_pixel_clk = 269000000,
 		.binning_factor = 1,
 	},
+/*Sony 3264x2448,25fps*/
 	{
 		.x_output = 0xCC0,
 		.y_output = 0x990,
@@ -361,6 +368,7 @@ static struct msm_sensor_output_info_t imx175_dimensions[] = {
 		.op_pixel_clk = 269000000,
 		.binning_factor = 1,
 	},
+/*Sony 3264x2448,25fps keep for FHD*/
 	{
 		.x_output = 0xCC0,
 		.y_output = 0x990,
@@ -370,6 +378,7 @@ static struct msm_sensor_output_info_t imx175_dimensions[] = {
 		.op_pixel_clk = 269000000,
 		.binning_factor = 1,
 	},
+/*Sony 1312x736,60fps*/
 	{
 		.x_output = 1312,
 		.y_output = 736,
@@ -379,6 +388,7 @@ static struct msm_sensor_output_info_t imx175_dimensions[] = {
 		.op_pixel_clk = 269000000/*320000000*/,
 		.binning_factor = 1,
 	},
+/*Sony 1312x736,90fps*/
 	{
 		.x_output = 1312,
 		.y_output = 736,
@@ -388,6 +398,7 @@ static struct msm_sensor_output_info_t imx175_dimensions[] = {
 		.op_pixel_clk = 269000000,
 		.binning_factor = 1,
 	},
+/*Sony 800x600,120fps*/
 	{
 		.x_output = 800,
 		.y_output = 600,
@@ -470,7 +481,7 @@ static int32_t imx175_write_exp_gain(struct msm_sensor_ctrl_t *s_ctrl,
 		s_ctrl->sensor_exp_gain_info->coarse_int_time_addr, line,
 		MSM_CAMERA_I2C_WORD_DATA);
 
-	if (gain > 224) {
+	if (gain > 224) { /* large than 8x gain, use digital gain*/
 		digital_gain_int = (gain & 0x00FF) - 224;
 		digital_gain = (digital_gain_int << 8) + ((gain & 0xFF00) >> 8);
 		gain = 224;
@@ -478,6 +489,7 @@ static int32_t imx175_write_exp_gain(struct msm_sensor_ctrl_t *s_ctrl,
 	msm_camera_i2c_write(s_ctrl->sensor_i2c_client,
 				s_ctrl->sensor_exp_gain_info->global_gain_addr, gain,
 				MSM_CAMERA_I2C_WORD_DATA);
+	/* update digital gain */
 	msm_camera_i2c_write(s_ctrl->sensor_i2c_client, 0x020E, digital_gain, MSM_CAMERA_I2C_WORD_DATA);
 	msm_camera_i2c_write(s_ctrl->sensor_i2c_client, 0x0210, digital_gain, MSM_CAMERA_I2C_WORD_DATA);
 	msm_camera_i2c_write(s_ctrl->sensor_i2c_client, 0x0212, digital_gain, MSM_CAMERA_I2C_WORD_DATA);
@@ -510,6 +522,7 @@ static int32_t imx175_match_id(struct msm_sensor_ctrl_t *s_ctrl)
 		return -ENODEV;
 	}
 
+	/* Read OTP */
 	msm_camera_i2c_write(s_ctrl->sensor_i2c_client, 0x0100, 0x00, MSM_CAMERA_I2C_BYTE_DATA);
 	msm_camera_i2c_write(s_ctrl->sensor_i2c_client, 0x3382, 0x05, MSM_CAMERA_I2C_BYTE_DATA);
 	msm_camera_i2c_write(s_ctrl->sensor_i2c_client, 0x3383, 0xA0, MSM_CAMERA_I2C_BYTE_DATA);
@@ -522,8 +535,9 @@ static int32_t imx175_match_id(struct msm_sensor_ctrl_t *s_ctrl)
 		msm_camera_i2c_read(s_ctrl->sensor_i2c_client, 0x3410, &byte, MSM_CAMERA_I2C_BYTE_DATA);
 		msm_camera_i2c_read(s_ctrl->sensor_i2c_client, 0x3411, &byte1, MSM_CAMERA_I2C_BYTE_DATA);
 
-		if (byte1 == 0x0C)
-			s_ctrl->sensordata->actuator_info->cam_name = 1;
+		if(byte1 == 0x0C) /* LITEON MITSUMI VCM */
+			s_ctrl->sensordata->actuator_info->cam_name = 1;//ACTUATOR_MAIN_CAM_1
+		/* else byte1 == 0x0A and 0x0B -> TDK */
 
 		if (byte == 0x0A) {
 			s_ctrl->sensordata->sensor_name = imx175_name[1];
@@ -588,6 +602,7 @@ static struct msm_sensor_fn_t imx175_func_tbl = {
 	.sensor_config = msm_sensor_config,
 	.sensor_power_up = msm_sensor_power_up,
 	.sensor_power_down = msm_sensor_power_down,
+//	.sensor_adjust_frame_lines = msm_sensor_adjust_frame_lines,
 	.sensor_get_csi_params = msm_sensor_get_csi_params,
 	.sensor_match_id = imx175_match_id,
 };

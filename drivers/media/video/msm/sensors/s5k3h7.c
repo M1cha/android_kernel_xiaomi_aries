@@ -37,54 +37,69 @@ static struct msm_camera_i2c_reg_conf s5k3h7_groupoff_settings[] = {
 
 static struct msm_camera_i2c_reg_conf s5k3h7_otp_settings[] = {
        {0x6028, 0xD000},
-       {0x38FA, 0x0030},
-       {0x38FC, 0x0030},
-       {0x0086, 0x01FF},
-       {0x6218, 0xF1D0},
-       {0x6214, 0xF9F0},
-       {0x6226, 0x0001},
+       // Offset control
+       {0x38FA, 0x0030},       // gisp_offs_gains_bls_offs_0_
+       {0x38FC, 0x0030},       // gisp_offs_gains_bls_offs_1_
+       {0x0086, 0x01FF},       // analogue_gain_code_max
+       // Setting for Analog (Don't change)
+       {0x6218, 0xF1D0},       // open all clocks
+       {0x6214, 0xF9F0},       // open all clocks
+       {0x6226, 0x0001},       // open APB clock for I2C transaction
        {0xB0C0, 0x000C},
        {0xB0C0, 0x000C},
-       {0xF400, 0x0BBC},
-       {0x6226, 0x0000},
-       {0x6218, 0xF9F0},
-       {0x0114, 0x0300},
-       {0x0136, 0x1314},
-       {0x0300, 0x0002},
-       {0x0302, 0x0001},
-       {0x0304, 0x0006},
-       {0x0306, 0x00A3},
-       {0x0308, 0x0008},
-       {0x030A, 0x0001},
-       {0x030C, 0x0006},
-       {0x030E, 0x00C8},
-       {0x034C, 0x0CC0},
-       {0x034E, 0x0990},
-       {0x0344, 0x0004},
-       {0x0346, 0x0004},
-       {0x0348, 0x0CC3},
-       {0x034A, 0x0993},
-       {0x0342, 0x0E68},
-       {0x0340, 0x0BDD},
-       {0x0200, 0x0BEF},
-       {0x0202, 0x060A},
-       {0x0204, 0x0020},
-       {0x0100, 0x0100},
+       {0xF400, 0x0BBC},       // workaround for the SW standby current
+       {0x6226, 0x0000},       // close APB clock for I2C transaction
+       {0x6218, 0xF9F0},       // close all clocks
+       // set MIPI lane
+       {0x0114, 0x0300},    // #smiaRegs_rw_output_lane_mode (03 - 4lane, 01 - 2lane)
+       // set MCLK
+       {0x0136, 0x1314},       // #smiaRegs_rw_op_cond_extclk_frequency_mhz
+       // set PLL
+       {0x0300, 0x0002},       // smiaRegs_rw_clocks_vt_pix_clk_div
+       {0x0302, 0x0001},       // smiaRegs_rw_clocks_vt_sys_clk_div
+       {0x0304, 0x0006},       // smiaRegs_rw_clocks_pre_pll_clk_div
+       {0x0306, 0x00A3},       // smiaRegs_rw_clocks_pll_multiplier
+       {0x0308, 0x0008},       // smiaRegs_rw_clocks_op_pix_clk_div
+       {0x030A, 0x0001},       // smiaRegs_rw_clocks_op_sys_clk_div
+       {0x030C, 0x0006},       // smiaRegs_rw_clocks_secnd_pre_pll_clk_div
+       {0x030E, 0x00C8},       // smiaRegs_rw_clocks_secnd_pll_multiplier (MIPI: 334.75MHz -> 276.25MHz)
+       // Set Output size
+       {0x034C, 0x0CC0},       // smiaRegs_rw_frame_timing_x_output_size
+       {0x034E, 0x0990},       // smiaRegs_rw_frame_timing_y_output_size
+       // Set start-address
+       {0x0344, 0x0004},       // smiaRegs_rw_frame_timing_x_addr_start
+       {0x0346, 0x0004},       // smiaRegs_rw_frame_timing_y_addr_start
+       {0x0348, 0x0CC3},       // smiaRegs_rw_frame_timing_x_addr_end
+       {0x034A, 0x0993},       // smiaRegs_rw_frame_timing_y_addr_end
+       // Set FPS
+       {0x0342, 0x0E68},       // smiaRegs_rw_frame_timing_line_length_pck (7376d)
+       {0x0340, 0x0BDD},       // smiaRegs_rw_frame_timing_frame_length_lines
+       // Set int.time
+       {0x0200, 0x0BEF},       // smiaRegs_rw_integration_time_fine_integration_time
+       {0x0202, 0x060A},       // smiaRegs_rw_integration_time_coarse_integration_time
+       // Set gain
+       {0x0204, 0x0020},       //0020  // X1
+       // Streaming on
+       {0x0100, 0x0100},       // smiaRegs_rw_general_setup_mode_select
 };
 
 
 static struct msm_camera_i2c_reg_conf s5k3h7_prev_settings[] = {
-	{0x6218, 0xF1D0},
-	{0x6214, 0xF9F0},
-	{0xF400, 0x0BBC},
-	{0x6226, 0x0001},
+	/*Timing configuration*/
+	{0x6218, 0xF1D0},	// open all clocks
+	{0x6214, 0xF9F0},	// open all clocks
+	{0xF400, 0x0BBC},	// workaround for the SW standby current
+	{0x6226, 0x0001},	// open APB clock for I2C transaction
 	{0xB0C0, 0x000C},
-	{0x6226, 0x0000},
-	{0x6218, 0xF9F0},
-	{0x38FA, 0x0030},
-	{0x38FC, 0x0030},
-	{0x0086, 0x01ff},
-	{0xF616, 0x0004},
+	{0x6226, 0x0000},	// close APB clock for I2C transaction
+	{0x6218, 0xF9F0},	// close all clocks
+
+	//Offset control
+	{0x38FA, 0x0030},  // gisp_offs_gains_bls_offs_0_
+	{0x38FC, 0x0030},  // gisp_offs_gains_bls_offs_1_
+	{0x0086, 0x01ff},	// smiaRegs_rd_analog_gain_analogue_gain_code_max
+	{0xF616, 0x0004},	//aig_tmc_gain
+
 	{0x32BD, 0x00E8},
 	{0x32BE, 0x001B},
 	{0xF442, 0x0018},
@@ -98,149 +113,167 @@ static struct msm_camera_i2c_reg_conf s5k3h7_prev_settings[] = {
 	{0x012A, 0x0060},
 	{0x012C, 0x7077},
 	{0x012E, 0x7777},
-	{0x0136, 0x1314},
-	{0x0114, 0x0300},
-	{0x0300, 0x0002},
-	{0x0302, 0x0001},
-	{0x0304, 0x0006},
-	{0x0306, 0x00A3},
-	{0x0308, 0x0008},
-	{0x030A, 0x0001},
-	{0x030C, 0x0006},
-	{0x030E, 0x00C8},
-	{0x034C, 0x0CC0},
-	{0x034E, 0x0990},
-	{0x0344, 0x0004},
-	{0x0346, 0x0004},
-	{0x0348, 0x0CC3},
-	{0x034A, 0x0993},
-	{0x0380, 0x0001},
-	{0x0382, 0x0001},
-	{0x0384, 0x0001},
-	{0x0386, 0x0001},
-	{0x0900, 0x0000},
-	{0x0902, 0x0100},
-	{0x0342, 0x0EDC},
-	{0x0340, 0x0AB8},
-	{0x0200, 0x0BEF},
-	{0x0202, 0x060A},
+
+	//Sensor configurations
+	//set MCLK
+	{0x0136, 0x1314},	// #smiaRegs_rw_op_cond_extclk_frequency_mhz
+	//set PLL
+	{0x0114, 0x0300},   // #smiaRegs_rw_output_lane_mode (03 - 4lane, 01 - 2lane)
+	{0x0300, 0x0002},	// smiaRegs_rw_clocks_vt_pix_clk_div
+	{0x0302, 0x0001},	// smiaRegs_rw_clocks_vt_sys_clk_div
+	{0x0304, 0x0006},	// smiaRegs_rw_clocks_pre_pll_clk_div
+	{0x0306, 0x00A3},	// smiaRegs_rw_clocks_pll_multiplier
+	{0x0308, 0x0008},	// smiaRegs_rw_clocks_op_pix_clk_div
+	{0x030A, 0x0001},	// smiaRegs_rw_clocks_op_sys_clk_div
+	{0x030C, 0x0006},	// smiaRegs_rw_clocks_secnd_pre_pll_clk_div
+	{0x030E, 0x00C8},	// smiaRegs_rw_clocks_secnd_pll_multiplier (MIPI: 334.75MHz -> 276.25MHz)
+	//Set Output size
+	{0x034C, 0x0CC0},	//0CC0	// smiaRegs_rw_frame_timing_x_output_size
+	{0x034E, 0x0990},	//0990	// smiaRegs_rw_frame_timing_y_output_size
+	//Set start-address
+	{0x0344, 0x0004},	// smiaRegs_rw_frame_timing_x_addr_start
+	{0x0346, 0x0004},	// smiaRegs_rw_frame_timing_y_addr_start
+	{0x0348, 0x0CC3},	// smiaRegs_rw_frame_timing_x_addr_end
+	{0x034A, 0x0993},	// smiaRegs_rw_frame_timing_y_addr_end
+	//Binning & Subsampling
+	{0x0380, 0x0001},        // #smiaRegs_rw_sub_sample_x_even_inc
+	{0x0382, 0x0001},        // #smiaRegs_rw_sub_sample_x_odd_inc
+	{0x0384, 0x0001},        // #smiaRegs_rw_sub_sample_y_even_inc
+	{0x0386, 0x0001},        // #smiaRegs_rw_sub_sample_y_odd_inc
+	{0x0900, 0x0000},        // #smiaRegs_rw_binning_mode
+	{0x0902, 0x0100},        // #smiaRegs_rw_binning_weighting
+	//Set FPS
+	{0x0342, 0x0EDC},	// smiaRegs_rw_frame_timing_line_length_pck (7376d)
+	{0x0340, 0x0AB8},	// smiaRegs_rw_frame_timing_frame_length_lines
+	//Set int.time
+	{0x0200, 0x0BEF},	// smiaRegs_rw_integration_time_fine_integration_time
+	{0x0202, 0x060A},	// smiaRegs_rw_integration_time_coarse_integration_time
 	{0x0204, 0x0020},
-	{0x31FE, 0xC004},	
-	{0x3200, 0xC4F0},	
-	{0x3202, 0xCEC8},	
-	{0x3204, 0xD8A0},	
-	{0x3206, 0xE278},	
-	{0x3208, 0xEC50},	
-	{0x320A, 0xF628},	
-	{0x320C, 0x0000},	
-	{0x320E, 0x09D8},	
-	{0x3210, 0x13B0},	
-	{0x3212, 0x1D88},	
-	{0x3214, 0x2760},	
-	{0x3216, 0x3138},	
-	{0x3218, 0x3B10},	
-	{0x321A, 0x3FFC},	
-	{0x321C, 0xC004},	
-	{0x321E, 0xCCD0},	
-	{0x3220, 0xD99C},	
-	{0x3222, 0xE668},	
-	{0x3224, 0xF334},	
-	{0x3226, 0x0000},	
-	{0x3228, 0x0CCC},	
-	{0x322A, 0x1998},	
-	{0x322C, 0x2664},	
-	{0x322E, 0x3330},	
-	{0x3230, 0x3FFC},	
-	{0x3232, 0x0100},	
-	{0x3234, 0x0100},	
-	{0x3238, 0x0909},	
-	{0x323A, 0x0B0F},	
-	{0x3236, 0x0E00},	
-	{0x0b00, 0x0120},	
-	{0x3160, 0x0600},	
-	{0x3161, 0x0000},	
-	{0x3164, 0x09C4},	
-	{0x3166, 0x0100},	
-	{0x3168, 0x0100},	
-	{0x316A, 0x0100},	
-	{0x316C, 0x0100},	
-	{0x316E, 0x0011},	
-	{0x3170, 0x002C},	
-	{0x3172, 0x0000},	
-	{0x3174, 0x0012},	
-	{0x3176, 0x0A8C},	
-	{0x3178, 0x0100},	
-	{0x317A, 0x0100},	
-	{0x317C, 0x0100},	
-	{0x317E, 0x0100},	
-	{0x3180, 0x0011},	
-	{0x3182, 0x002C},	
-	{0x3184, 0x0000},	
-	{0x3186, 0x0012},	
-	{0x3188, 0x0CE4},	
-	{0x318A, 0x0040},	
-	{0x318C, 0x0048},	
-	{0x318E, 0x0040},	
-	{0x3190, 0x0040},	
-	{0x3192, 0x0011},	
-	{0x3194, 0x002C},	
-	{0x3196, 0x0000},	
-	{0x3198, 0x0012},	
-	{0x319A, 0x1004},	
-	{0x319C, 0x0100},	
-	{0x319E, 0x0100},	
-	{0x31A0, 0x0100},	
-	{0x31A2, 0x0100},	
-	{0x31A4, 0x0011},	
-	{0x31A6, 0x002C},	
-	{0x31A8, 0x0000},	
-	{0x31AA, 0x0012},	
-	{0x31AC, 0x1388},	
-	{0x31AE, 0x0100},	
-	{0x31B0, 0x0100},	
-	{0x31B2, 0x0100},	
-	{0x31B4, 0x0100},	
-	{0x31B6, 0x0011},	
-	{0x31B8, 0x002C},	
-	{0x31BA, 0x0000},	
-	{0x31BC, 0x0012},	
-	{0x31BE, 0x1964},	
-	{0x31C0, 0x0100},	
-	{0x31C2, 0x0100},	
-	{0x31C4, 0x0100},	
-	{0x31C6, 0x0100},	
-	{0x31C8, 0x0011},	
-	{0x31CA, 0x002C},	
-	{0x31CC, 0x0000},	
-	{0x31CE, 0x0012},	
-	{0x31D0, 0x1D4C},	
-	{0x31D2, 0x0100},	
-	{0x31D4, 0x0100},	
-	{0x31D6, 0x0100},	
-	{0x31D8, 0x0100},	
-	{0x31DA, 0x0011},	
-	{0x31DC, 0x002C},	
-	{0x31DE, 0x0000},	
-	{0x31E0, 0x0012},	
-	{0x3162, 0x0100},	
-	{0x301c, 0x0200},	
-	{0x301e, 0x0300},	
-	{0x323C, 0x0101},	
-	{0x1989, 0x0004},	
+	//M2M
+	{0x31FE, 0xC004},         //ash_uDecompressXgrid[0]
+	{0x3200, 0xC4F0},         //ash_uDecompressXgrid[1]
+	{0x3202, 0xCEC8},         //ash_uDecompressXgrid[2]
+	{0x3204, 0xD8A0},         //ash_uDecompressXgrid[3]
+	{0x3206, 0xE278},         //ash_uDecompressXgrid[4]
+	{0x3208, 0xEC50},         //ash_uDecompressXgrid[5]
+	{0x320A, 0xF628},         //ash_uDecompressXgrid[6]
+	{0x320C, 0x0000},         //ash_uDecompressXgrid[7]
+	{0x320E, 0x09D8},         //ash_uDecompressXgrid[8]
+	{0x3210, 0x13B0},         //ash_uDecompressXgrid[9]
+	{0x3212, 0x1D88},         //ash_uDecompressXgrid[10]
+	{0x3214, 0x2760},         //ash_uDecompressXgrid[11]
+	{0x3216, 0x3138},         //ash_uDecompressXgrid[12]
+	{0x3218, 0x3B10},         //ash_uDecompressXgrid[13]
+	{0x321A, 0x3FFC},         //ash_uDecompressXgrid[14]
+
+	{0x321C, 0xC004},         //ash_uDecompressYgrid[0]
+	{0x321E, 0xCCD0},         //ash_uDecompressYgrid[1]
+	{0x3220, 0xD99C},         //ash_uDecompressYgrid[2]
+	{0x3222, 0xE668},         //ash_uDecompressYgrid[3]
+	{0x3224, 0xF334},         //ash_uDecompressYgrid[4]
+	{0x3226, 0x0000},         //ash_uDecompressYgrid[5]
+	{0x3228, 0x0CCC},         //ash_uDecompressYgrid[6]
+	{0x322A, 0x1998},         //ash_uDecompressYgrid[7]
+	{0x322C, 0x2664},         //ash_uDecompressYgrid[8]
+	{0x322E, 0x3330},         //ash_uDecompressYgrid[9]
+	{0x3230, 0x3FFC},         //ash_uDecompressYgrid[10]
+
+	{0x3232, 0x0100},           //ash_uDecompressWidth
+	{0x3234, 0x0100},           //ash_uDecompressHeight
+
+	{0x3238, 0x0909},           //ash_uDecompressRadiusShifter
+	{0x323A, 0x0B0F},           //ash_uDecompressFinalScale
+	{0x3236, 0x0E00},           //ash_uDecompressScale
+	{0x0b00, 0x0120},           //smiaRegs_rw_isp_luminance_correction_level
+
+	//BASE Profile parabola start
+	{0x3160, 0x0600},            //ash_GrasCfg
+	{0x3161, 0x0000},            //ash_GrasShifter
+	{0x3164, 0x09C4},         //ash_luma_params[0]_tmpr
+	{0x3166, 0x0100},         //ash_luma_params[0]_alpha[0]
+	{0x3168, 0x0100},         //ash_luma_params[0]_alpha[1]
+	{0x316A, 0x0100},         //ash_luma_params[0]_alpha[2]
+	{0x316C, 0x0100},         //ash_luma_params[0]_alpha[3]
+	{0x316E, 0x0011},         //ash_luma_params[0]_beta[0]
+	{0x3170, 0x002C},         //ash_luma_params[0]_beta[1]
+	{0x3172, 0x0000},         //ash_luma_params[0]_beta[2]
+	{0x3174, 0x0012},         //ash_luma_params[0]_beta[3]
+	{0x3176, 0x0A8C},         //ash_luma_params[1]_tmpr
+	{0x3178, 0x0100},         //ash_luma_params[1]_alpha[0]
+	{0x317A, 0x0100},         //ash_luma_params[1]_alpha[1]
+	{0x317C, 0x0100},         //ash_luma_params[1]_alpha[2]
+	{0x317E, 0x0100},         //ash_luma_params[1]_alpha[3]
+	{0x3180, 0x0011},         //ash_luma_params[1]_beta[0]
+	{0x3182, 0x002C},         //ash_luma_params[1]_beta[1]
+	{0x3184, 0x0000},         //ash_luma_params[1]_beta[2]
+	{0x3186, 0x0012},         //ash_luma_params[1]_beta[3]
+	{0x3188, 0x0CE4},         //ash_luma_params[2]_tmpr
+	{0x318A, 0x0040},         //ash_luma_params[2]_alpha[0]    GR
+	{0x318C, 0x0048},         //ash_luma_params[2]_alpha[1]    R
+	{0x318E, 0x0040},         //ash_luma_params[2]_alpha[2]    B
+	{0x3190, 0x0040},         //ash_luma_params[2]_alpha[3]    GB
+	{0x3192, 0x0011},         //ash_luma_params[2]_beta[0]
+	{0x3194, 0x002C},         //ash_luma_params[2]_beta[1]
+	{0x3196, 0x0000},         //ash_luma_params[2]_beta[2]
+	{0x3198, 0x0012},         //ash_luma_params[2]_beta[3]
+	{0x319A, 0x1004},         //ash_luma_params[3]_tmpr
+	{0x319C, 0x0100},         //ash_luma_params[3]_alpha[0]
+	{0x319E, 0x0100},         //ash_luma_params[3]_alpha[1]
+	{0x31A0, 0x0100},         //ash_luma_params[3]_alpha[2]
+	{0x31A2, 0x0100},         //ash_luma_params[3]_alpha[3]
+	{0x31A4, 0x0011},         //ash_luma_params[3]_beta[0]
+	{0x31A6, 0x002C},         //ash_luma_params[3]_beta[1]
+	{0x31A8, 0x0000},         //ash_luma_params[3]_beta[2]
+	{0x31AA, 0x0012},         //ash_luma_params[3]_beta[3]
+	{0x31AC, 0x1388},         //ash_luma_params[4]_tmpr
+	{0x31AE, 0x0100},         //ash_luma_params[4]_alpha[0]
+	{0x31B0, 0x0100},         //ash_luma_params[4]_alpha[1]
+	{0x31B2, 0x0100},         //ash_luma_params[4]_alpha[2]
+	{0x31B4, 0x0100},         //ash_luma_params[4]_alpha[3]
+	{0x31B6, 0x0011},         //ash_luma_params[4]_beta[0]
+	{0x31B8, 0x002C},         //ash_luma_params[4]_beta[1]
+	{0x31BA, 0x0000},         //ash_luma_params[4]_beta[2]
+	{0x31BC, 0x0012},         //ash_luma_params[4]_beta[3]
+	{0x31BE, 0x1964},         //ash_luma_params[5]_tmpr
+	{0x31C0, 0x0100},         //ash_luma_params[5]_alpha[0]
+	{0x31C2, 0x0100},         //ash_luma_params[5]_alpha[1]
+	{0x31C4, 0x0100},         //ash_luma_params[5]_alpha[2]
+	{0x31C6, 0x0100},         //ash_luma_params[5]_alpha[3]
+	{0x31C8, 0x0011},         //ash_luma_params[5]_beta[0]
+	{0x31CA, 0x002C},         //ash_luma_params[5]_beta[1]
+	{0x31CC, 0x0000},         //ash_luma_params[5]_beta[2]
+	{0x31CE, 0x0012},         //ash_luma_params[5]_beta[3]
+	{0x31D0, 0x1D4C},         //ash_luma_params[6]_tmpr
+	{0x31D2, 0x0100},         //ash_luma_params[6]_alpha[0]
+	{0x31D4, 0x0100},         //ash_luma_params[6]_alpha[1]
+	{0x31D6, 0x0100},         //ash_luma_params[6]_alpha[2]
+	{0x31D8, 0x0100},         //ash_luma_params[6]_alpha[3]
+	{0x31DA, 0x0011},         //ash_luma_params[6]_beta[0]
+	{0x31DC, 0x002C},         //ash_luma_params[6]_beta[1]
+	{0x31DE, 0x0000},         //ash_luma_params[6]_beta[2]
+	{0x31E0, 0x0012},         //ash_luma_params[6]_beta[3]
+	{0x3162, 0x0100},           //ash_bLumaMode
+	{0x301c, 0x0200},            //smiaRegs_vendor_gras_nvm_address//index 228: page#3, byte #36
+	{0x301e, 0x0300},            //WsmiaRegs_vendor_gras_load_from
+	{0x323C, 0x0101},            //Wash_bSkipNvmGrasOfs  // skipping the value set in nvm page 0 address 47
+	{0x1989, 0x0004},            //smiaRegs_ro_edof_cap_uAlphaTempInd
 };
 
 static struct msm_camera_i2c_reg_conf s5k3h7_video_60fps_settings[] = {
-	{0x6218, 0xF1D0},
-	{0x6214, 0xF9F0},
-	{0xF400, 0x0BBC},
-	{0x6226, 0x0001},
+	{0x6218, 0xF1D0},       // open all clocks
+	{0x6214, 0xF9F0},       // open all clocks
+	{0xF400, 0x0BBC},// workaround for the SW standby current
+	{0x6226, 0x0001},       // open APB clock for I2C transaction
 	{0xB0C0, 0x000C},
-	{0x6226, 0x0000},
-	{0x6218, 0xF9F0},
-	{0x38FA, 0x0030},
-	{0x38FC, 0x0030},
-	{0x0086, 0x01FF},
-	{0xF616, 0x0004},
+	{0x6226, 0x0000},       // close APB clock for I2C transaction
+	{0x6218, 0xF9F0},       // close all clocks
+
+	//Offset control
+	{0x38FA, 0x0030},  // gisp_offs_gains_bls_offs_0_
+	{0x38FC, 0x0030},  // gisp_offs_gains_bls_offs_1_
+	{0x0086, 0x01FF},      // analogue_gain_code_max
+	{0xF616, 0x0004},       //aig_tmc_gain 
+
 	{0x32BD, 0x00E8},
 	{0x32BE, 0x001B},
 	{0xF442, 0x0018},
@@ -254,151 +287,170 @@ static struct msm_camera_i2c_reg_conf s5k3h7_video_60fps_settings[] = {
 	{0x012A, 0x0060},
 	{0x012C, 0x7077},
 	{0x012E, 0x7777},
-	{0x0136, 0x1314},
-	{0x0114, 0x0300},
-	{0x0300, 0x0002},
-	{0x0302, 0x0001},
-	{0x0304, 0x0006},
-	{0x0306, 0x00A3},
-	{0x0308, 0x0008},
-	{0x030A, 0x0001},
-	{0x030C, 0x0006},
-	{0x030E, 0x00C8},
-	{0x034C, 0x0520},
-	{0x034E, 0x02E0},
-	{0x0344, 0x0144},
-	{0x0346, 0x01EC},
-	{0x0348, 0x0B83},
-	{0x034A, 0x07AB},
-	{0x0380, 0x0001},
-	{0x0382, 0x0003},
-	{0x0384, 0x0001},
-	{0x0386, 0x0003},
-	{0x0900, 0x0122},
-	{0x0902, 0x0100},
-	{0x0342, 0x0EDC},
-	{0x0340, 0x0477},
-	{0x0200, 0x0618},
-	{0x0202, 0x04BC},
-	{0x0204, 0x0020},
-	{0x31FE, 0xC004},	
-	{0x3200, 0xC4F0},	
-	{0x3202, 0xCEC8},	
-	{0x3204, 0xD8A0},	
-	{0x3206, 0xE278},	
-	{0x3208, 0xEC50},	
-	{0x320A, 0xF628},	
-	{0x320C, 0x0000},	
-	{0x320E, 0x09D8},	
-	{0x3210, 0x13B0},	
-	{0x3212, 0x1D88},	
-	{0x3214, 0x2760},	
-	{0x3216, 0x3138},	
-	{0x3218, 0x3B10},	
-	{0x321A, 0x3FFC},	
-	{0x321C, 0xC004},	
-	{0x321E, 0xCCD0},	
-	{0x3220, 0xD99C},	
-	{0x3222, 0xE668},	
-	{0x3224, 0xF334},	
-	{0x3226, 0x0000},	
-	{0x3228, 0x0CCC},	
-	{0x322A, 0x1998},	
-	{0x322C, 0x2664},	
-	{0x322E, 0x3330},	
-	{0x3230, 0x3FFC},	
-	{0x3232, 0x0100},	
-	{0x3234, 0x0100},	
-	{0x3238, 0x0909},	
-	{0x323A, 0x0B0F},	
-	{0x3236, 0x0E00},	
-	{0x0b00, 0x0120},	
-	{0x3160, 0x0600},	
-	{0x3161, 0x0000},	
-	{0x3164, 0x09C4},	
-	{0x3166, 0x0100},	
-	{0x3168, 0x0100},	
-	{0x316A, 0x0100},	
-	{0x316C, 0x0100},	
-	{0x316E, 0x0011},	
-	{0x3170, 0x002C},	
-	{0x3172, 0x0000},	
-	{0x3174, 0x0012},	
-	{0x3176, 0x0A8C},	
-	{0x3178, 0x0100},	
-	{0x317A, 0x0100},	
-	{0x317C, 0x0100},	
-	{0x317E, 0x0100},	
-	{0x3180, 0x0011},	
-	{0x3182, 0x002C},	
-	{0x3184, 0x0000},	
-	{0x3186, 0x0012},	
-	{0x3188, 0x0CE4},	
-	{0x318A, 0x0040},	
-	{0x318C, 0x0048},	
-	{0x318E, 0x0040},	
-	{0x3190, 0x0040},	
-	{0x3192, 0x0011},	
-	{0x3194, 0x002C},	
-	{0x3196, 0x0000},	
-	{0x3198, 0x0012},	
-	{0x319A, 0x1004},	
-	{0x319C, 0x0100},	
-	{0x319E, 0x0100},	
-	{0x31A0, 0x0100},	
-	{0x31A2, 0x0100},	
-	{0x31A4, 0x0011},	
-	{0x31A6, 0x002C},	
-	{0x31A8, 0x0000},	
-	{0x31AA, 0x0012},	
-	{0x31AC, 0x1388},	
-	{0x31AE, 0x0100},	
-	{0x31B0, 0x0100},	
-	{0x31B2, 0x0100},	
-	{0x31B4, 0x0100},	
-	{0x31B6, 0x0011},	
-	{0x31B8, 0x002C},	
-	{0x31BA, 0x0000},	
-	{0x31BC, 0x0012},	
-	{0x31BE, 0x1964},	
-	{0x31C0, 0x0100},	
-	{0x31C2, 0x0100},	
-	{0x31C4, 0x0100},	
-	{0x31C6, 0x0100},	
-	{0x31C8, 0x0011},	
-	{0x31CA, 0x002C},	
-	{0x31CC, 0x0000},	
-	{0x31CE, 0x0012},	
-	{0x31D0, 0x1D4C},	
-	{0x31D2, 0x0100},	
-	{0x31D4, 0x0100},	
-	{0x31D6, 0x0100},	
-	{0x31D8, 0x0100},	
-	{0x31DA, 0x0011},	
-	{0x31DC, 0x002C},	
-	{0x31DE, 0x0000},	
-	{0x31E0, 0x0012},	
-	{0x3162, 0x0100},	
-	{0x301c, 0x0200},	
-	{0x301e, 0x0300},	
-	{0x323C, 0x0101},	
-	{0x1989, 0x0004},	
+
+	//Sensor configurations
+	//set MCLK
+	{0x0136, 0x1314},//0D00  // #smiaRegs_rw_op_cond_extclk_frequency_mhz
+	//set PLL
+	{0x0114, 0x0300},      // #smiaRegs_rw_output_lane_mode (03 - 4lane, 01 - 2lane)
+	{0x0300, 0x0002},        // smiaRegs_rw_clocks_vt_pix_clk_div
+	{0x0302, 0x0001},        // smiaRegs_rw_clocks_vt_sys_clk_div
+	{0x0304, 0x0006},//0004  // smiaRegs_rw_clocks_pre_pll_clk_div
+	{0x0306, 0x00A3},//00AC  // smiaRegs_rw_clocks_pll_multiplier
+	{0x0308, 0x0008},        // smiaRegs_rw_clocks_op_pix_clk_div
+	{0x030A, 0x0001},        // smiaRegs_rw_clocks_op_sys_clk_div
+	{0x030C, 0x0006},//0004  // smiaRegs_rw_clocks_secnd_pre_pll_clk_div
+	{0x030E, 0x00C8},//00CE  // smiaRegs_rw_clocks_secnd_pll_multiplier
+	//Set Output size
+	{0x034C, 0x0520},        // smiaRegs_rw_frame_timing_x_output_size
+	{0x034E, 0x02E0},        // smiaRegs_rw_frame_timing_y_output_size
+	//Set start-address
+	{0x0344, 0x0144},        // smiaRegs_rw_frame_timing_x_addr_start
+	{0x0346, 0x01EC},        // smiaRegs_rw_frame_timing_y_addr_start
+	{0x0348, 0x0B83},        // smiaRegs_rw_frame_timing_x_addr_end
+	{0x034A, 0x07AB},        // smiaRegs_rw_frame_timing_y_addr_end
+	//Binning & Subsampling
+	{0x0380, 0x0001},        // #smiaRegs_rw_sub_sample_x_even_inc
+	{0x0382, 0x0003},        // #smiaRegs_rw_sub_sample_x_odd_inc
+	{0x0384, 0x0001},        // #smiaRegs_rw_sub_sample_y_even_inc
+	{0x0386, 0x0003},        // #smiaRegs_rw_sub_sample_y_odd_inc
+	{0x0900, 0x0122},        // #smiaRegs_rw_binning_mode
+	{0x0902, 0x0100},        // #smiaRegs_rw_binning_weighting
+	//Set FPS
+	{0x0342, 0x0EDC},        // smiaRegs_rw_frame_timing_line_length_pck
+	{0x0340, 0x0477},        // smiaRegs_rw_frame_timing_frame_length_lines
+	//Set int.time
+	{0x0200, 0x0618},        // smiaRegs_rw_integration_time_fine_integration_time
+	{0x0202, 0x04BC},        // smiaRegs_rw_integration_time_coarse_integration_time
+	//Set gain
+	{0x0204, 0x0020},        // X1
+	//M2M
+	{0x31FE, 0xC004},         //ash_uDecompressXgrid[0]
+	{0x3200, 0xC4F0},         //ash_uDecompressXgrid[1]
+	{0x3202, 0xCEC8},         //ash_uDecompressXgrid[2]
+	{0x3204, 0xD8A0},         //ash_uDecompressXgrid[3]
+	{0x3206, 0xE278},         //ash_uDecompressXgrid[4]
+	{0x3208, 0xEC50},         //ash_uDecompressXgrid[5]
+	{0x320A, 0xF628},         //ash_uDecompressXgrid[6]
+	{0x320C, 0x0000},         //ash_uDecompressXgrid[7]
+	{0x320E, 0x09D8},         //ash_uDecompressXgrid[8]
+	{0x3210, 0x13B0},         //ash_uDecompressXgrid[9]
+	{0x3212, 0x1D88},         //ash_uDecompressXgrid[10]
+	{0x3214, 0x2760},         //ash_uDecompressXgrid[11]
+	{0x3216, 0x3138},         //ash_uDecompressXgrid[12]
+	{0x3218, 0x3B10},         //ash_uDecompressXgrid[13]
+	{0x321A, 0x3FFC},         //ash_uDecompressXgrid[14]
+
+	{0x321C, 0xC004},         //ash_uDecompressYgrid[0]
+	{0x321E, 0xCCD0},         //ash_uDecompressYgrid[1]
+	{0x3220, 0xD99C},         //ash_uDecompressYgrid[2]
+	{0x3222, 0xE668},         //ash_uDecompressYgrid[3]
+	{0x3224, 0xF334},         //ash_uDecompressYgrid[4]
+	{0x3226, 0x0000},         //ash_uDecompressYgrid[5]
+	{0x3228, 0x0CCC},         //ash_uDecompressYgrid[6]
+	{0x322A, 0x1998},         //ash_uDecompressYgrid[7]
+	{0x322C, 0x2664},         //ash_uDecompressYgrid[8]
+	{0x322E, 0x3330},         //ash_uDecompressYgrid[9]
+	{0x3230, 0x3FFC},         //ash_uDecompressYgrid[10]
+
+	{0x3232, 0x0100},           //ash_uDecompressWidth
+	{0x3234, 0x0100},           //ash_uDecompressHeight
+
+	{0x3238, 0x0909},           //ash_uDecompressRadiusShifter
+	{0x323A, 0x0B0F},           //ash_uDecompressFinalScale
+	{0x3236, 0x0E00},           //ash_uDecompressScale
+	{0x0b00, 0x0120},           //smiaRegs_rw_isp_luminance_correction_level
+
+	//BASE Profile parabola start
+	{0x3160, 0x0600},            //ash_GrasCfg
+	{0x3161, 0x0000},            //ash_GrasShifter
+	{0x3164, 0x09C4},         //ash_luma_params[0]_tmpr
+	{0x3166, 0x0100},         //ash_luma_params[0]_alpha[0]
+	{0x3168, 0x0100},         //ash_luma_params[0]_alpha[1]
+	{0x316A, 0x0100},         //ash_luma_params[0]_alpha[2]
+	{0x316C, 0x0100},         //ash_luma_params[0]_alpha[3]
+	{0x316E, 0x0011},         //ash_luma_params[0]_beta[0]
+	{0x3170, 0x002C},         //ash_luma_params[0]_beta[1]
+	{0x3172, 0x0000},         //ash_luma_params[0]_beta[2]
+	{0x3174, 0x0012},         //ash_luma_params[0]_beta[3]
+	{0x3176, 0x0A8C},         //ash_luma_params[1]_tmpr
+	{0x3178, 0x0100},         //ash_luma_params[1]_alpha[0]
+	{0x317A, 0x0100},         //ash_luma_params[1]_alpha[1]
+	{0x317C, 0x0100},         //ash_luma_params[1]_alpha[2]
+	{0x317E, 0x0100},         //ash_luma_params[1]_alpha[3]
+	{0x3180, 0x0011},         //ash_luma_params[1]_beta[0]
+	{0x3182, 0x002C},         //ash_luma_params[1]_beta[1]
+	{0x3184, 0x0000},         //ash_luma_params[1]_beta[2]
+	{0x3186, 0x0012},         //ash_luma_params[1]_beta[3]
+	{0x3188, 0x0CE4},         //ash_luma_params[2]_tmpr
+	{0x318A, 0x0040},         //ash_luma_params[2]_alpha[0]    GR
+	{0x318C, 0x0048},         //ash_luma_params[2]_alpha[1]    R
+	{0x318E, 0x0040},         //ash_luma_params[2]_alpha[2]    B
+	{0x3190, 0x0040},         //ash_luma_params[2]_alpha[3]    GB
+	{0x3192, 0x0011},         //ash_luma_params[2]_beta[0]
+	{0x3194, 0x002C},         //ash_luma_params[2]_beta[1]
+	{0x3196, 0x0000},         //ash_luma_params[2]_beta[2]
+	{0x3198, 0x0012},         //ash_luma_params[2]_beta[3]
+	{0x319A, 0x1004},         //ash_luma_params[3]_tmpr
+	{0x319C, 0x0100},         //ash_luma_params[3]_alpha[0]
+	{0x319E, 0x0100},         //ash_luma_params[3]_alpha[1]
+	{0x31A0, 0x0100},         //ash_luma_params[3]_alpha[2]
+	{0x31A2, 0x0100},         //ash_luma_params[3]_alpha[3]
+	{0x31A4, 0x0011},         //ash_luma_params[3]_beta[0]
+	{0x31A6, 0x002C},         //ash_luma_params[3]_beta[1]
+	{0x31A8, 0x0000},         //ash_luma_params[3]_beta[2]
+	{0x31AA, 0x0012},         //ash_luma_params[3]_beta[3]
+	{0x31AC, 0x1388},         //ash_luma_params[4]_tmpr
+	{0x31AE, 0x0100},         //ash_luma_params[4]_alpha[0]
+	{0x31B0, 0x0100},         //ash_luma_params[4]_alpha[1]
+	{0x31B2, 0x0100},         //ash_luma_params[4]_alpha[2]
+	{0x31B4, 0x0100},         //ash_luma_params[4]_alpha[3]
+	{0x31B6, 0x0011},         //ash_luma_params[4]_beta[0]
+	{0x31B8, 0x002C},         //ash_luma_params[4]_beta[1]
+	{0x31BA, 0x0000},         //ash_luma_params[4]_beta[2]
+	{0x31BC, 0x0012},         //ash_luma_params[4]_beta[3]
+	{0x31BE, 0x1964},         //ash_luma_params[5]_tmpr
+	{0x31C0, 0x0100},         //ash_luma_params[5]_alpha[0]
+	{0x31C2, 0x0100},         //ash_luma_params[5]_alpha[1]
+	{0x31C4, 0x0100},         //ash_luma_params[5]_alpha[2]
+	{0x31C6, 0x0100},         //ash_luma_params[5]_alpha[3]
+	{0x31C8, 0x0011},         //ash_luma_params[5]_beta[0]
+	{0x31CA, 0x002C},         //ash_luma_params[5]_beta[1]
+	{0x31CC, 0x0000},         //ash_luma_params[5]_beta[2]
+	{0x31CE, 0x0012},         //ash_luma_params[5]_beta[3]
+	{0x31D0, 0x1D4C},         //ash_luma_params[6]_tmpr
+	{0x31D2, 0x0100},         //ash_luma_params[6]_alpha[0]
+	{0x31D4, 0x0100},         //ash_luma_params[6]_alpha[1]
+	{0x31D6, 0x0100},         //ash_luma_params[6]_alpha[2]
+	{0x31D8, 0x0100},         //ash_luma_params[6]_alpha[3]
+	{0x31DA, 0x0011},         //ash_luma_params[6]_beta[0]
+	{0x31DC, 0x002C},         //ash_luma_params[6]_beta[1]
+	{0x31DE, 0x0000},         //ash_luma_params[6]_beta[2]
+	{0x31E0, 0x0012},         //ash_luma_params[6]_beta[3]
+	{0x3162, 0x0100},           //ash_bLumaMode
+	{0x301c, 0x0200},            //smiaRegs_vendor_gras_nvm_address//index 228: page#3, byte #36
+	{0x301e, 0x0300},            //WsmiaRegs_vendor_gras_load_from
+	{0x323C, 0x0101},            //Wash_bSkipNvmGrasOfs  // skipping the value set in nvm page 0 address 47
+	{0x1989, 0x0004},            //smiaRegs_ro_edof_cap_uAlphaTempInd
 
 
 };
 
 static struct msm_camera_i2c_reg_conf s5k3h7_video_90fps_settings[] = {
-	{0x6218, 0xF1D0},
-	{0x6214, 0xF9F0},
-	{0xF400, 0x0BBC},
-	{0x6226, 0x0001},
+	{0x6218, 0xF1D0},       // open all clocks
+	{0x6214, 0xF9F0},       // open all clocks
+	{0xF400, 0x0BBC},// workaround for the SW standby current
+	{0x6226, 0x0001},       // open APB clock for I2C transaction
 	{0xB0C0, 0x000C},
-	{0x6226, 0x0000},
-	{0x6218, 0xF9F0},
-	{0x38FA, 0x0030},
-	{0x38FC, 0x0030},
-	{0x0086, 0x01FF},
+	{0x6226, 0x0000},       // close APB clock for I2C transaction
+	{0x6218, 0xF9F0},       // close all clocks
+
+	//Offset control
+	{0x38FA, 0x0030},  // gisp_offs_gains_bls_offs_0_
+	{0x38FC, 0x0030},  // gisp_offs_gains_bls_offs_1_
+	{0x0086, 0x01FF},      // analogue_gain_code_max
 	{0xF616, 0x0004},
+
 	{0x32BD, 0x00E8},
 	{0x32BE, 0x001B},
 	{0xF442, 0x0018},
@@ -412,149 +464,169 @@ static struct msm_camera_i2c_reg_conf s5k3h7_video_90fps_settings[] = {
 	{0x012A, 0x0060},
 	{0x012C, 0x7077},
 	{0x012E, 0x7777},
-	{0x0136, 0x1314},
-	{0x0300, 0x0002},
-	{0x0302, 0x0001},
-	{0x0304, 0x0006},
-	{0x0306, 0x00A3},
-	{0x0308, 0x0008},
-	{0x030A, 0x0001},
-	{0x030C, 0x0006},
-	{0x030E, 0x00C8},
-	{0x034C, 0x0520},
-	{0x034E, 0x02E0},
-	{0x0344, 0x0144},
-	{0x0346, 0x01EC},
-	{0x0348, 0x0B83},
-	{0x034A, 0x07AB},
-	{0x0380, 0x0001},
-	{0x0382, 0x0003},
-	{0x0384, 0x0001},
-	{0x0386, 0x0003},
-	{0x0900, 0x0122},
-	{0x0902, 0x0100},
-	{0x0342, 0x0EDC},
-	{0x0340, 0x02FA},
-	{0x0200, 0x0618},
-	{0x0202, 0x04BC},
-	{0x0204, 0x0020},
-	{0x31FE, 0xC004},	
-	{0x3200, 0xC4F0},	
-	{0x3202, 0xCEC8},	
-	{0x3204, 0xD8A0},	
-	{0x3206, 0xE278},	
-	{0x3208, 0xEC50},	
-	{0x320A, 0xF628},	
-	{0x320C, 0x0000},	
-	{0x320E, 0x09D8},	
-	{0x3210, 0x13B0},	
-	{0x3212, 0x1D88},	
-	{0x3214, 0x2760},	
-	{0x3216, 0x3138},	
-	{0x3218, 0x3B10},	
-	{0x321A, 0x3FFC},	
-	{0x321C, 0xC004},	
-	{0x321E, 0xCCD0},	
-	{0x3220, 0xD99C},	
-	{0x3222, 0xE668},	
-	{0x3224, 0xF334},	
-	{0x3226, 0x0000},	
-	{0x3228, 0x0CCC},	
-	{0x322A, 0x1998},	
-	{0x322C, 0x2664},	
-	{0x322E, 0x3330},	
-	{0x3230, 0x3FFC},	
-	{0x3232, 0x0100},	
-	{0x3234, 0x0100},	
-	{0x3238, 0x0909},	
-	{0x323A, 0x0B0F},	
-	{0x3236, 0x0E00},	
-	{0x0b00, 0x0120},	
-	{0x3160, 0x0600},	
-	{0x3161, 0x0000},	
-	{0x3164, 0x09C4},	
-	{0x3166, 0x0100},	
-	{0x3168, 0x0100},	
-	{0x316A, 0x0100},	
-	{0x316C, 0x0100},	
-	{0x316E, 0x0011},	
-	{0x3170, 0x002C},	
-	{0x3172, 0x0000},	
-	{0x3174, 0x0012},	
-	{0x3176, 0x0A8C},	
-	{0x3178, 0x0100},	
-	{0x317A, 0x0100},	
-	{0x317C, 0x0100},	
-	{0x317E, 0x0100},	
-	{0x3180, 0x0011},	
-	{0x3182, 0x002C},	
-	{0x3184, 0x0000},	
-	{0x3186, 0x0012},	
-	{0x3188, 0x0CE4},	
-	{0x318A, 0x0040},	
-	{0x318C, 0x0048},	
-	{0x318E, 0x0040},	
-	{0x3190, 0x0040},	
-	{0x3192, 0x0011},	
-	{0x3194, 0x002C},	
-	{0x3196, 0x0000},	
-	{0x3198, 0x0012},	
-	{0x319A, 0x1004},	
-	{0x319C, 0x0100},	
-	{0x319E, 0x0100},	
-	{0x31A0, 0x0100},	
-	{0x31A2, 0x0100},	
-	{0x31A4, 0x0011},	
-	{0x31A6, 0x002C},	
-	{0x31A8, 0x0000},	
-	{0x31AA, 0x0012},	
-	{0x31AC, 0x1388},	
-	{0x31AE, 0x0100},	
-	{0x31B0, 0x0100},	
-	{0x31B2, 0x0100},	
-	{0x31B4, 0x0100},	
-	{0x31B6, 0x0011},	
-	{0x31B8, 0x002C},	
-	{0x31BA, 0x0000},	
-	{0x31BC, 0x0012},	
-	{0x31BE, 0x1964},	
-	{0x31C0, 0x0100},	
-	{0x31C2, 0x0100},	
-	{0x31C4, 0x0100},	
-	{0x31C6, 0x0100},	
-	{0x31C8, 0x0011},	
-	{0x31CA, 0x002C},	
-	{0x31CC, 0x0000},	
-	{0x31CE, 0x0012},	
-	{0x31D0, 0x1D4C},	
-	{0x31D2, 0x0100},	
-	{0x31D4, 0x0100},	
-	{0x31D6, 0x0100},	
-	{0x31D8, 0x0100},	
-	{0x31DA, 0x0011},	
-	{0x31DC, 0x002C},	
-	{0x31DE, 0x0000},	
-	{0x31E0, 0x0012},	
-	{0x3162, 0x0100},	
-	{0x301c, 0x0200},	
-	{0x301e, 0x0300},	
-	{0x323C, 0x0101},	
-	{0x1989, 0x0004},	
+
+	//Sensor configurations
+	//set MCLK
+	{0x0136, 0x1314},//0D00  // #smiaRegs_rw_op_cond_extclk_frequency_mhz
+	//set PLL
+	{0x0300, 0x0002},        // smiaRegs_rw_clocks_vt_pix_clk_div
+	{0x0302, 0x0001},        // smiaRegs_rw_clocks_vt_sys_clk_div
+	{0x0304, 0x0006},//0004  // smiaRegs_rw_clocks_pre_pll_clk_div
+	{0x0306, 0x00A3},//00AC  // smiaRegs_rw_clocks_pll_multiplier
+	{0x0308, 0x0008},        // smiaRegs_rw_clocks_op_pix_clk_div
+	{0x030A, 0x0001},        // smiaRegs_rw_clocks_op_sys_clk_div
+	{0x030C, 0x0006},//0004  // smiaRegs_rw_clocks_secnd_pre_pll_clk_div
+	{0x030E, 0x00C8},//00CE  // smiaRegs_rw_clocks_secnd_pll_multiplier
+	//Set Output size
+	{0x034C, 0x0520},        // smiaRegs_rw_frame_timing_x_output_size
+	{0x034E, 0x02E0},        // smiaRegs_rw_frame_timing_y_output_size
+	//Set start-address
+	{0x0344, 0x0144},        // smiaRegs_rw_frame_timing_x_addr_start
+	{0x0346, 0x01EC},        // smiaRegs_rw_frame_timing_y_addr_start
+	{0x0348, 0x0B83},        // smiaRegs_rw_frame_timing_x_addr_end
+	{0x034A, 0x07AB},        // smiaRegs_rw_frame_timing_y_addr_end
+	//Binning & Subsampling
+	{0x0380, 0x0001},        // #smiaRegs_rw_sub_sample_x_even_inc
+	{0x0382, 0x0003},        // #smiaRegs_rw_sub_sample_x_odd_inc
+	{0x0384, 0x0001},        // #smiaRegs_rw_sub_sample_y_even_inc
+	{0x0386, 0x0003},        // #smiaRegs_rw_sub_sample_y_odd_inc
+	{0x0900, 0x0122},        // #smiaRegs_rw_binning_mode
+	{0x0902, 0x0100},        // #smiaRegs_rw_binning_weighting
+	//Set FPS
+	{0x0342, 0x0EDC},        // smiaRegs_rw_frame_timing_line_length_pck
+	{0x0340, 0x02FA},        // smiaRegs_rw_frame_timing_frame_length_lines
+	//Set int.time
+	{0x0200, 0x0618},        // smiaRegs_rw_integration_time_fine_integration_time
+	{0x0202, 0x04BC},        // smiaRegs_rw_integration_time_coarse_integration_time
+	//Set gain
+	{0x0204, 0x0020},        // X1
+
+	//M2M
+	{0x31FE, 0xC004},         //ash_uDecompressXgrid[0]
+	{0x3200, 0xC4F0},         //ash_uDecompressXgrid[1]
+	{0x3202, 0xCEC8},         //ash_uDecompressXgrid[2]
+	{0x3204, 0xD8A0},         //ash_uDecompressXgrid[3]
+	{0x3206, 0xE278},         //ash_uDecompressXgrid[4]
+	{0x3208, 0xEC50},         //ash_uDecompressXgrid[5]
+	{0x320A, 0xF628},         //ash_uDecompressXgrid[6]
+	{0x320C, 0x0000},         //ash_uDecompressXgrid[7]
+	{0x320E, 0x09D8},         //ash_uDecompressXgrid[8]
+	{0x3210, 0x13B0},         //ash_uDecompressXgrid[9]
+	{0x3212, 0x1D88},         //ash_uDecompressXgrid[10]
+	{0x3214, 0x2760},         //ash_uDecompressXgrid[11]
+	{0x3216, 0x3138},         //ash_uDecompressXgrid[12]
+	{0x3218, 0x3B10},         //ash_uDecompressXgrid[13]
+	{0x321A, 0x3FFC},         //ash_uDecompressXgrid[14]
+
+	{0x321C, 0xC004},         //ash_uDecompressYgrid[0]
+	{0x321E, 0xCCD0},         //ash_uDecompressYgrid[1]
+	{0x3220, 0xD99C},         //ash_uDecompressYgrid[2]
+	{0x3222, 0xE668},         //ash_uDecompressYgrid[3]
+	{0x3224, 0xF334},         //ash_uDecompressYgrid[4]
+	{0x3226, 0x0000},         //ash_uDecompressYgrid[5]
+	{0x3228, 0x0CCC},         //ash_uDecompressYgrid[6]
+	{0x322A, 0x1998},         //ash_uDecompressYgrid[7]
+	{0x322C, 0x2664},         //ash_uDecompressYgrid[8]
+	{0x322E, 0x3330},         //ash_uDecompressYgrid[9]
+	{0x3230, 0x3FFC},         //ash_uDecompressYgrid[10]
+
+	{0x3232, 0x0100},           //ash_uDecompressWidth
+	{0x3234, 0x0100},           //ash_uDecompressHeight
+
+	{0x3238, 0x0909},           //ash_uDecompressRadiusShifter
+	{0x323A, 0x0B0F},           //ash_uDecompressFinalScale
+	{0x3236, 0x0E00},           //ash_uDecompressScale
+	{0x0b00, 0x0120},           //smiaRegs_rw_isp_luminance_correction_level
+
+	//BASE Profile parabola start
+	{0x3160, 0x0600},            //ash_GrasCfg
+	{0x3161, 0x0000},            //ash_GrasShifter
+	{0x3164, 0x09C4},         //ash_luma_params[0]_tmpr
+	{0x3166, 0x0100},         //ash_luma_params[0]_alpha[0]
+	{0x3168, 0x0100},         //ash_luma_params[0]_alpha[1]
+	{0x316A, 0x0100},         //ash_luma_params[0]_alpha[2]
+	{0x316C, 0x0100},         //ash_luma_params[0]_alpha[3]
+	{0x316E, 0x0011},         //ash_luma_params[0]_beta[0]
+	{0x3170, 0x002C},         //ash_luma_params[0]_beta[1]
+	{0x3172, 0x0000},         //ash_luma_params[0]_beta[2]
+	{0x3174, 0x0012},         //ash_luma_params[0]_beta[3]
+	{0x3176, 0x0A8C},         //ash_luma_params[1]_tmpr
+	{0x3178, 0x0100},         //ash_luma_params[1]_alpha[0]
+	{0x317A, 0x0100},         //ash_luma_params[1]_alpha[1]
+	{0x317C, 0x0100},         //ash_luma_params[1]_alpha[2]
+	{0x317E, 0x0100},         //ash_luma_params[1]_alpha[3]
+	{0x3180, 0x0011},         //ash_luma_params[1]_beta[0]
+	{0x3182, 0x002C},         //ash_luma_params[1]_beta[1]
+	{0x3184, 0x0000},         //ash_luma_params[1]_beta[2]
+	{0x3186, 0x0012},         //ash_luma_params[1]_beta[3]
+	{0x3188, 0x0CE4},         //ash_luma_params[2]_tmpr
+	{0x318A, 0x0040},         //ash_luma_params[2]_alpha[0]    GR
+	{0x318C, 0x0048},         //ash_luma_params[2]_alpha[1]    R
+	{0x318E, 0x0040},         //ash_luma_params[2]_alpha[2]    B
+	{0x3190, 0x0040},         //ash_luma_params[2]_alpha[3]    GB
+	{0x3192, 0x0011},         //ash_luma_params[2]_beta[0]
+	{0x3194, 0x002C},         //ash_luma_params[2]_beta[1]
+	{0x3196, 0x0000},         //ash_luma_params[2]_beta[2]
+	{0x3198, 0x0012},         //ash_luma_params[2]_beta[3]
+	{0x319A, 0x1004},         //ash_luma_params[3]_tmpr
+	{0x319C, 0x0100},         //ash_luma_params[3]_alpha[0]
+	{0x319E, 0x0100},         //ash_luma_params[3]_alpha[1]
+	{0x31A0, 0x0100},         //ash_luma_params[3]_alpha[2]
+	{0x31A2, 0x0100},         //ash_luma_params[3]_alpha[3]
+	{0x31A4, 0x0011},         //ash_luma_params[3]_beta[0]
+	{0x31A6, 0x002C},         //ash_luma_params[3]_beta[1]
+	{0x31A8, 0x0000},         //ash_luma_params[3]_beta[2]
+	{0x31AA, 0x0012},         //ash_luma_params[3]_beta[3]
+	{0x31AC, 0x1388},         //ash_luma_params[4]_tmpr
+	{0x31AE, 0x0100},         //ash_luma_params[4]_alpha[0]
+	{0x31B0, 0x0100},         //ash_luma_params[4]_alpha[1]
+	{0x31B2, 0x0100},         //ash_luma_params[4]_alpha[2]
+	{0x31B4, 0x0100},         //ash_luma_params[4]_alpha[3]
+	{0x31B6, 0x0011},         //ash_luma_params[4]_beta[0]
+	{0x31B8, 0x002C},         //ash_luma_params[4]_beta[1]
+	{0x31BA, 0x0000},         //ash_luma_params[4]_beta[2]
+	{0x31BC, 0x0012},         //ash_luma_params[4]_beta[3]
+	{0x31BE, 0x1964},         //ash_luma_params[5]_tmpr
+	{0x31C0, 0x0100},         //ash_luma_params[5]_alpha[0]
+	{0x31C2, 0x0100},         //ash_luma_params[5]_alpha[1]
+	{0x31C4, 0x0100},         //ash_luma_params[5]_alpha[2]
+	{0x31C6, 0x0100},         //ash_luma_params[5]_alpha[3]
+	{0x31C8, 0x0011},         //ash_luma_params[5]_beta[0]
+	{0x31CA, 0x002C},         //ash_luma_params[5]_beta[1]
+	{0x31CC, 0x0000},         //ash_luma_params[5]_beta[2]
+	{0x31CE, 0x0012},         //ash_luma_params[5]_beta[3]
+	{0x31D0, 0x1D4C},         //ash_luma_params[6]_tmpr
+	{0x31D2, 0x0100},         //ash_luma_params[6]_alpha[0]
+	{0x31D4, 0x0100},         //ash_luma_params[6]_alpha[1]
+	{0x31D6, 0x0100},         //ash_luma_params[6]_alpha[2]
+	{0x31D8, 0x0100},         //ash_luma_params[6]_alpha[3]
+	{0x31DA, 0x0011},         //ash_luma_params[6]_beta[0]
+	{0x31DC, 0x002C},         //ash_luma_params[6]_beta[1]
+	{0x31DE, 0x0000},         //ash_luma_params[6]_beta[2]
+	{0x31E0, 0x0012},         //ash_luma_params[6]_beta[3]
+	{0x3162, 0x0100},           //ash_bLumaMode
+	{0x301c, 0x0200},            //smiaRegs_vendor_gras_nvm_address//index 228: page#3, byte #36
+	{0x301e, 0x0300},            //WsmiaRegs_vendor_gras_load_from
+	{0x323C, 0x0101},            //Wash_bSkipNvmGrasOfs  // skipping the value set in nvm page 0 address 47
+	{0x1989, 0x0004},            //smiaRegs_ro_edof_cap_uAlphaTempInd
 
 };
 
 static struct msm_camera_i2c_reg_conf s5k3h7_video_120fps_settings[] = {
-	{0x6218, 0xF1D0},
-	{0x6214, 0xF9F0},
-	{0xF400, 0x0BBC},
-	{0x6226, 0x0001},
+	{0x6218, 0xF1D0},       // open all clocks
+	{0x6214, 0xF9F0},       // open all clocks
+	{0xF400, 0x0BBC},// workaround for the SW standby current
+	{0x6226, 0x0001},       // open APB clock for I2C transaction
 	{0xB0C0, 0x000C},
-	{0x6226, 0x0000},
-	{0x6218, 0xF9F0},
-	{0x38FA, 0x0030},
-	{0x38FC, 0x0030},
-	{0x0086, 0x01FF},
+	{0x6226, 0x0000},       // close APB clock for I2C transaction
+	{0x6218, 0xF9F0},       // close all clocks
+
+	//Offset control
+	{0x38FA, 0x0030},  // gisp_offs_gains_bls_offs_0_
+	{0x38FC, 0x0030},  // gisp_offs_gains_bls_offs_1_
+	{0x0086, 0x01FF},      // analogue_gain_code_max
 	{0xF616, 0x0004},
+
 	{0x32BD, 0x00E8},
 	{0x32BE, 0x001B},
 	{0xF442, 0x0018},
@@ -568,149 +640,169 @@ static struct msm_camera_i2c_reg_conf s5k3h7_video_120fps_settings[] = {
 	{0x012A, 0x0060},
 	{0x012C, 0x7077},
 	{0x012E, 0x7777},
-	{0x0136, 0x1314},
-	{0x0300, 0x0002},
-	{0x0302, 0x0001},
-	{0x0304, 0x0006},
-	{0x0306, 0x00A3},
-	{0x0308, 0x0008},
-	{0x030A, 0x0001},
-	{0x030C, 0x0006},
-	{0x030E, 0x00C8},
-	{0x034C, 0x0320},
-	{0x034E, 0x0258},
-	{0x0344, 0x0000},
-	{0x0346, 0x0000},
-	{0x0348, 0x0CCF},
-	{0x034A, 0x099F},
-	{0x0380, 0x0001},
-	{0x0382, 0x0007},
-	{0x0384, 0x0001},
-	{0x0386, 0x0007},
-	{0x0900, 0x0100},
-	{0x0901, 0x4400},
-	{0x0902, 0x0100},
-	{0x0342, 0x0EDC},
-	{0x0340, 0x023C},
-	{0x0200, 0x0618},
-	{0x0202, 0x025E},
-	{0x0204, 0x0020},
-	{0x31FE, 0xC004},	
-	{0x3200, 0xC4F0},	
-	{0x3202, 0xCEC8},	
-	{0x3204, 0xD8A0},	
-	{0x3206, 0xE278},	
-	{0x3208, 0xEC50},	
-	{0x320A, 0xF628},	
-	{0x320C, 0x0000},	
-	{0x320E, 0x09D8},	
-	{0x3210, 0x13B0},	
-	{0x3212, 0x1D88},	
-	{0x3214, 0x2760},	
-	{0x3216, 0x3138},	
-	{0x3218, 0x3B10},	
-	{0x321A, 0x3FFC},	
-	{0x321C, 0xC004},	
-	{0x321E, 0xCCD0},	
-	{0x3220, 0xD99C},	
-	{0x3222, 0xE668},	
-	{0x3224, 0xF334},	
-	{0x3226, 0x0000},	
-	{0x3228, 0x0CCC},	
-	{0x322A, 0x1998},	
-	{0x322C, 0x2664},	
-	{0x322E, 0x3330},	
-	{0x3230, 0x3FFC},	
-	{0x3232, 0x0100},	
-	{0x3234, 0x0100},	
-	{0x3238, 0x0909},	
-	{0x323A, 0x0B0F},	
-	{0x3236, 0x0E00},	
-	{0x0b00, 0x0120},	
-	{0x3160, 0x0600},	
-	{0x3161, 0x0000},	
-	{0x3164, 0x09C4},	
-	{0x3166, 0x0100},	
-	{0x3168, 0x0100},	
-	{0x316A, 0x0100},	
-	{0x316C, 0x0100},	
-	{0x316E, 0x0011},	
-	{0x3170, 0x002C},	
-	{0x3172, 0x0000},	
-	{0x3174, 0x0012},	
-	{0x3176, 0x0A8C},	
-	{0x3178, 0x0100},	
-	{0x317A, 0x0100},	
-	{0x317C, 0x0100},	
-	{0x317E, 0x0100},	
-	{0x3180, 0x0011},	
-	{0x3182, 0x002C},	
-	{0x3184, 0x0000},	
-	{0x3186, 0x0012},	
-	{0x3188, 0x0CE4},	
-	{0x318A, 0x0040},	
-	{0x318C, 0x0048},	
-	{0x318E, 0x0040},	
-	{0x3190, 0x0040},	
-	{0x3192, 0x0011},	
-	{0x3194, 0x002C},	
-	{0x3196, 0x0000},	
-	{0x3198, 0x0012},	
-	{0x319A, 0x1004},	
-	{0x319C, 0x0100},	
-	{0x319E, 0x0100},	
-	{0x31A0, 0x0100},	
-	{0x31A2, 0x0100},	
-	{0x31A4, 0x0011},	
-	{0x31A6, 0x002C},	
-	{0x31A8, 0x0000},	
-	{0x31AA, 0x0012},	
-	{0x31AC, 0x1388},	
-	{0x31AE, 0x0100},	
-	{0x31B0, 0x0100},	
-	{0x31B2, 0x0100},	
-	{0x31B4, 0x0100},	
-	{0x31B6, 0x0011},	
-	{0x31B8, 0x002C},	
-	{0x31BA, 0x0000},	
-	{0x31BC, 0x0012},	
-	{0x31BE, 0x1964},	
-	{0x31C0, 0x0100},	
-	{0x31C2, 0x0100},	
-	{0x31C4, 0x0100},	
-	{0x31C6, 0x0100},	
-	{0x31C8, 0x0011},	
-	{0x31CA, 0x002C},	
-	{0x31CC, 0x0000},	
-	{0x31CE, 0x0012},	
-	{0x31D0, 0x1D4C},	
-	{0x31D2, 0x0100},	
-	{0x31D4, 0x0100},	
-	{0x31D6, 0x0100},	
-	{0x31D8, 0x0100},	
-	{0x31DA, 0x0011},	
-	{0x31DC, 0x002C},	
-	{0x31DE, 0x0000},	
-	{0x31E0, 0x0012},	
-	{0x3162, 0x0100},	
-	{0x301c, 0x0200},	
-	{0x301e, 0x0300},	
-	{0x323C, 0x0101},	
-	{0x1989, 0x0004},	
+
+	//Sensor configurations
+	//set MCLK
+	{0x0136, 0x1314},//0D00  // #smiaRegs_rw_op_cond_extclk_frequency_mhz
+	//set PLL
+	{0x0300, 0x0002},        // smiaRegs_rw_clocks_vt_pix_clk_div
+	{0x0302, 0x0001},        // smiaRegs_rw_clocks_vt_sys_clk_div
+	{0x0304, 0x0006},//0004  // smiaRegs_rw_clocks_pre_pll_clk_div
+	{0x0306, 0x00A3},//00AC  // smiaRegs_rw_clocks_pll_multiplier
+	{0x0308, 0x0008},        // smiaRegs_rw_clocks_op_pix_clk_div
+	{0x030A, 0x0001},        // smiaRegs_rw_clocks_op_sys_clk_div
+	{0x030C, 0x0006},//0004  // smiaRegs_rw_clocks_secnd_pre_pll_clk_div
+	{0x030E, 0x00C8},//00CE  // smiaRegs_rw_clocks_secnd_pll_multiplier
+	//Set Output size
+	{0x034C, 0x0320},        // smiaRegs_rw_frame_timing_x_output_size
+	{0x034E, 0x0258},        // smiaRegs_rw_frame_timing_y_output_size
+	//Set start-address
+	{0x0344, 0x0000},        // smiaRegs_rw_frame_timing_x_addr_start
+	{0x0346, 0x0000},        // smiaRegs_rw_frame_timing_y_addr_start
+	{0x0348, 0x0CCF},        // smiaRegs_rw_frame_timing_x_addr_end
+	{0x034A, 0x099F},        // smiaRegs_rw_frame_timing_y_addr_end
+	//Binning & Subsampling
+	{0x0380, 0x0001},        // #smiaRegs_rw_sub_sample_x_even_inc
+	{0x0382, 0x0007},        // #smiaRegs_rw_sub_sample_x_odd_inc
+	{0x0384, 0x0001},        // #smiaRegs_rw_sub_sample_y_even_inc
+	{0x0386, 0x0007},        // #smiaRegs_rw_sub_sample_y_odd_inc
+	{0x0900, 0x0100},        // #smiaRegs_rw_binning_mode
+	{0x0901, 0x4400},        // #smiaRegs_rw_binning_type
+	{0x0902, 0x0100},        // #smiaRegs_rw_binning_weighting
+	//Set FPS
+	{0x0342, 0x0EDC},        // smiaRegs_rw_frame_timing_line_length_pck
+	{0x0340, 0x023C},        // smiaRegs_rw_frame_timing_frame_length_lines
+	//Set int.time
+	{0x0200, 0x0618},        // smiaRegs_rw_integration_time_fine_integration_time
+	{0x0202, 0x025E},        // smiaRegs_rw_integration_time_coarse_integration_time
+	//Set gain
+	{0x0204, 0x0020},        // X1
+	//M2M
+	{0x31FE, 0xC004},         //ash_uDecompressXgrid[0]
+	{0x3200, 0xC4F0},         //ash_uDecompressXgrid[1]
+	{0x3202, 0xCEC8},         //ash_uDecompressXgrid[2]
+	{0x3204, 0xD8A0},         //ash_uDecompressXgrid[3]
+	{0x3206, 0xE278},         //ash_uDecompressXgrid[4]
+	{0x3208, 0xEC50},         //ash_uDecompressXgrid[5]
+	{0x320A, 0xF628},         //ash_uDecompressXgrid[6]
+	{0x320C, 0x0000},         //ash_uDecompressXgrid[7]
+	{0x320E, 0x09D8},         //ash_uDecompressXgrid[8]
+	{0x3210, 0x13B0},         //ash_uDecompressXgrid[9]
+	{0x3212, 0x1D88},         //ash_uDecompressXgrid[10]
+	{0x3214, 0x2760},         //ash_uDecompressXgrid[11]
+	{0x3216, 0x3138},         //ash_uDecompressXgrid[12]
+	{0x3218, 0x3B10},         //ash_uDecompressXgrid[13]
+	{0x321A, 0x3FFC},         //ash_uDecompressXgrid[14]
+
+	{0x321C, 0xC004},         //ash_uDecompressYgrid[0]
+	{0x321E, 0xCCD0},         //ash_uDecompressYgrid[1]
+	{0x3220, 0xD99C},         //ash_uDecompressYgrid[2]
+	{0x3222, 0xE668},         //ash_uDecompressYgrid[3]
+	{0x3224, 0xF334},         //ash_uDecompressYgrid[4]
+	{0x3226, 0x0000},         //ash_uDecompressYgrid[5]
+	{0x3228, 0x0CCC},         //ash_uDecompressYgrid[6]
+	{0x322A, 0x1998},         //ash_uDecompressYgrid[7]
+	{0x322C, 0x2664},         //ash_uDecompressYgrid[8]
+	{0x322E, 0x3330},         //ash_uDecompressYgrid[9]
+	{0x3230, 0x3FFC},         //ash_uDecompressYgrid[10]
+
+	{0x3232, 0x0100},           //ash_uDecompressWidth
+	{0x3234, 0x0100},           //ash_uDecompressHeight
+
+	{0x3238, 0x0909},           //ash_uDecompressRadiusShifter
+	{0x323A, 0x0B0F},           //ash_uDecompressFinalScale
+	{0x3236, 0x0E00},           //ash_uDecompressScale
+	{0x0b00, 0x0120},           //smiaRegs_rw_isp_luminance_correction_level
+
+	//BASE Profile parabola start
+	{0x3160, 0x0600},            //ash_GrasCfg
+	{0x3161, 0x0000},            //ash_GrasShifter
+	{0x3164, 0x09C4},         //ash_luma_params[0]_tmpr
+	{0x3166, 0x0100},         //ash_luma_params[0]_alpha[0]
+	{0x3168, 0x0100},         //ash_luma_params[0]_alpha[1]
+	{0x316A, 0x0100},         //ash_luma_params[0]_alpha[2]
+	{0x316C, 0x0100},         //ash_luma_params[0]_alpha[3]
+	{0x316E, 0x0011},         //ash_luma_params[0]_beta[0]
+	{0x3170, 0x002C},         //ash_luma_params[0]_beta[1]
+	{0x3172, 0x0000},         //ash_luma_params[0]_beta[2]
+	{0x3174, 0x0012},         //ash_luma_params[0]_beta[3]
+	{0x3176, 0x0A8C},         //ash_luma_params[1]_tmpr
+	{0x3178, 0x0100},         //ash_luma_params[1]_alpha[0]
+	{0x317A, 0x0100},         //ash_luma_params[1]_alpha[1]
+	{0x317C, 0x0100},         //ash_luma_params[1]_alpha[2]
+	{0x317E, 0x0100},         //ash_luma_params[1]_alpha[3]
+	{0x3180, 0x0011},         //ash_luma_params[1]_beta[0]
+	{0x3182, 0x002C},         //ash_luma_params[1]_beta[1]
+	{0x3184, 0x0000},         //ash_luma_params[1]_beta[2]
+	{0x3186, 0x0012},         //ash_luma_params[1]_beta[3]
+	{0x3188, 0x0CE4},         //ash_luma_params[2]_tmpr
+	{0x318A, 0x0040},         //ash_luma_params[2]_alpha[0]    GR
+	{0x318C, 0x0048},         //ash_luma_params[2]_alpha[1]    R
+	{0x318E, 0x0040},         //ash_luma_params[2]_alpha[2]    B
+	{0x3190, 0x0040},         //ash_luma_params[2]_alpha[3]    GB
+	{0x3192, 0x0011},         //ash_luma_params[2]_beta[0]
+	{0x3194, 0x002C},         //ash_luma_params[2]_beta[1]
+	{0x3196, 0x0000},         //ash_luma_params[2]_beta[2]
+	{0x3198, 0x0012},         //ash_luma_params[2]_beta[3]
+	{0x319A, 0x1004},         //ash_luma_params[3]_tmpr
+	{0x319C, 0x0100},         //ash_luma_params[3]_alpha[0]
+	{0x319E, 0x0100},         //ash_luma_params[3]_alpha[1]
+	{0x31A0, 0x0100},         //ash_luma_params[3]_alpha[2]
+	{0x31A2, 0x0100},         //ash_luma_params[3]_alpha[3]
+	{0x31A4, 0x0011},         //ash_luma_params[3]_beta[0]
+	{0x31A6, 0x002C},         //ash_luma_params[3]_beta[1]
+	{0x31A8, 0x0000},         //ash_luma_params[3]_beta[2]
+	{0x31AA, 0x0012},         //ash_luma_params[3]_beta[3]
+	{0x31AC, 0x1388},         //ash_luma_params[4]_tmpr
+	{0x31AE, 0x0100},         //ash_luma_params[4]_alpha[0]
+	{0x31B0, 0x0100},         //ash_luma_params[4]_alpha[1]
+	{0x31B2, 0x0100},         //ash_luma_params[4]_alpha[2]
+	{0x31B4, 0x0100},         //ash_luma_params[4]_alpha[3]
+	{0x31B6, 0x0011},         //ash_luma_params[4]_beta[0]
+	{0x31B8, 0x002C},         //ash_luma_params[4]_beta[1]
+	{0x31BA, 0x0000},         //ash_luma_params[4]_beta[2]
+	{0x31BC, 0x0012},         //ash_luma_params[4]_beta[3]
+	{0x31BE, 0x1964},         //ash_luma_params[5]_tmpr
+	{0x31C0, 0x0100},         //ash_luma_params[5]_alpha[0]
+	{0x31C2, 0x0100},         //ash_luma_params[5]_alpha[1]
+	{0x31C4, 0x0100},         //ash_luma_params[5]_alpha[2]
+	{0x31C6, 0x0100},         //ash_luma_params[5]_alpha[3]
+	{0x31C8, 0x0011},         //ash_luma_params[5]_beta[0]
+	{0x31CA, 0x002C},         //ash_luma_params[5]_beta[1]
+	{0x31CC, 0x0000},         //ash_luma_params[5]_beta[2]
+	{0x31CE, 0x0012},         //ash_luma_params[5]_beta[3]
+	{0x31D0, 0x1D4C},         //ash_luma_params[6]_tmpr
+	{0x31D2, 0x0100},         //ash_luma_params[6]_alpha[0]
+	{0x31D4, 0x0100},         //ash_luma_params[6]_alpha[1]
+	{0x31D6, 0x0100},         //ash_luma_params[6]_alpha[2]
+	{0x31D8, 0x0100},         //ash_luma_params[6]_alpha[3]
+	{0x31DA, 0x0011},         //ash_luma_params[6]_beta[0]
+	{0x31DC, 0x002C},         //ash_luma_params[6]_beta[1]
+	{0x31DE, 0x0000},         //ash_luma_params[6]_beta[2]
+	{0x31E0, 0x0012},         //ash_luma_params[6]_beta[3]
+	{0x3162, 0x0100},           //ash_bLumaMode
+	{0x301c, 0x0200},            //smiaRegs_vendor_gras_nvm_address//index 228: page#3, byte #36
+	{0x301e, 0x0300},            //WsmiaRegs_vendor_gras_load_from
+	{0x323C, 0x0101},            //Wash_bSkipNvmGrasOfs  // skipping the value set in nvm page 0 address 47
+	{0x1989, 0x0004},            //smiaRegs_ro_edof_cap_uAlphaTempInd
 };
 
 static struct msm_camera_i2c_reg_conf s5k3h7_snap_settings[] = {
-	{0x6218, 0xF1D0},
-	{0x6214, 0xF9F0},
-	{0xF400, 0x0BBC},
-	{0x6226, 0x0001},
+	/*Timing configuration*/
+	{0x6218, 0xF1D0},	// open all clocks
+	{0x6214, 0xF9F0},	// open all clocks
+	{0xF400, 0x0BBC},	// workaround for the SW standby current
+	{0x6226, 0x0001},	// open APB clock for I2C transaction
 	{0xB0C0, 0x000C},
-	{0x6226, 0x0000},
-	{0x6218, 0xF9F0},
-	{0x38FA, 0x0030},
-	{0x38FC, 0x0030},
-	{0x0086, 0x01ff},
-	{0xF616, 0x0004},
+	{0x6226, 0x0000},	// close APB clock for I2C transaction
+	{0x6218, 0xF9F0},	// close all clocks
+
+	//Offset control
+	{0x38FA, 0x0030},  // gisp_offs_gains_bls_offs_0_
+	{0x38FC, 0x0030},  // gisp_offs_gains_bls_offs_1_
+	{0x0086, 0x01ff},	// smiaRegs_rd_analog_gain_analogue_gain_code_max
+	{0xF616, 0x0004},	//aig_tmc_gain
+
 	{0x32BD, 0x00E8},
 	{0x32BE, 0x001B},
 	{0xF442, 0x0018},
@@ -724,135 +816,150 @@ static struct msm_camera_i2c_reg_conf s5k3h7_snap_settings[] = {
 	{0x012A, 0x0060},
 	{0x012C, 0x7077},
 	{0x012E, 0x7777},
-	{0x0136, 0x1314},
-	{0x0114, 0x0300},
-	{0x0300, 0x0002},
-	{0x0302, 0x0001},
-	{0x0304, 0x0006},
-	{0x0306, 0x00A3},
-	{0x0308, 0x0008},
-	{0x030A, 0x0001},
-	{0x030C, 0x0006},
-	{0x030E, 0x00C8},
-	{0x034C, 0x0CC0},
-	{0x034E, 0x0990},
-	{0x0344, 0x0004},
-	{0x0346, 0x0004},
-	{0x0348, 0x0CC3},
-	{0x034A, 0x0993},
-	{0x0380, 0x0001},
-	{0x0382, 0x0001},
-	{0x0384, 0x0001},
-	{0x0386, 0x0001},
-	{0x0900, 0x0000},
-	{0x0902, 0x0100},
-	{0x0342, 0x0EDC},
-	{0x0340, 0x0AB8},
-	{0x0200, 0x0BEF},
-	{0x0202, 0x060A},
+
+	//Sensor configurations
+	//set MCLK
+	{0x0136, 0x1314},	// #smiaRegs_rw_op_cond_extclk_frequency_mhz
+	//set PLL
+	{0x0114, 0x0300},      // #smiaRegs_rw_output_lane_mode (03 - 4lane, 01 - 2lane)
+	{0x0300, 0x0002},	// smiaRegs_rw_clocks_vt_pix_clk_div
+	{0x0302, 0x0001},	// smiaRegs_rw_clocks_vt_sys_clk_div
+	{0x0304, 0x0006},	// smiaRegs_rw_clocks_pre_pll_clk_div
+	{0x0306, 0x00A3},	// smiaRegs_rw_clocks_pll_multiplier
+	{0x0308, 0x0008},	// smiaRegs_rw_clocks_op_pix_clk_div
+	{0x030A, 0x0001},	// smiaRegs_rw_clocks_op_sys_clk_div
+	{0x030C, 0x0006},	// smiaRegs_rw_clocks_secnd_pre_pll_clk_div
+	{0x030E, 0x00C8},	// smiaRegs_rw_clocks_secnd_pll_multiplier (MIPI: 334.75MHz -> 276.25MHz)
+	//Set Output size
+	{0x034C, 0x0CC0},	//0CC0	// smiaRegs_rw_frame_timing_x_output_size
+	{0x034E, 0x0990},	//0990	// smiaRegs_rw_frame_timing_y_output_size
+	//Set start-address
+	{0x0344, 0x0004},	// smiaRegs_rw_frame_timing_x_addr_start
+	{0x0346, 0x0004},	// smiaRegs_rw_frame_timing_y_addr_start
+	{0x0348, 0x0CC3},	// smiaRegs_rw_frame_timing_x_addr_end
+	{0x034A, 0x0993},	// smiaRegs_rw_frame_timing_y_addr_end
+	//Binning & Subsampling
+	{0x0380, 0x0001},        // #smiaRegs_rw_sub_sample_x_even_inc
+	{0x0382, 0x0001},        // #smiaRegs_rw_sub_sample_x_odd_inc
+	{0x0384, 0x0001},        // #smiaRegs_rw_sub_sample_y_even_inc
+	{0x0386, 0x0001},        // #smiaRegs_rw_sub_sample_y_odd_inc
+	{0x0900, 0x0000},        // #smiaRegs_rw_binning_mode
+	{0x0902, 0x0100},        // #smiaRegs_rw_binning_weighting
+	//Set FPS
+	{0x0342, 0x0EDC},	// smiaRegs_rw_frame_timing_line_length_pck (7376d)
+	{0x0340, 0x0AB8},	// smiaRegs_rw_frame_timing_frame_length_lines
+	//Set int.time
+	{0x0200, 0x0BEF},	// smiaRegs_rw_integration_time_fine_integration_time
+	{0x0202, 0x060A},	// smiaRegs_rw_integration_time_coarse_integration_time
 	{0x0204, 0x0020},
-	{0x31FE, 0xC004},	
-	{0x3200, 0xC4F0},	
-	{0x3202, 0xCEC8},	
-	{0x3204, 0xD8A0},	
-	{0x3206, 0xE278},	
-	{0x3208, 0xEC50},	
-	{0x320A, 0xF628},	
-	{0x320C, 0x0000},	
-	{0x320E, 0x09D8},	
-	{0x3210, 0x13B0},	
-	{0x3212, 0x1D88},	
-	{0x3214, 0x2760},	
-	{0x3216, 0x3138},	
-	{0x3218, 0x3B10},	
-	{0x321A, 0x3FFC},	
-	{0x321C, 0xC004},	
-	{0x321E, 0xCCD0},	
-	{0x3220, 0xD99C},	
-	{0x3222, 0xE668},	
-	{0x3224, 0xF334},	
-	{0x3226, 0x0000},	
-	{0x3228, 0x0CCC},	
-	{0x322A, 0x1998},	
-	{0x322C, 0x2664},	
-	{0x322E, 0x3330},	
-	{0x3230, 0x3FFC},	
-	{0x3232, 0x0100},	
-	{0x3234, 0x0100},	
-	{0x3238, 0x0909},	
-	{0x323A, 0x0B0F},	
-	{0x3236, 0x0E00},	
-	{0x0b00, 0x0120},	
-	{0x3160, 0x0600},	
-	{0x3161, 0x0000},	
-	{0x3164, 0x09C4},	
-	{0x3166, 0x0100},	
-	{0x3168, 0x0100},	
-	{0x316A, 0x0100},	
-	{0x316C, 0x0100},	
-	{0x316E, 0x0011},	
-	{0x3170, 0x002C},	
-	{0x3172, 0x0000},	
-	{0x3174, 0x0012},	
-	{0x3176, 0x0A8C},	
-	{0x3178, 0x0100},	
-	{0x317A, 0x0100},	
-	{0x317C, 0x0100},	
-	{0x317E, 0x0100},	
-	{0x3180, 0x0011},	
-	{0x3182, 0x002C},	
-	{0x3184, 0x0000},	
-	{0x3186, 0x0012},	
-	{0x3188, 0x0CE4},	
-	{0x318A, 0x0040},	
-	{0x318C, 0x0048},	
-	{0x318E, 0x0040},	
-	{0x3190, 0x0040},	
-	{0x3192, 0x0011},	
-	{0x3194, 0x002C},	
-	{0x3196, 0x0000},	
-	{0x3198, 0x0012},	
-	{0x319A, 0x1004},	
-	{0x319C, 0x0100},	
-	{0x319E, 0x0100},	
-	{0x31A0, 0x0100},	
-	{0x31A2, 0x0100},	
-	{0x31A4, 0x0011},	
-	{0x31A6, 0x002C},	
-	{0x31A8, 0x0000},	
-	{0x31AA, 0x0012},	
-	{0x31AC, 0x1388},	
-	{0x31AE, 0x0100},	
-	{0x31B0, 0x0100},	
-	{0x31B2, 0x0100},	
-	{0x31B4, 0x0100},	
-	{0x31B6, 0x0011},	
-	{0x31B8, 0x002C},	
-	{0x31BA, 0x0000},	
-	{0x31BC, 0x0012},	
-	{0x31BE, 0x1964},	
-	{0x31C0, 0x0100},	
-	{0x31C2, 0x0100},	
-	{0x31C4, 0x0100},	
-	{0x31C6, 0x0100},	
-	{0x31C8, 0x0011},	
-	{0x31CA, 0x002C},	
-	{0x31CC, 0x0000},	
-	{0x31CE, 0x0012},	
-	{0x31D0, 0x1D4C},	
-	{0x31D2, 0x0100},	
-	{0x31D4, 0x0100},	
-	{0x31D6, 0x0100},	
-	{0x31D8, 0x0100},	
-	{0x31DA, 0x0011},	
-	{0x31DC, 0x002C},	
-	{0x31DE, 0x0000},	
-	{0x31E0, 0x0012},	
-	{0x3162, 0x0100},	
-	{0x301c, 0x0200},	
-	{0x301e, 0x0300},	
-	{0x323C, 0x0101},	
-	{0x1989, 0x0004},	
+	//M2M
+	{0x31FE, 0xC004},         //ash_uDecompressXgrid[0]
+	{0x3200, 0xC4F0},         //ash_uDecompressXgrid[1]
+	{0x3202, 0xCEC8},         //ash_uDecompressXgrid[2]
+	{0x3204, 0xD8A0},         //ash_uDecompressXgrid[3]
+	{0x3206, 0xE278},         //ash_uDecompressXgrid[4]
+	{0x3208, 0xEC50},         //ash_uDecompressXgrid[5]
+	{0x320A, 0xF628},         //ash_uDecompressXgrid[6]
+	{0x320C, 0x0000},         //ash_uDecompressXgrid[7]
+	{0x320E, 0x09D8},         //ash_uDecompressXgrid[8]
+	{0x3210, 0x13B0},         //ash_uDecompressXgrid[9]
+	{0x3212, 0x1D88},         //ash_uDecompressXgrid[10]
+	{0x3214, 0x2760},         //ash_uDecompressXgrid[11]
+	{0x3216, 0x3138},         //ash_uDecompressXgrid[12]
+	{0x3218, 0x3B10},         //ash_uDecompressXgrid[13]
+	{0x321A, 0x3FFC},         //ash_uDecompressXgrid[14]
+
+	{0x321C, 0xC004},         //ash_uDecompressYgrid[0]
+	{0x321E, 0xCCD0},         //ash_uDecompressYgrid[1]
+	{0x3220, 0xD99C},         //ash_uDecompressYgrid[2]
+	{0x3222, 0xE668},         //ash_uDecompressYgrid[3]
+	{0x3224, 0xF334},         //ash_uDecompressYgrid[4]
+	{0x3226, 0x0000},         //ash_uDecompressYgrid[5]
+	{0x3228, 0x0CCC},         //ash_uDecompressYgrid[6]
+	{0x322A, 0x1998},         //ash_uDecompressYgrid[7]
+	{0x322C, 0x2664},         //ash_uDecompressYgrid[8]
+	{0x322E, 0x3330},         //ash_uDecompressYgrid[9]
+	{0x3230, 0x3FFC},         //ash_uDecompressYgrid[10]
+
+	{0x3232, 0x0100},           //ash_uDecompressWidth
+	{0x3234, 0x0100},           //ash_uDecompressHeight
+
+	{0x3238, 0x0909},           //ash_uDecompressRadiusShifter
+	{0x323A, 0x0B0F},           //ash_uDecompressFinalScale
+	{0x3236, 0x0E00},           //ash_uDecompressScale
+	{0x0b00, 0x0120},           //smiaRegs_rw_isp_luminance_correction_level
+
+	//BASE Profile parabola start
+	{0x3160, 0x0600},            //ash_GrasCfg
+	{0x3161, 0x0000},            //ash_GrasShifter
+	{0x3164, 0x09C4},         //ash_luma_params[0]_tmpr
+	{0x3166, 0x0100},         //ash_luma_params[0]_alpha[0]
+	{0x3168, 0x0100},         //ash_luma_params[0]_alpha[1]
+	{0x316A, 0x0100},         //ash_luma_params[0]_alpha[2]
+	{0x316C, 0x0100},         //ash_luma_params[0]_alpha[3]
+	{0x316E, 0x0011},         //ash_luma_params[0]_beta[0]
+	{0x3170, 0x002C},         //ash_luma_params[0]_beta[1]
+	{0x3172, 0x0000},         //ash_luma_params[0]_beta[2]
+	{0x3174, 0x0012},         //ash_luma_params[0]_beta[3]
+	{0x3176, 0x0A8C},         //ash_luma_params[1]_tmpr
+	{0x3178, 0x0100},         //ash_luma_params[1]_alpha[0]
+	{0x317A, 0x0100},         //ash_luma_params[1]_alpha[1]
+	{0x317C, 0x0100},         //ash_luma_params[1]_alpha[2]
+	{0x317E, 0x0100},         //ash_luma_params[1]_alpha[3]
+	{0x3180, 0x0011},         //ash_luma_params[1]_beta[0]
+	{0x3182, 0x002C},         //ash_luma_params[1]_beta[1]
+	{0x3184, 0x0000},         //ash_luma_params[1]_beta[2]
+	{0x3186, 0x0012},         //ash_luma_params[1]_beta[3]
+	{0x3188, 0x0CE4},         //ash_luma_params[2]_tmpr
+	{0x318A, 0x0040},         //ash_luma_params[2]_alpha[0]    GR
+	{0x318C, 0x0048},         //ash_luma_params[2]_alpha[1]    R
+	{0x318E, 0x0040},         //ash_luma_params[2]_alpha[2]    B
+	{0x3190, 0x0040},         //ash_luma_params[2]_alpha[3]    GB
+	{0x3192, 0x0011},         //ash_luma_params[2]_beta[0]
+	{0x3194, 0x002C},         //ash_luma_params[2]_beta[1]
+	{0x3196, 0x0000},         //ash_luma_params[2]_beta[2]
+	{0x3198, 0x0012},         //ash_luma_params[2]_beta[3]
+	{0x319A, 0x1004},         //ash_luma_params[3]_tmpr
+	{0x319C, 0x0100},         //ash_luma_params[3]_alpha[0]
+	{0x319E, 0x0100},         //ash_luma_params[3]_alpha[1]
+	{0x31A0, 0x0100},         //ash_luma_params[3]_alpha[2]
+	{0x31A2, 0x0100},         //ash_luma_params[3]_alpha[3]
+	{0x31A4, 0x0011},         //ash_luma_params[3]_beta[0]
+	{0x31A6, 0x002C},         //ash_luma_params[3]_beta[1]
+	{0x31A8, 0x0000},         //ash_luma_params[3]_beta[2]
+	{0x31AA, 0x0012},         //ash_luma_params[3]_beta[3]
+	{0x31AC, 0x1388},         //ash_luma_params[4]_tmpr
+	{0x31AE, 0x0100},         //ash_luma_params[4]_alpha[0]
+	{0x31B0, 0x0100},         //ash_luma_params[4]_alpha[1]
+	{0x31B2, 0x0100},         //ash_luma_params[4]_alpha[2]
+	{0x31B4, 0x0100},         //ash_luma_params[4]_alpha[3]
+	{0x31B6, 0x0011},         //ash_luma_params[4]_beta[0]
+	{0x31B8, 0x002C},         //ash_luma_params[4]_beta[1]
+	{0x31BA, 0x0000},         //ash_luma_params[4]_beta[2]
+	{0x31BC, 0x0012},         //ash_luma_params[4]_beta[3]
+	{0x31BE, 0x1964},         //ash_luma_params[5]_tmpr
+	{0x31C0, 0x0100},         //ash_luma_params[5]_alpha[0]
+	{0x31C2, 0x0100},         //ash_luma_params[5]_alpha[1]
+	{0x31C4, 0x0100},         //ash_luma_params[5]_alpha[2]
+	{0x31C6, 0x0100},         //ash_luma_params[5]_alpha[3]
+	{0x31C8, 0x0011},         //ash_luma_params[5]_beta[0]
+	{0x31CA, 0x002C},         //ash_luma_params[5]_beta[1]
+	{0x31CC, 0x0000},         //ash_luma_params[5]_beta[2]
+	{0x31CE, 0x0012},         //ash_luma_params[5]_beta[3]
+	{0x31D0, 0x1D4C},         //ash_luma_params[6]_tmpr
+	{0x31D2, 0x0100},         //ash_luma_params[6]_alpha[0]
+	{0x31D4, 0x0100},         //ash_luma_params[6]_alpha[1]
+	{0x31D6, 0x0100},         //ash_luma_params[6]_alpha[2]
+	{0x31D8, 0x0100},         //ash_luma_params[6]_alpha[3]
+	{0x31DA, 0x0011},         //ash_luma_params[6]_beta[0]
+	{0x31DC, 0x002C},         //ash_luma_params[6]_beta[1]
+	{0x31DE, 0x0000},         //ash_luma_params[6]_beta[2]
+	{0x31E0, 0x0012},         //ash_luma_params[6]_beta[3]
+	{0x3162, 0x0100},           //ash_bLumaMode
+	{0x301c, 0x0200},            //smiaRegs_vendor_gras_nvm_address//index 228: page#3, byte #36
+	{0x301e, 0x0300},            //WsmiaRegs_vendor_gras_load_from
+	{0x323C, 0x0101},            //Wash_bSkipNvmGrasOfs  // skipping the value set in nvm page 0 address 47
+	{0x1989, 0x0004},            //smiaRegs_ro_edof_cap_uAlphaTempInd
 };
 
 static struct msm_camera_i2c_reg_conf s5k3h7_recommend_settings[] = {
@@ -1976,6 +2083,27 @@ static struct msm_camera_i2c_conf_array s5k3h7_confs[] = {
 };
 
 static struct msm_sensor_output_info_t s5k3h7_dimensions[] = {
+	/* snapshot */
+	{
+		.x_output = 0xCC0, /* 3264 */
+		.y_output = 0x990, /* 2448 */
+		.line_length_pclk = 0xEDC, /* 3470 */
+		.frame_length_lines = 0xAB8, /* 2496*/
+		.vt_pixel_clk = 260800000,
+		.op_pixel_clk = 269000000,
+		.binning_factor = 1,
+	},
+	/* preview */
+	{
+		.x_output = 0xCC0, /* 3264 */
+		.y_output = 0x990, /* 2448 */
+		.line_length_pclk = 0xEDC, /* 3470 */
+		.frame_length_lines = 0xAB8, /* 2496*/
+		.vt_pixel_clk = 260800000,
+		.op_pixel_clk = 269000000,
+		.binning_factor = 1,
+	},
+	/* 3264x2448,25fps keep for FHD*/
 	{
 		.x_output = 0xCC0,
 		.y_output = 0x990,
@@ -1985,24 +2113,7 @@ static struct msm_sensor_output_info_t s5k3h7_dimensions[] = {
 		.op_pixel_clk = 269000000,
 		.binning_factor = 1,
 	},
-	{
-		.x_output = 0xCC0,
-		.y_output = 0x990,
-		.line_length_pclk = 0xEDC,
-		.frame_length_lines = 0xAB8,
-		.vt_pixel_clk = 260800000,
-		.op_pixel_clk = 269000000,
-		.binning_factor = 1,
-	},
-	{
-		.x_output = 0xCC0,
-		.y_output = 0x990,
-		.line_length_pclk = 0xEDC,
-		.frame_length_lines = 0xAB8,
-		.vt_pixel_clk = 260800000,
-		.op_pixel_clk = 269000000,
-		.binning_factor = 1,
-	},
+	/* 1312x736,60fps*/
 	{
 		.x_output = 1312,
 		.y_output = 736,
@@ -2012,6 +2123,7 @@ static struct msm_sensor_output_info_t s5k3h7_dimensions[] = {
 		.op_pixel_clk = 269000000,
 		.binning_factor = 1,
 	},
+	/* 1312x736,90fps*/
 	{
 		.x_output = 1312,
 		.y_output = 736,
@@ -2021,6 +2133,7 @@ static struct msm_sensor_output_info_t s5k3h7_dimensions[] = {
 		.op_pixel_clk = 269000000,
 		.binning_factor = 1,
 	},
+	/* 800x600,120fps*/
 	{
 		.x_output = 800,
 		.y_output = 600,
@@ -2145,7 +2258,7 @@ static int32_t s5k3h7_match_id(struct msm_sensor_ctrl_t *s_ctrl)
 		return -ENODEV;
 	}
 
-
+	// otp slot == 0, read otp to find lsc
 	msm_camera_i2c_write(s_ctrl->sensor_i2c_client, 0x6010, 0x0001, MSM_CAMERA_I2C_WORD_DATA);
 	msleep(10);
 	msm_camera_i2c_write_tbl(s_ctrl->sensor_i2c_client, s5k3h7_otp_settings,
@@ -2165,23 +2278,23 @@ static int32_t s5k3h7_match_id(struct msm_sensor_ctrl_t *s_ctrl)
 		if (byte == 0)
 			continue;
 
-		if (byte & 0x1000)
-			s_ctrl->sensordata->actuator_info->cam_name = 0;
-		else if (byte & 0x2000)
-			s_ctrl->sensordata->actuator_info->cam_name = 1;
+		if (byte & 0x1000) /* PRIMAX SHICOH VCM */
+			s_ctrl->sensordata->actuator_info->cam_name = 0;//ACTUATOR_MAIN_CAM_0
+		else if (byte & 0x2000) /* PRIMAX MITSUMI VCM */
+			s_ctrl->sensordata->actuator_info->cam_name = 1;//ACTUATOR_MAIN_CAM_1
 
 		byte &= 0x0FFF;
 
-		if (byte == 0x0803)
+		if (byte == 0x0803) /* Primax M2 */
 			s_ctrl->sensordata->sensor_name = s5k3h7_name[0];
-		else if (byte == 0x0802)
+		else if (byte == 0x0802) /* Primax M2A */
 			s_ctrl->sensordata->sensor_name = s5k3h7_name[1];
-		else if (byte == 0x0A0A)
+		else if (byte == 0x0A0A) /* Liteon M2A */
 			s_ctrl->sensordata->sensor_name = s5k3h7_name[2];
 		break;
 	}
 
-	msm_camera_i2c_write(s_ctrl->sensor_i2c_client, 0x0A02, 0x0D, MSM_CAMERA_I2C_BYTE_DATA);
+	msm_camera_i2c_write(s_ctrl->sensor_i2c_client, 0x0A02, 0x0D, MSM_CAMERA_I2C_BYTE_DATA);//page D
 	msm_camera_i2c_write(s_ctrl->sensor_i2c_client, 0x0A00, 0x01, MSM_CAMERA_I2C_BYTE_DATA);
 	for (rc = 0; rc < 5; rc++) {
 		msm_camera_i2c_read(s_ctrl->sensor_i2c_client, 0x0A01, &byte, MSM_CAMERA_I2C_BYTE_DATA);
@@ -2244,7 +2357,7 @@ static int32_t s5k3h7_write_exp_gain(struct msm_sensor_ctrl_t *s_ctrl,
 			s_ctrl->sensor_exp_gain_info->coarse_int_time_addr, line,
 			MSM_CAMERA_I2C_WORD_DATA);
 
-	if ((gain & 0x00FF) < 0x20) {
+	if ((gain & 0x00FF) < 0x20 ) { /* large than 8x gain*/
 		digital_gain_int = (gain & 0x00FF);
 		digital_gain = (digital_gain_int << 8) + ((gain & 0xFF00) >> 8);
 		gain = 256;
@@ -2253,6 +2366,7 @@ static int32_t s5k3h7_write_exp_gain(struct msm_sensor_ctrl_t *s_ctrl,
 	msm_camera_i2c_write(s_ctrl->sensor_i2c_client,
 			s_ctrl->sensor_exp_gain_info->global_gain_addr, gain,
 			MSM_CAMERA_I2C_WORD_DATA);
+	/* update digital gain */
 	msm_camera_i2c_write(s_ctrl->sensor_i2c_client, 0x020E, digital_gain, MSM_CAMERA_I2C_WORD_DATA);
 	msm_camera_i2c_write(s_ctrl->sensor_i2c_client, 0x0210, digital_gain, MSM_CAMERA_I2C_WORD_DATA);
 	msm_camera_i2c_write(s_ctrl->sensor_i2c_client, 0x0212, digital_gain, MSM_CAMERA_I2C_WORD_DATA);
@@ -2297,7 +2411,7 @@ static struct msm_sensor_fn_t s5k3h7_func_tbl = {
 	.sensor_match_id = s5k3h7_match_id,
 	.sensor_power_up = msm_sensor_power_up,
 	.sensor_power_down = msm_sensor_power_down,
-
+//	.sensor_adjust_frame_lines = msm_sensor_adjust_frame_lines,
 	.sensor_get_csi_params = msm_sensor_get_csi_params,
 
 };
@@ -2336,6 +2450,7 @@ static struct msm_sensor_ctrl_t s5k3h7_s_ctrl = {
 	.sensor_v4l2_subdev_info_size = ARRAY_SIZE(s5k3h7_subdev_info),
 	.sensor_v4l2_subdev_ops = &s5k3h7_subdev_ops,
 	.func_tbl = &s5k3h7_func_tbl,
+//	.clk_rate = MSM_SENSOR_MCLK_24HZ,
 	.clk_rate = 19200000,
 };
 
