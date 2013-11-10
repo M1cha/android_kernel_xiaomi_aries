@@ -22,7 +22,7 @@
 #define PC_CC_COLS             13
 
 #define PC_TEMP_ROWS		29
-#define PC_TEMP_COLS		8
+#define PC_TEMP_COLS		12
 
 #define MAX_SINGLE_LUT_COLS	20
 
@@ -108,6 +108,14 @@ struct bms_battery_data {
 	defined(CONFIG_PM8921_BMS_MODULE)
 extern struct bms_battery_data  palladium_1500_data;
 extern struct bms_battery_data  desay_5200_data;
+extern struct bms_battery_data  sony_1900_data;
+extern struct bms_battery_data  samsung_1900_data;
+extern struct bms_battery_data  samsung_2000_data;
+extern struct bms_battery_data  lg_1900_data;
+extern struct bms_battery_data  lg_2000_data;
+extern struct bms_battery_data  sony_3000_data;
+extern struct bms_battery_data  lg_3000_data;
+extern struct bms_battery_data  samsung_3000_data;
 
 int interpolate_fcc(struct single_row_lut *fcc_temp_lut, int batt_temp);
 int interpolate_scalingfactor(struct sf_lut *sf_lut, int row_entry, int pc);
