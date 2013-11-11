@@ -1,4 +1,4 @@
-/* Copyright (c) 2011-2012, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2011-2012, Code Aurora Forum. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -100,7 +100,7 @@ int32_t msm_eeprom_config(struct msm_eeprom_ctrl_t *e_ctrl,
 		}
 		rc = e_ctrl->func_tbl.eeprom_get_info(e_ctrl,
 			&cdata.cfg.get_info);
-		cdata.is_eeprom_supported = 1;
+
 		if (copy_to_user((void *)argp,
 			&cdata,
 			sizeof(struct msm_eeprom_cfg_data)))

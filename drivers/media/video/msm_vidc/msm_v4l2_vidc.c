@@ -1,4 +1,4 @@
-/* Copyright (c) 2012, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2012, Code Aurora Forum. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -21,9 +21,7 @@
 #include <linux/debugfs.h>
 #include <linux/version.h>
 #include <linux/slab.h>
-#include <linux/of.h>
-#include <mach/iommu.h>
-#include <mach/iommu_domains.h>
+
 #include <media/msm_vidc.h>
 #include "msm_vidc_internal.h"
 #include "vidc_hal_api.h"
@@ -31,130 +29,6 @@
 
 #define BASE_DEVICE_NUMBER 32
 #define MAX_EVENTS 30
-#define SHARED_QSIZE 0x1000000
-
-
-static struct msm_bus_vectors ocmem_init_vectors[]  = {
-	{
-		.src = MSM_BUS_MASTER_VIDEO_P0_OCMEM,
-		.dst = MSM_BUS_SLAVE_EBI_CH0,
-		.ab = 0,
-		.ib = 0,
-	},
-};
-
-static struct msm_bus_vectors ocmem_perf0_vectors[]  = {
-	{
-		.src = MSM_BUS_MASTER_VIDEO_P0_OCMEM,
-		.dst = MSM_BUS_SLAVE_OCMEM,
-		.ab = 176900000,
-		.ib = 221125000,
-	},
-};
-
-static struct msm_bus_vectors ocmem_perf1_vectors[]  = {
-	{
-		.src = MSM_BUS_MASTER_VIDEO_P0_OCMEM,
-		.dst = MSM_BUS_SLAVE_OCMEM,
-		.ab = 456200000,
-		.ib = 570250000,
-	},
-};
-
-static struct msm_bus_vectors ocmem_perf2_vectors[]  = {
-	{
-		.src = MSM_BUS_MASTER_VIDEO_P0_OCMEM,
-		.dst = MSM_BUS_SLAVE_OCMEM,
-		.ab = 864800000,
-		.ib = 1081000000,
-	},
-};
-
-static struct msm_bus_paths ocmem_perf_vectors[]  = {
-	{
-		ARRAY_SIZE(ocmem_init_vectors),
-		ocmem_init_vectors,
-	},
-	{
-		ARRAY_SIZE(ocmem_perf0_vectors),
-		ocmem_perf0_vectors,
-	},
-	{
-		ARRAY_SIZE(ocmem_perf1_vectors),
-		ocmem_perf1_vectors,
-	},
-	{
-		ARRAY_SIZE(ocmem_perf2_vectors),
-		ocmem_perf2_vectors,
-	},
-};
-
-static struct msm_bus_scale_pdata ocmem_bus_data = {
-	.usecase = ocmem_perf_vectors,
-	.num_usecases = ARRAY_SIZE(ocmem_perf_vectors),
-	.name = "msm_vidc_ocmem",
-};
-
-static struct msm_bus_vectors vcodec_init_vectors[]  = {
-	{
-		.src = MSM_BUS_MASTER_VIDEO_P0,
-		.dst = MSM_BUS_SLAVE_EBI_CH0,
-		.ab = 0,
-		.ib = 0,
-	},
-};
-
-static struct msm_bus_vectors vcodec_perf0_vectors[]  = {
-	{
-		.src = MSM_BUS_MASTER_VIDEO_P0,
-		.dst = MSM_BUS_SLAVE_EBI_CH0,
-		.ab = 110000000,
-		.ib = 137500000,
-	},
-};
-
-static struct msm_bus_vectors vcodec_perf1_vectors[]  = {
-	{
-		.src = MSM_BUS_MASTER_VIDEO_P0,
-		.dst = MSM_BUS_SLAVE_EBI_CH0,
-		.ab = 268000000,
-		.ib = 335000000,
-	},
-};
-
-static struct msm_bus_vectors vcodec_perf2_vectors[]  = {
-	{
-		.src = MSM_BUS_MASTER_VIDEO_P0,
-		.dst = MSM_BUS_SLAVE_EBI_CH0,
-		.ab = 505000000,
-		.ib = 631250000,
-	},
-};
-
-static struct msm_bus_paths vcodec_perf_vectors[]  = {
-	{
-		ARRAY_SIZE(vcodec_init_vectors),
-		vcodec_init_vectors,
-	},
-	{
-		ARRAY_SIZE(vcodec_perf0_vectors),
-		vcodec_perf0_vectors,
-	},
-	{
-		ARRAY_SIZE(vcodec_perf1_vectors),
-		vcodec_perf1_vectors,
-	},
-	{
-		ARRAY_SIZE(vcodec_perf2_vectors),
-		vcodec_perf2_vectors,
-	},
-};
-
-static struct msm_bus_scale_pdata vcodec_bus_data = {
-	.usecase = vcodec_perf_vectors,
-	.num_usecases = ARRAY_SIZE(vcodec_perf_vectors),
-	.name = "msm_vidc_vcodec",
-};
 
 struct msm_vidc_drv *vidc_driver;
 
@@ -403,10 +277,8 @@ int msm_v4l2_prepare_buf(struct file *file, void *fh,
 			goto exit;
 		}
 		handle = msm_smem_user_to_kernel(v4l2_inst->mem_client,
-			b->m.planes[i].reserved[0],
-			b->m.planes[i].reserved[1],
-			vidc_inst->core->resources.io_map[NS_MAP].domain,
-			0);
+				b->m.planes[i].reserved[0],
+				b->m.planes[i].reserved[1]);
 		if (!handle) {
 			pr_err("Failed to get device buffer address\n");
 			kfree(binfo);
@@ -505,14 +377,6 @@ static int msm_v4l2_decoder_cmd(struct file *file, void *fh,
 	struct msm_vidc_inst *vidc_inst = get_vidc_inst(file, fh);
 	return msm_vidc_decoder_cmd((void *)vidc_inst, dec);
 }
-
-static int msm_v4l2_encoder_cmd(struct file *file, void *fh,
-				struct v4l2_encoder_cmd *enc)
-{
-	struct msm_vidc_inst *vidc_inst = get_vidc_inst(file, fh);
-	return msm_vidc_encoder_cmd((void *)vidc_inst, enc);
-}
-
 static const struct v4l2_ioctl_ops msm_v4l2_ioctl_ops = {
 	.vidioc_querycap = msm_v4l2_querycap,
 	.vidioc_enum_fmt_vid_cap_mplane = msm_v4l2_enum_fmt,
@@ -532,7 +396,6 @@ static const struct v4l2_ioctl_ops msm_v4l2_ioctl_ops = {
 	.vidioc_subscribe_event = msm_v4l2_subscribe_event,
 	.vidioc_unsubscribe_event = msm_v4l2_unsubscribe_event,
 	.vidioc_decoder_cmd = msm_v4l2_decoder_cmd,
-	.vidioc_encoder_cmd = msm_v4l2_encoder_cmd,
 };
 
 static const struct v4l2_ioctl_ops msm_v4l2_enc_ioctl_ops = {
@@ -557,245 +420,36 @@ void msm_vidc_release_video_device(struct video_device *pvdev)
 {
 }
 
-static size_t read_u32_array(struct platform_device *pdev,
-		char *name, u32 *arr, size_t size)
-{
-	int len;
-	size_t sz = 0;
-	struct device_node *np = pdev->dev.of_node;
-	if (!of_get_property(np, name, &len)) {
-		pr_err("Failed to read %s from device tree\n",
-			name);
-		goto fail_read;
-	}
-	sz = len / sizeof(u32);
-	if (sz <= 0) {
-		pr_err("%s not specified in device tree\n", name);
-		goto fail_read;
-	}
-	if (sz > size) {
-		pr_err("Not enough memory to store %s values\n", name);
-		goto fail_read;
-	}
-	if (of_property_read_u32_array(np, name, arr, sz)) {
-		pr_err("error while reading %s from device tree\n",
-			name);
-		goto fail_read;
-	}
-	return sz;
-fail_read:
-	sz = 0;
-	return sz;
-}
-
-static int register_iommu_domains(struct platform_device *pdev,
-	struct msm_vidc_core *core)
-{
-	size_t len;
-	struct msm_iova_partition partition[2];
-	struct msm_iova_layout layout;
-	int rc = 0;
-	int i;
-	struct iommu_info *io_map = core->resources.io_map;
-	strlcpy(io_map[CP_MAP].name, "vidc-cp-map",
-			sizeof(io_map[CP_MAP].name));
-	strlcpy(io_map[CP_MAP].ctx, "venus_cp",
-			sizeof(io_map[CP_MAP].ctx));
-	strlcpy(io_map[NS_MAP].name, "vidc-ns-map",
-			sizeof(io_map[NS_MAP].name));
-	strlcpy(io_map[NS_MAP].ctx, "venus_ns",
-			sizeof(io_map[NS_MAP].ctx));
-
-	for (i = 0; i < MAX_MAP; i++) {
-		len = read_u32_array(pdev, io_map[i].name,
-				io_map[i].addr_range,
-				(sizeof(io_map[i].addr_range)/sizeof(u32)));
-		if (!len) {
-			pr_err("Error in reading cp address range\n");
-			rc = -EINVAL;
-			break;
-		}
-		partition[0].start = io_map[i].addr_range[0];
-		if (i == NS_MAP) {
-			partition[0].size =
-				io_map[i].addr_range[1] - SHARED_QSIZE;
-			partition[1].start =
-				partition[0].start + io_map[i].addr_range[1]
-					- SHARED_QSIZE;
-			partition[1].size = SHARED_QSIZE;
-			layout.npartitions = 2;
-		} else {
-			partition[0].size = io_map[i].addr_range[1];
-			layout.npartitions = 1;
-		}
-		layout.partitions = &partition[0];
-		layout.client_name = io_map[i].name;
-		layout.domain_flags = 0;
-		pr_debug("Registering domain 1 with: %lx, %lx, %s\n",
-			partition[0].start, partition[0].size,
-			layout.client_name);
-		pr_debug("Registering domain 2 with: %lx, %lx, %s\n",
-			partition[1].start, partition[1].size,
-			layout.client_name);
-		io_map[i].domain = msm_register_domain(&layout);
-		if (io_map[i].domain < 0) {
-			pr_err("Failed to register cp domain\n");
-			rc = -EINVAL;
-			break;
-		}
-	}
-	/* There is no api provided as msm_unregister_domain, so
-	 * we are not able to unregister the previously
-	 * registered domains if any domain registration fails.*/
-	BUG_ON(i < MAX_MAP);
-	return rc;
-}
-
-static inline int msm_vidc_init_clocks(struct platform_device *pdev,
-		struct msm_vidc_core *core)
-{
-	struct core_clock *cl;
-	int i;
-	int rc = 0;
-	struct core_clock *clock;
-	if (!core) {
-		pr_err("Invalid params: %p\n", core);
-		return -EINVAL;
-	}
-	clock = core->resources.clock;
-	strlcpy(clock[VCODEC_CLK].name, "core_clk",
-		sizeof(clock[VCODEC_CLK].name));
-	strlcpy(clock[VCODEC_AHB_CLK].name, "iface_clk",
-		sizeof(clock[VCODEC_AHB_CLK].name));
-	strlcpy(clock[VCODEC_AXI_CLK].name, "bus_clk",
-		sizeof(clock[VCODEC_AXI_CLK].name));
-	strlcpy(clock[VCODEC_OCMEM_CLK].name, "mem_clk",
-		sizeof(clock[VCODEC_OCMEM_CLK].name));
-
-	clock[VCODEC_CLK].count = read_u32_array(pdev,
-		"load-freq-tbl", (u32 *)clock[VCODEC_CLK].load_freq_tbl,
-		(sizeof(clock[VCODEC_CLK].load_freq_tbl)/sizeof(u32)));
-	clock[VCODEC_CLK].count /= 2;
-	pr_err("NOTE: Count = %d\n", clock[VCODEC_CLK].count);
-	if (!clock[VCODEC_CLK].count) {
-		pr_err("Failed to read clock frequency\n");
-		goto fail_init_clocks;
-	}
-	for (i = 0; i <	clock[VCODEC_CLK].count; i++) {
-		pr_err("NOTE: load = %d, freq = %d\n",
-				clock[VCODEC_CLK].load_freq_tbl[i].load,
-				clock[VCODEC_CLK].load_freq_tbl[i].freq
-			  );
-	}
-
-	for (i = 0; i < VCODEC_MAX_CLKS; i++) {
-		cl = &core->resources.clock[i];
-		if (!cl->clk) {
-			cl->clk = devm_clk_get(&pdev->dev, cl->name);
-			if (IS_ERR_OR_NULL(cl->clk)) {
-				pr_err("Failed to get clock: %s\n", cl->name);
-				rc = PTR_ERR(cl->clk);
-				break;
-			}
-		}
-	}
-
-	if (i < VCODEC_MAX_CLKS) {
-		for (--i; i >= 0; i--) {
-			cl = &core->resources.clock[i];
-			clk_put(cl->clk);
-		}
-	}
-fail_init_clocks:
-	return rc;
-}
-
-static inline void msm_vidc_deinit_clocks(struct msm_vidc_core *core)
-{
-	int i;
-	if (!core) {
-		pr_err("Invalid args\n");
-		return;
-	}
-	for (i = 0; i < VCODEC_MAX_CLKS; i++)
-		clk_put(core->resources.clock[i].clk);
-}
-
 static int msm_vidc_initialize_core(struct platform_device *pdev,
 				struct msm_vidc_core *core)
 {
 	struct resource *res;
 	int i = 0;
-	int rc = 0;
-	struct on_chip_mem *ocmem;
 	if (!core)
 		return -EINVAL;
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	if (!res) {
 		pr_err("Failed to get IORESOURCE_MEM\n");
-		rc = -ENODEV;
-		goto core_init_failed;
+		return -ENODEV;
 	}
 	core->register_base = res->start;
 	core->register_size = resource_size(res);
 	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
 	if (!res) {
 		pr_err("Failed to get IORESOURCE_IRQ\n");
-		rc = -ENODEV;
-		goto core_init_failed;
+		return -ENODEV;
 	}
 	core->irq = res->start;
 	INIT_LIST_HEAD(&core->instances);
 	mutex_init(&core->sync_lock);
 	spin_lock_init(&core->lock);
-	core->base_addr = 0x0;
+	core->base_addr = 0x14f00000;
 	core->state = VIDC_CORE_UNINIT;
 	for (i = SYS_MSG_INDEX(SYS_MSG_START);
 		i <= SYS_MSG_INDEX(SYS_MSG_END); i++) {
 		init_completion(&core->completions[i]);
 	}
-	rc = msm_vidc_init_clocks(pdev, core);
-	if (rc) {
-		pr_err("Failed to init clocks\n");
-		rc = -ENODEV;
-		goto core_init_failed;
-	}
-	core->resources.bus_info.vcodec_handle =
-		msm_bus_scale_register_client(&vcodec_bus_data);
-	if (!core->resources.bus_info.vcodec_handle) {
-		pr_err("Failed to register bus scale client\n");
-		goto fail_register_vcodec_bus;
-	}
-	core->resources.bus_info.ocmem_handle =
-		msm_bus_scale_register_client(&ocmem_bus_data);
-	if (!core->resources.bus_info.ocmem_handle) {
-		pr_err("Failed to register bus scale client\n");
-		goto fail_register_ocmem;
-	}
-	rc = register_iommu_domains(pdev, core);
-	if (rc) {
-		pr_err("Failed to register iommu domains: %d\n", rc);
-		goto fail_register_domains;
-	}
-	ocmem = &core->resources.ocmem;
-	ocmem->vidc_ocmem_nb.notifier_call = msm_vidc_ocmem_notify_handler;
-	ocmem->handle =
-		ocmem_notifier_register(OCMEM_VIDEO, &ocmem->vidc_ocmem_nb);
-	if (!ocmem->handle) {
-		pr_warn("Failed to register OCMEM notifier.");
-		pr_warn(" Performance will be impacted\n");
-	}
-	return rc;
-fail_register_domains:
-	msm_bus_scale_unregister_client(
-		core->resources.bus_info.ocmem_handle);
-fail_register_ocmem:
-	msm_bus_scale_unregister_client(
-		core->resources.bus_info.vcodec_handle);
-fail_register_vcodec_bus:
-	msm_vidc_deinit_clocks(core);
-core_init_failed:
-	return rc;
+	return 0;
 }
 
 static int __devinit msm_vidc_probe(struct platform_device *pdev)
@@ -887,15 +541,10 @@ static int __devexit msm_vidc_remove(struct platform_device *pdev)
 {
 	int rc = 0;
 	struct msm_vidc_core *core = pdev->dev.platform_data;
-	msm_bus_scale_unregister_client(core->resources.bus_info.vcodec_handle);
-	msm_bus_scale_unregister_client(core->resources.bus_info.ocmem_handle);
 	vidc_hal_delete_device(core->device);
 	video_unregister_device(&core->vdev[MSM_VIDC_ENCODER].vdev);
 	video_unregister_device(&core->vdev[MSM_VIDC_DECODER].vdev);
 	v4l2_device_unregister(&core->v4l2_dev);
-	if (core->resources.ocmem.handle)
-		ocmem_notifier_unregister(core->resources.ocmem.handle,
-				&core->resources.ocmem.vidc_ocmem_nb);
 	kfree(core);
 	return rc;
 }

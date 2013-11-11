@@ -1,4 +1,4 @@
-/* Copyright (c) 2012, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2012, Code Aurora Forum. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -22,8 +22,6 @@
 #define MAX_PLANES 1
 #define DEFAULT_HEIGHT 720
 #define DEFAULT_WIDTH 1280
-#define MAX_SUPPORTED_WIDTH 4096
-#define MAX_SUPPORTED_HEIGHT 2160
 #define MIN_NUM_OUTPUT_BUFFERS 2
 #define MAX_NUM_OUTPUT_BUFFERS 6
 
@@ -156,11 +154,7 @@ static const struct msm_vidc_ctrl msm_vdec_ctrls[] = {
 static u32 get_frame_size_nv12(int plane,
 					u32 height, u32 width)
 {
-	int luma_stride = ALIGN(width, 32);
-	int luma_slice = ALIGN(height, 32);
-	int chroma_stride = ALIGN(roundup(width, 2)/2, 32);
-	int chroma_slice = ALIGN(roundup(height, 2)/2, 32);
-	return (luma_stride * luma_slice) + (chroma_stride * chroma_slice) * 2;
+	return (ALIGN(height, 32) * ALIGN(width, 32) * 3) / 2;
 }
 static u32 get_frame_size_nv21(int plane,
 					u32 height, u32 width)
@@ -171,7 +165,7 @@ static u32 get_frame_size_nv21(int plane,
 static u32 get_frame_size_compressed(int plane,
 					u32 height, u32 width)
 {
-	return (MAX_SUPPORTED_WIDTH * MAX_SUPPORTED_HEIGHT * 3/2)/2;
+	return 0x500000;
 }
 
 static const struct msm_vidc_format vdec_formats[] = {
@@ -219,14 +213,6 @@ static const struct msm_vidc_format vdec_formats[] = {
 		.name = "H264",
 		.description = "H264 compressed format",
 		.fourcc = V4L2_PIX_FMT_H264,
-		.num_planes = 1,
-		.get_frame_size = get_frame_size_compressed,
-		.type = OUTPUT_PORT,
-	},
-	{
-		.name = "VP8",
-		.description = "VP8 compressed format",
-		.fourcc = V4L2_PIX_FMT_VP8,
 		.num_planes = 1,
 		.get_frame_size = get_frame_size_compressed,
 		.type = OUTPUT_PORT,
@@ -309,21 +295,8 @@ int msm_vdec_prepare_buf(struct msm_vidc_inst *inst,
 			buffer_info.num_buffers = 1;
 			buffer_info.align_device_addr =
 				b->m.planes[i].m.userptr;
-			if (!inst->extradata_handle) {
-				inst->extradata_handle =
-				msm_smem_alloc(inst->mem_client,
-				4096 * 1024, 1, 0,
-				inst->core->resources.io_map[NS_MAP].domain,
-				0);
-				if (!inst->extradata_handle) {
-					pr_err("Failed to allocate extradta memory\n");
-					rc = -ENOMEM;
-					break;
-				}
-			}
-			buffer_info.extradata_addr =
-				inst->extradata_handle->device_addr;
-			buffer_info.extradata_size = 4096 * 1024;
+			buffer_info.extradata_size = 0;
+			buffer_info.extradata_addr = 0;
 			rc = vidc_hal_session_set_buffers((void *)inst->session,
 					&buffer_info);
 			if (rc) {
@@ -359,8 +332,7 @@ int msm_vdec_release_buf(struct msm_vidc_inst *inst,
 			buffer_info.num_buffers = 1;
 			buffer_info.align_device_addr =
 				 b->m.planes[i].m.userptr;
-			buffer_info.extradata_addr =
-				inst->extradata_handle->device_addr;
+			buffer_info.extradata_addr = 0;
 			rc = vidc_hal_session_release_buffers(
 				(void *)inst->session, &buffer_info);
 			if (rc)
@@ -440,16 +412,14 @@ int msm_vdec_g_fmt(struct msm_vidc_inst *inst, struct v4l2_format *f)
 	if (fmt) {
 		f->fmt.pix_mp.pixelformat = fmt->fourcc;
 		if (inst->in_reconfig == true) {
-			inst->prop.height = inst->reconfig_height;
-			inst->prop.width = inst->reconfig_width;
+			inst->height = inst->reconfig_height;
+			inst->width = inst->reconfig_width;
 		}
-		f->fmt.pix_mp.height = inst->prop.height;
-		f->fmt.pix_mp.width = inst->prop.width;
-		f->fmt.pix_mp.num_planes = fmt->num_planes;
+		f->fmt.pix_mp.height = inst->height;
+		f->fmt.pix_mp.width = inst->width;
 		for (i = 0; i < fmt->num_planes; ++i) {
 			f->fmt.pix_mp.plane_fmt[i].sizeimage =
-			fmt->get_frame_size(i, inst->prop.height,
-				inst->prop.width);
+			fmt->get_frame_size(i, inst->height, inst->width);
 		}
 	} else {
 		pr_err("Buf type not recognized, type = %d\n",
@@ -469,8 +439,8 @@ int msm_vdec_s_fmt(struct msm_vidc_inst *inst, struct v4l2_format *f)
 		return -EINVAL;
 	}
 	if (f->type == V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE) {
-		inst->prop.width = f->fmt.pix_mp.width;
-		inst->prop.height = f->fmt.pix_mp.height;
+		inst->width = f->fmt.pix_mp.width;
+		inst->height = f->fmt.pix_mp.height;
 		fmt = msm_comm_get_pixel_fmt_fourcc(vdec_formats,
 			ARRAY_SIZE(vdec_formats), f->fmt.pix_mp.pixelformat,
 			CAPTURE_PORT);
@@ -493,7 +463,6 @@ int msm_vdec_s_fmt(struct msm_vidc_inst *inst, struct v4l2_format *f)
 	}
 
 	if (fmt) {
-		f->fmt.pix_mp.num_planes = fmt->num_planes;
 		for (i = 0; i < fmt->num_planes; ++i) {
 			f->fmt.pix_mp.plane_fmt[i].sizeimage =
 				fmt->get_frame_size(i, f->fmt.pix_mp.height,
@@ -585,7 +554,7 @@ static int msm_vdec_queue_setup(struct vb2_queue *q,
 			*num_buffers = MIN_NUM_OUTPUT_BUFFERS;
 		for (i = 0; i < *num_planes; i++) {
 			sizes[i] = inst->fmts[OUTPUT_PORT]->get_frame_size(
-					i, inst->prop.height, inst->prop.width);
+					i, inst->height, inst->width);
 		}
 		break;
 	case V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE:
@@ -596,8 +565,8 @@ static int msm_vdec_queue_setup(struct vb2_queue *q,
 			break;
 		}
 		frame_sz.buffer_type = HAL_BUFFER_OUTPUT;
-		frame_sz.width = inst->prop.width;
-		frame_sz.height = inst->prop.height;
+		frame_sz.width = inst->width;
+		frame_sz.height = inst->height;
 		pr_debug("width = %d, height = %d\n",
 				frame_sz.width, frame_sz.height);
 		rc = vidc_hal_session_set_property((void *)inst->session,
@@ -620,7 +589,7 @@ static int msm_vdec_queue_setup(struct vb2_queue *q,
 				inst->buff_req.buffer[1].buffer_alignment);
 		for (i = 0; i < *num_planes; i++) {
 			sizes[i] = inst->fmts[CAPTURE_PORT]->get_frame_size(
-					i, inst->prop.height, inst->prop.width);
+					i, inst->height, inst->width);
 		}
 
 		break;
@@ -638,25 +607,96 @@ static inline int start_streaming(struct msm_vidc_inst *inst)
 	unsigned long flags;
 	struct vb2_buf_entry *temp;
 	struct list_head *ptr, *next;
-	rc = msm_comm_try_get_bufreqs(inst);
-	if (rc) {
-		pr_err("Failed to get buffer requirements : %d\n", rc);
-		goto fail_start;
-	}
+	struct v4l2_control control;
+	struct hal_nal_stream_format_supported stream_format;
+	struct hal_enable_picture enable_picture;
+	struct hal_enable hal_property;
+	u32 control_idx = 0;
+	enum hal_property property_id = 0;
+	u32 property_val = 0;
+	void *pdata;
 	rc = msm_comm_set_scratch_buffers(inst);
 	if (rc) {
 		pr_err("Failed to set scratch buffers: %d\n", rc);
 		goto fail_start;
 	}
-	rc = msm_comm_set_persist_buffers(inst);
-	if (rc) {
-		pr_err("Failed to set persist buffers: %d\n", rc);
-		goto fail_start;
+	for (; control_idx < NUM_CTRLS; control_idx++) {
+		control.id = msm_vdec_ctrls[control_idx].id;
+		rc = v4l2_g_ctrl(&inst->ctrl_handler, &control);
+		if (rc) {
+			pr_err("Failed to get control value for ID=%d\n",
+				   msm_vdec_ctrls[control_idx].id);
+		} else {
+			property_id = 0;
+			switch (control.id) {
+			case V4L2_CID_MPEG_VIDC_VIDEO_STREAM_FORMAT:
+				property_id =
+					HAL_PARAM_NAL_STREAM_FORMAT_SELECT;
+				stream_format.nal_stream_format_supported =
+					(0x00000001 << control.value);
+				pdata = &stream_format;
+				break;
+			case V4L2_CID_MPEG_VIDC_VIDEO_OUTPUT_ORDER:
+				property_id = HAL_PARAM_VDEC_OUTPUT_ORDER;
+				property_val = control.value;
+				pdata = &property_val;
+				break;
+			case V4L2_CID_MPEG_VIDC_VIDEO_ENABLE_PICTURE_TYPE:
+				property_id =
+					HAL_PARAM_VDEC_PICTURE_TYPE_DECODE;
+				enable_picture.picture_type = control.value;
+				pdata = &enable_picture;
+				break;
+			case V4L2_CID_MPEG_VIDC_VIDEO_KEEP_ASPECT_RATIO:
+				property_id =
+				HAL_PARAM_VDEC_OUTPUT2_KEEP_ASPECT_RATIO;
+				hal_property.enable = control.value;
+				pdata = &hal_property;
+				break;
+			case V4L2_CID_MPEG_VIDC_VIDEO_POST_LOOP_DEBLOCKER_MODE:
+				property_id =
+					HAL_CONFIG_VDEC_POST_LOOP_DEBLOCKER;
+				hal_property.enable = control.value;
+				pdata = &hal_property;
+				break;
+			case V4L2_CID_MPEG_VIDC_VIDEO_DIVX_FORMAT:
+				property_id = HAL_PARAM_DIVX_FORMAT;
+				property_val = control.value;
+				pdata = &property_val;
+				break;
+			case V4L2_CID_MPEG_VIDC_VIDEO_MB_ERROR_MAP_REPORTING:
+				property_id =
+					HAL_CONFIG_VDEC_MB_ERROR_MAP_REPORTING;
+				hal_property.enable = control.value;
+				pdata = &hal_property;
+				break;
+			case V4L2_CID_MPEG_VIDC_VIDEO_CONTINUE_DATA_TRANSFER:
+				property_id =
+					HAL_PARAM_VDEC_CONTINUE_DATA_TRANSFER;
+				hal_property.enable = control.value;
+				pdata = &hal_property;
+				break;
+			default:
+				break;
+			}
+			if (property_id) {
+				pr_err("Control: HAL property=%x,ctrl_id=%x,ctrl_value=%d\n",
+					   property_id,
+					   msm_vdec_ctrls[control_idx].id,
+					   control.value);
+				rc = vidc_hal_session_set_property((void *)
+						inst->session, property_id,
+						pdata);
+			}
+			if (rc)
+				pr_err("Failed to set hal property for framesize\n");
+		}
 	}
+
 	rc = msm_comm_try_state(inst, MSM_VIDC_START_DONE);
 	if (rc) {
 		pr_err("Failed to move inst: %p to start done state\n",
-			inst);
+				inst);
 		goto fail_start;
 	}
 	spin_lock_irqsave(&inst->lock, flags);
@@ -690,14 +730,11 @@ static int msm_vdec_start_streaming(struct vb2_queue *q, unsigned int count)
 	pr_debug("Streamon called on: %d capability\n", q->type);
 	switch (q->type) {
 	case V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE:
-		if (msm_comm_scale_clocks(inst->core))
-			pr_err("Failed to scale clocks. Performance/power might be impacted\n");
 		if (inst->vb2_bufq[CAPTURE_PORT].streaming)
 			rc = start_streaming(inst);
 		break;
 	case V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE:
-		if (msm_comm_scale_clocks(inst->core))
-			pr_err("Failed to scale clocks. Performance/power might be impacted\n");
+		inst->in_reconfig = false;
 		if (inst->vb2_bufq[OUTPUT_PORT].streaming)
 			rc = start_streaming(inst);
 		break;
@@ -722,13 +759,11 @@ static int msm_vdec_stop_streaming(struct vb2_queue *q)
 	switch (q->type) {
 	case V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE:
 		if (!inst->vb2_bufq[CAPTURE_PORT].streaming)
-			rc = msm_comm_try_state(inst,
-				MSM_VIDC_RELEASE_RESOURCES_DONE);
+			rc = msm_comm_try_state(inst, MSM_VIDC_CLOSE_DONE);
 		break;
 	case V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE:
 		if (!inst->vb2_bufq[OUTPUT_PORT].streaming)
-			rc = msm_comm_try_state(inst,
-				MSM_VIDC_RELEASE_RESOURCES_DONE);
+			rc = msm_comm_try_state(inst, MSM_VIDC_CLOSE_DONE);
 		break;
 	default:
 		pr_err("Q-type is not supported: %d\n", q->type);
@@ -737,7 +772,7 @@ static int msm_vdec_stop_streaming(struct vb2_queue *q)
 	}
 	if (rc)
 		pr_err("Failed to move inst: %p, cap = %d to state: %d\n",
-				inst, q->type, MSM_VIDC_RELEASE_RESOURCES_DONE);
+				inst, q->type, MSM_VIDC_CLOSE_DONE);
 	return rc;
 }
 
@@ -748,74 +783,6 @@ static void msm_vdec_buf_queue(struct vb2_buffer *vb)
 	if (rc)
 		pr_err("Failed to queue buffer: %d\n", rc);
 }
-
-int msm_vdec_cmd(struct msm_vidc_inst *inst, struct v4l2_decoder_cmd *dec)
-{
-	int rc = 0;
-	bool ip_flush = false,
-	     op_flush = false;
-
-	switch (dec->cmd) {
-	case V4L2_DEC_QCOM_CMD_FLUSH:
-		mutex_lock(&inst->sync_lock);
-		ip_flush = dec->flags & V4L2_DEC_QCOM_CMD_FLUSH_OUTPUT;
-		op_flush = dec->flags & V4L2_DEC_QCOM_CMD_FLUSH_CAPTURE;
-		/* Only support flush on decoder (for now)*/
-		if (inst->session_type == MSM_VIDC_ENCODER) {
-			pr_err("Buffer flushing not supported for encoder\n");
-			rc = -ENOTSUPP;
-			mutex_unlock(&inst->sync_lock);
-			break;
-		}
-
-		/* Certain types of flushes aren't supported such as: */
-		/* 1) Input only flush */
-		if (ip_flush && !op_flush) {
-			pr_err("Input only flush not supported\n");
-			rc = -ENOTSUPP;
-			mutex_unlock(&inst->sync_lock);
-			break;
-		}
-
-		/* 2) Output only flush when in reconfig */
-		if (!ip_flush && op_flush && !inst->in_reconfig) {
-			pr_err("Output only flush only supported when reconfiguring\n");
-			rc = -ENOTSUPP;
-			mutex_unlock(&inst->sync_lock);
-			break;
-		}
-
-		/* Finally flush */
-		if (op_flush && ip_flush)
-			rc = vidc_hal_session_flush(inst->session,
-					HAL_FLUSH_ALL);
-		else if (ip_flush)
-			rc = vidc_hal_session_flush(inst->session,
-					HAL_FLUSH_INPUT);
-		else if (op_flush)
-			rc = vidc_hal_session_flush(inst->session,
-					HAL_FLUSH_OUTPUT);
-		mutex_unlock(&inst->sync_lock);
-		break;
-	case V4L2_DEC_CMD_STOP:
-		rc = msm_comm_try_state(inst, MSM_VIDC_CLOSE_DONE);
-		if (rc)
-			pr_err("Failed to close instance\n");
-		break;
-	default:
-		pr_err("Unknown Decoder Command\n");
-		rc = -ENOTSUPP;
-		goto exit;
-	}
-
-	if (rc) {
-		pr_err("Failed to exec decoder cmd %d\n", dec->cmd);
-		goto exit;
-	}
-exit:
-	return rc;
-}
-
 
 static const struct vb2_ops msm_vdec_vb2q_ops = {
 	.queue_setup = msm_vdec_queue_setup,
@@ -838,102 +805,14 @@ int msm_vdec_inst_init(struct msm_vidc_inst *inst)
 	}
 	inst->fmts[OUTPUT_PORT] = &vdec_formats[1];
 	inst->fmts[CAPTURE_PORT] = &vdec_formats[0];
-	inst->prop.height = DEFAULT_HEIGHT;
-	inst->prop.width = DEFAULT_WIDTH;
-	inst->prop.fps = 30;
+	inst->height = DEFAULT_HEIGHT;
+	inst->width = DEFAULT_WIDTH;
 	return rc;
 }
 
 static int msm_vdec_op_s_ctrl(struct v4l2_ctrl *ctrl)
 {
-	int rc = 0;
-	struct v4l2_control control;
-	struct hal_nal_stream_format_supported stream_format;
-	struct hal_enable_picture enable_picture;
-	struct hal_enable hal_property;/*, prop;*/
-	u32 control_idx = 0;
-	enum hal_property property_id = 0;
-	u32 property_val = 0;
-	void *pdata;
-	struct msm_vidc_inst *inst = container_of(ctrl->handler,
-				struct msm_vidc_inst, ctrl_handler);
-	rc = msm_comm_try_state(inst, MSM_VIDC_OPEN_DONE);
-
-	if (rc) {
-		pr_err("Failed to move inst: %p to start done state\n",
-				inst);
-		goto failed_open_done;
-	}
-
-	control.id = ctrl->id;
-	control.value = ctrl->val;
-
-	switch (control.id) {
-	case V4L2_CID_MPEG_VIDC_VIDEO_STREAM_FORMAT:
-		property_id =
-		HAL_PARAM_NAL_STREAM_FORMAT_SELECT;
-		stream_format.nal_stream_format_supported =
-		(0x00000001 << control.value);
-		pdata = &stream_format;
-		break;
-	case V4L2_CID_MPEG_VIDC_VIDEO_OUTPUT_ORDER:
-		property_id = HAL_PARAM_VDEC_OUTPUT_ORDER;
-		property_val = control.value;
-		pdata = &property_val;
-		break;
-	case V4L2_CID_MPEG_VIDC_VIDEO_ENABLE_PICTURE_TYPE:
-		property_id =
-			HAL_PARAM_VDEC_PICTURE_TYPE_DECODE;
-		enable_picture.picture_type = control.value;
-		pdata = &enable_picture;
-		break;
-	case V4L2_CID_MPEG_VIDC_VIDEO_KEEP_ASPECT_RATIO:
-		property_id =
-			HAL_PARAM_VDEC_OUTPUT2_KEEP_ASPECT_RATIO;
-		hal_property.enable = control.value;
-		pdata = &hal_property;
-		break;
-	case V4L2_CID_MPEG_VIDC_VIDEO_POST_LOOP_DEBLOCKER_MODE:
-		property_id =
-			HAL_CONFIG_VDEC_POST_LOOP_DEBLOCKER;
-		hal_property.enable = control.value;
-		pdata = &hal_property;
-		break;
-	case V4L2_CID_MPEG_VIDC_VIDEO_DIVX_FORMAT:
-		property_id = HAL_PARAM_DIVX_FORMAT;
-		property_val = control.value;
-		pdata = &property_val;
-		break;
-	case V4L2_CID_MPEG_VIDC_VIDEO_MB_ERROR_MAP_REPORTING:
-		property_id =
-			HAL_CONFIG_VDEC_MB_ERROR_MAP_REPORTING;
-		hal_property.enable = control.value;
-		pdata = &hal_property;
-		break;
-	case V4L2_CID_MPEG_VIDC_VIDEO_CONTINUE_DATA_TRANSFER:
-		property_id =
-			HAL_PARAM_VDEC_CONTINUE_DATA_TRANSFER;
-		hal_property.enable = control.value;
-		pdata = &hal_property;
-		break;
-	default:
-		break;
-		}
-	if (property_id) {
-		pr_debug("Control: HAL property=%d,ctrl_id=%d,ctrl_value=%d\n",
-			   property_id,
-			   msm_vdec_ctrls[control_idx].id,
-			   control.value);
-			rc = vidc_hal_session_set_property((void *)
-				inst->session, property_id,
-					pdata);
-		}
-	if (rc)
-		pr_err("Failed to set hal property for framesize\n");
-
-failed_open_done:
-
-	return rc;
+	return 0;
 }
 static int msm_vdec_op_g_volatile_ctrl(struct v4l2_ctrl *ctrl)
 {

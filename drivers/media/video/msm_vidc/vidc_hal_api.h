@@ -1,4 +1,4 @@
-/* Copyright (c) 2012, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2012, Code Aurora Forum. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -943,7 +943,7 @@ struct buffer_requirements {
 };
 
 /* VIDC_HAL CORE API's */
-int vidc_hal_core_init(void *device, int domain);
+int vidc_hal_core_init(void *device);
 int vidc_hal_core_release(void *device);
 int vidc_hal_core_pc_prep(void *device);
 int vidc_hal_core_set_resource(void *device,

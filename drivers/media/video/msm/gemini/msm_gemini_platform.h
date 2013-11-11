@@ -1,4 +1,4 @@
-/* Copyright (c) 2010-2012, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2010-2012, Code Aurora Forum. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -15,7 +15,7 @@
 
 #include <linux/interrupt.h>
 #include <linux/platform_device.h>
-#include <linux/msm_ion.h>
+#include <linux/ion.h>
 #include <linux/iommu.h>
 void msm_gemini_platform_p2v(struct file  *file,
 				struct ion_handle **ionhandle);
