@@ -383,72 +383,33 @@ static struct platform_device wfd_device = {
 #define HDMI_DDC_DATA_GPIO	71
 #define HDMI_HPD_GPIO		72
 
+/* power: ldo23 1.8  gpio11 vspvsn */
+/* reset: gpio25 */
+#define MI_RESET_GPIO		PM8921_GPIO_PM_TO_SYS(25)
+#define MI_LCD_ID_GPIO		PM8921_GPIO_PM_TO_SYS(12)
+
 static bool dsi_power_on = false;
 static int mipi_dsi_panel_power(int on)
 {
-	static struct regulator *reg_l8, *reg_l2, *reg_lvs6, *ext_dsv_load;
-	static int gpio42;
+	static struct regulator *reg_l23, *reg_l2, *reg_lvs7, *reg_vsp;
+	static int reset_gpio, lcd_id_gpio;
 	int rc;
 
-	struct pm_gpio gpio42_param = {
-		.direction = PM_GPIO_DIR_OUT,
-		.output_buffer = PM_GPIO_OUT_BUF_CMOS,
-		.output_value = 0,
-		.pull = PM_GPIO_PULL_NO,
-		.vin_sel = 2,
-		.out_strength = PM_GPIO_STRENGTH_HIGH,
-		.function = PM_GPIO_FUNC_PAIRED,
-		.inv_int_pol = 0,
-		.disable_pin = 0,
-	};
-	printk(KERN_INFO"%s: mipi lcd function started status = %d \n", __func__, on);
-
-	pr_debug("%s: state : %d\n", __func__, on);
-
 	if (!dsi_power_on) {
-
-		gpio42 = PM8921_GPIO_PM_TO_SYS(42);
-
-		rc = gpio_request(gpio42, "disp_rst_n");
-		if (rc) {
-			pr_err("request gpio 42 failed, rc=%d\n", rc);
+		reg_lvs7 = regulator_get(&msm_mipi_dsi1_device.dev,
+				"dsi1_vddio");
+		if (IS_ERR_OR_NULL(reg_lvs7)) {
+			pr_err("could not get 8921_lvs7, rc = %ld\n",
+					PTR_ERR(reg_lvs7));
 			return -ENODEV;
 		}
 
-		if (lge_get_board_revno() > HW_REV_C) {
-			ext_dsv_load = regulator_get(NULL, "ext_dsv_load");
-			if (IS_ERR(ext_dsv_load)) {
-				pr_err("could not get ext_dsv_load, rc = %ld\n",
-					PTR_ERR(ext_dsv_load));
-				return -ENODEV;
-			}
-		}
-
-		reg_l8 = regulator_get(&msm_mipi_dsi1_device.dev, "dsi_vci");
-		if (IS_ERR(reg_l8)) {
-			pr_err("could not get 8921_l8, rc = %ld\n",
-				PTR_ERR(reg_l8));
-			return -ENODEV;
-		}
-
-		reg_lvs6 = regulator_get(&msm_mipi_dsi1_device.dev, "dsi_iovcc");
-		if (IS_ERR(reg_lvs6)) {
-			pr_err("could not get 8921_lvs6, rc = %ld\n",
-				 PTR_ERR(reg_lvs6));
-			return -ENODEV;
-		}
-
-		reg_l2 = regulator_get(&msm_mipi_dsi1_device.dev, "dsi_vdda");
-		if (IS_ERR(reg_l2)) {
+		reg_l2 = regulator_get(&msm_mipi_dsi1_device.dev,
+				"dsi_vdda");
+		if (IS_ERR_OR_NULL(reg_l2)) {
 			pr_err("could not get 8921_l2, rc = %ld\n",
-				PTR_ERR(reg_l2));
+					PTR_ERR(reg_l2));
 			return -ENODEV;
-		}
-
-		rc = regulator_set_voltage(reg_l8, 3000000, 3000000);
-		if (rc) {
-			pr_err("set_voltage l8 failed, rc=%d\n", rc);
-			return -EINVAL;
 		}
 
 		rc = regulator_set_voltage(reg_l2, 1200000, 1200000);
@@ -457,114 +418,107 @@ static int mipi_dsi_panel_power(int on)
 			return -EINVAL;
 		}
 
-		dsi_power_on = true;
-	}
-	if (on) {
-
-		if (lge_get_board_revno() > HW_REV_C) {
-			rc = regulator_enable(ext_dsv_load);
-			if (rc) {
-				pr_err("enable ext_dsv_load failed, rc=%d\n", rc);
-				return -ENODEV;
-			}
+		reg_l23 = regulator_get(&msm_mipi_dsi1_device.dev,
+				"dsi_mi_vddio");
+		if (IS_ERR_OR_NULL(reg_l23)) {
+			pr_err("could not get 8921_l23, rc = %ld\n",
+				PTR_ERR(reg_l23));
+			return -ENODEV;
 		}
 
-		rc = regulator_set_optimum_mode(reg_l8, 100000);
-		if (rc < 0) {
-			pr_err("set_optimum_mode l8 failed, rc=%d\n", rc);
+		rc = regulator_set_voltage(reg_l23, 1800000, 1800000);
+		if (rc) {
+			pr_err("set_voltage l23 failed, rc=%d\n", rc);
 			return -EINVAL;
 		}
 
+		reg_vsp = regulator_get(&msm_mipi_dsi1_device.dev,
+				"dsi_mi_vsp");
+		if (IS_ERR_OR_NULL(reg_vsp)) {
+			pr_err("could not get VSP/VSN regulator, rc = %ld\n",
+				PTR_ERR(reg_vsp));
+			return -ENODEV;
+		}
+
+		reset_gpio = MI_RESET_GPIO;
+		rc = gpio_request(reset_gpio, "disp_rst_n");
+		if (rc) {
+			pr_err("request pm8921 gpio 25 failed, rc=%d\n", rc);
+			return -ENODEV;
+		}
+
+		lcd_id_gpio = MI_LCD_ID_GPIO;
+		rc = gpio_request(lcd_id_gpio, "disp_id_det");
+		if (rc) {
+			pr_err("request pm8921 gpio 12 failed, rc=%d\n", rc);
+			return -ENODEV;
+		}
+
+		dsi_power_on = true;
+	}
+
+	if (on) {
 		rc = regulator_set_optimum_mode(reg_l2, 100000);
 		if (rc < 0) {
 			pr_err("set_optimum_mode l2 failed, rc=%d\n", rc);
 			return -EINVAL;
 		}
 
-#if defined(CONFIG_FB_MSM_MIPI_LGIT_VIDEO_WXGA_PT)
-		rc = regulator_enable(reg_l8);  // dsi_vci
-		if (rc) {
-			pr_err("enable l8 failed, rc=%d\n", rc);
-			return -ENODEV;
-		}
-
-		udelay(100);
-
-		rc = regulator_enable(reg_lvs6); // IOVCC
-		if (rc) {
-			pr_err("enable lvs6 failed, rc=%d\n", rc);
-			return -ENODEV;
-		}
-
-		udelay(100);
-#endif
-
-		rc = regulator_enable(reg_l2);  // DSI
+		rc = regulator_enable(reg_l2);
 		if (rc) {
 			pr_err("enable l2 failed, rc=%d\n", rc);
 			return -ENODEV;
 		}
 
-		printk(KERN_INFO " %s : reset start.", __func__);
-		/* LCD RESET HIGH */
-		mdelay(2);
-		gpio42_param.output_value = 1;
-		rc = pm8xxx_gpio_config(gpio42,&gpio42_param);
+		rc = regulator_enable(reg_lvs7);
 		if (rc) {
-			pr_err("gpio_config 42 failed (3), rc=%d\n", rc);
-			return -EINVAL;
+			pr_err("enable lvs7 failed, rc=%d\n", rc);
+			return -ENODEV;
 		}
-		mdelay(5);
+		rc = regulator_enable(reg_l23);
+		if (rc) {
+			pr_err("enable l23 failed, rc=%d\n", rc);
+			return -ENODEV;
+		}
+		mdelay(1);
 
+		rc = regulator_enable(reg_vsp);
+		if (rc) {
+			pr_err("enable vsp failed, rc=%d\n", rc);
+			return -ENODEV;
+		}
+		mdelay(10);
+
+		gpio_direction_output(reset_gpio, 1);
+		mdelay(3);
+
+		//mi_panel_id = gpio_get_value(lcd_id_gpio);
 	} else {
-		/* LCD RESET LOW */
-		gpio42_param.output_value = 0;
-		rc = pm8xxx_gpio_config(gpio42,&gpio42_param);
-		if (rc) {
-			pr_err("gpio_config 42 failed, rc=%d\n", rc);
-			return -ENODEV;
-		}
-		udelay(100);
+		gpio_direction_output(reset_gpio, 0);
 
-#if defined(CONFIG_FB_MSM_MIPI_LGIT_VIDEO_WXGA_PT)
-		rc = regulator_disable(reg_lvs6); // IOVCC
+		rc = regulator_disable(reg_vsp);
 		if (rc) {
-			pr_err("disable lvs6 failed, rc=%d\n", rc);
+			pr_err("disable reg_vsp failed, rc=%d\n", rc);
 			return -ENODEV;
 		}
-		udelay(100);
+		mdelay(10);
 
-		rc = regulator_disable(reg_l8);	//VCI
+		rc = regulator_disable(reg_lvs7);
 		if (rc) {
-			pr_err("disable reg_l8  failed, rc=%d\n", rc);
-			return -ENODEV;
-		}
-		udelay(100);
-#endif
-		rc = regulator_disable(reg_l2);	//DSI
-		if (rc) {
-			pr_err("disable reg_l2  failed, rc=%d\n", rc);
+			pr_err("disable reg_lvs7 failed, rc=%d\n", rc);
 			return -ENODEV;
 		}
 
-		rc = regulator_set_optimum_mode(reg_l8, 100);
-		if (rc < 0) {
-			pr_err("set_optimum_mode l8 failed, rc=%d\n", rc);
-			return -EINVAL;
+		rc = regulator_disable(reg_l23);
+		if (rc) {
+			pr_err("disable reg_l23 failed, rc=%d\n", rc);
+			return -ENODEV;
 		}
 
-		rc = regulator_set_optimum_mode(reg_l2, 100);
-		if (rc < 0) {
-			pr_err("set_optimum_mode l2 failed, rc=%d\n", rc);
-			return -EINVAL;
-		}
-
-		if (lge_get_board_revno() > HW_REV_C) {
-			rc = regulator_disable(ext_dsv_load);
-			if (rc) {
-				pr_err("disable ext_dsv_load  failed, rc=%d\n", rc);
-				return -ENODEV;
-			}
+		rc = regulator_disable(reg_l2);
+		if (rc) {
+			pr_err("disable reg_l2 failed, rc=%d\n", rc);
+			return -ENODEV;
 		}
 	}
 
