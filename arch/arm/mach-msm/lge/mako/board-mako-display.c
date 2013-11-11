@@ -902,7 +902,7 @@ void __init apq8064_init_fb(void)
 #if defined (CONFIG_BACKLIGHT_LM3530)
 static struct backlight_platform_data lm3530_data = {
 
-	.gpio = PM8921_GPIO_PM_TO_SYS(24),
+	.gpio = PM8921_GPIO_PM_TO_SYS(13),
 #ifdef CONFIG_LGIT_VIDEO_WXGA_CABC
 	.max_current = 0x17 | PWM_BRIGHTNESS,
 #else
