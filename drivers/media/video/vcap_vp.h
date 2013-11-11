@@ -1,4 +1,4 @@
-/* Copyright (c) 2012, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2012, Code Aurora Forum. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -89,16 +89,6 @@
 #define VCAP_VP_NR_T2_C_BASE_ADDR (VCAP_BASE + 0x4B8)
 
 #define VP_PIC_DONE (0x1 << 0)
-#define VP_MODE_CHANGE (0x1 << 8)
-
-#define VP_NR_MAX_WINDOW 120
-#define VP_NR_MAX_RATIO  16
-
-#define BITS_MASK(start, num_of_bits) \
-	(((1 << (num_of_bits)) - 1) << (start))
-
-#define BITS_VALUE(x, start, num_of_bits)  \
-	(((x) & BITS_MASK(start, num_of_bits)) >> (start))
 
 irqreturn_t vp_handler(struct vcap_dev *dev);
 int config_vp_format(struct vcap_client_data *c_data);
@@ -107,11 +97,7 @@ int init_motion_buf(struct vcap_client_data *c_data);
 void deinit_motion_buf(struct vcap_client_data *c_data);
 int init_nr_buf(struct vcap_client_data *c_data);
 void deinit_nr_buf(struct vcap_client_data *c_data);
-int nr_s_param(struct vcap_client_data *c_data, struct nr_param *param);
-void nr_g_param(struct vcap_client_data *c_data, struct nr_param *param);
-void s_default_nr_val(struct nr_param *param);
 int kickoff_vp(struct vcap_client_data *c_data);
 int continue_vp(struct vcap_client_data *c_data);
-int vp_dummy_event(struct vcap_client_data *c_data);
 
 #endif

@@ -1,4 +1,4 @@
-/* Copyright (c) 2012, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2012, Code Aurora Forum. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -11,6 +11,7 @@
  *
  */
 
+#include <linux/module.h>
 #include "msm_sensor.h"
 #define SENSOR_NAME "s5k4e1"
 #define PLATFORM_DRIVER_NAME "msm_camera_s5k4e1"
