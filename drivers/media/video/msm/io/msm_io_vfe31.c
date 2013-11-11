@@ -1,4 +1,4 @@
-/* Copyright (c) 2010-2012, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2010-2012, Code Aurora Forum. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -247,7 +247,7 @@ int msm_camio_clk_enable(enum msm_camio_clk_type clktype)
 	}
 
 	if (!IS_ERR(clk))
-		clk_prepare_enable(clk);
+		clk_enable(clk);
 	else
 		rc = -1;
 	return rc;
@@ -303,11 +303,10 @@ int msm_camio_clk_disable(enum msm_camio_clk_type clktype)
 	}
 
 	if (!IS_ERR(clk)) {
-		clk_disable_unprepare(clk);
+		clk_disable(clk);
 		clk_put(clk);
-	} else {
+	} else
 		rc = -1;
-	}
 
 	return rc;
 }

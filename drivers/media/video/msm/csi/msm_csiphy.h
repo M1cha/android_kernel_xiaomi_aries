@@ -1,4 +1,4 @@
-/* Copyright (c) 2011-2012, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2011, Code Aurora Forum. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -17,8 +17,6 @@
 #include <linux/io.h>
 #include <media/v4l2-subdev.h>
 
-#define MAX_CSIPHY 3
-
 struct csiphy_device {
 	struct platform_device *pdev;
 	struct v4l2_subdev subdev;
@@ -27,11 +25,8 @@ struct csiphy_device {
 	struct resource *io;
 	void __iomem *base;
 	struct mutex mutex;
-	uint32_t hw_version;
 
 	struct clk *csiphy_clk[2];
-	uint8_t ref_count;
-	uint16_t lane_mask[MAX_CSIPHY];
 };
 
 struct csiphy_cfg_params {
@@ -40,12 +35,12 @@ struct csiphy_cfg_params {
 };
 
 #define VIDIOC_MSM_CSIPHY_CFG \
-	_IOWR('V', BASE_VIDIOC_PRIVATE + 7, void *)
+	_IOWR('V', BASE_VIDIOC_PRIVATE + 7, struct csiphy_cfg_params)
 
 #define VIDIOC_MSM_CSIPHY_INIT \
 	_IOWR('V', BASE_VIDIOC_PRIVATE + 8, struct v4l2_subdev*)
 
 #define VIDIOC_MSM_CSIPHY_RELEASE \
-	_IOWR('V', BASE_VIDIOC_PRIVATE + 9, void *)
+	_IOWR('V', BASE_VIDIOC_PRIVATE + 9, struct v4l2_subdev*)
 
 #endif

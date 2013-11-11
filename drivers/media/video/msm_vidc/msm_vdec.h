@@ -1,4 +1,4 @@
-/* Copyright (c) 2012, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2012, Code Aurora Forum. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -31,7 +31,6 @@ int msm_vdec_qbuf(struct msm_vidc_inst *inst, struct v4l2_buffer *b);
 int msm_vdec_dqbuf(struct msm_vidc_inst *inst, struct v4l2_buffer *b);
 int msm_vdec_streamon(struct msm_vidc_inst *inst, enum v4l2_buf_type i);
 int msm_vdec_streamoff(struct msm_vidc_inst *inst, enum v4l2_buf_type i);
-int msm_vdec_cmd(struct msm_vidc_inst *inst, struct v4l2_decoder_cmd *dec);
 struct vb2_ops *msm_vdec_get_vb2q_ops(void);
 
 #endif
