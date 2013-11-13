@@ -1271,6 +1271,7 @@ static struct branch_clk vcap_p_clk = {
 static struct clk_freq_tbl clk_tbl_gp[] = {
 	F_GP(        0, gnd,  1, 0, 0),
 	F_GP(  9600000, cxo,  2, 0, 0),
+	F_GP( 12000000, pll8, 4, 1, 8),
 	F_GP( 13500000, pxo,  2, 0, 0),
 	F_GP( 19200000, cxo,  1, 0, 0),
 	F_GP( 27000000, pxo,  1, 0, 0),
@@ -1323,6 +1324,7 @@ static struct clk_freq_tbl clk_tbl_gsbi_uart[] = {
 	F_GSBI_UART( 1843200, pll8, 2,  6, 625),
 	F_GSBI_UART( 3686400, pll8, 2, 12, 625),
 	F_GSBI_UART( 7372800, pll8, 2, 24, 625),
+	F_GSBI_UART( 8000000, pll8, 4,  1,  12),
 	F_GSBI_UART(14745600, pll8, 2, 48, 625),
 	F_GSBI_UART(16000000, pll8, 4,  1,   6),
 	F_GSBI_UART(24000000, pll8, 4,  1,   4),
@@ -5607,6 +5609,9 @@ static struct clk_lookup msm_clocks_8064[] = {
 	CLK_LOOKUP("vcodec_iommu0_clk", vcodec_axi_a_clk.c, "mdp.0"),
 	CLK_LOOKUP("vcodec_iommu1_clk", vcodec_axi_b_clk.c, "mdp.0"),
 	CLK_LOOKUP("smmu_iface_clk", smmu_p_clk.c,	"mdp.0"),
+#ifdef CONFIG_SND_SOC_ES310
+	CLK_LOOKUP("gp0_clk",	gp0_clk.c,	NULL),
+#endif
 };
 
 static struct clk_lookup msm_clocks_8960_common[] __initdata = {
