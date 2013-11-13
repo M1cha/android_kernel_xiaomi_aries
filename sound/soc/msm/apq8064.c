@@ -484,6 +484,17 @@ static int msm_mclk_event(struct snd_soc_dapm_widget *w,
 	return 0;
 }
 
+#ifdef CONFIG_SND_SOC_ES310
+static const char *dynamic_micbias_text[] = {"MB1", "MB2"};
+
+static const struct soc_enum dynamic_micbias_enum[] = {
+	SOC_ENUM_SINGLE_EXT(2, dynamic_micbias_text),
+};
+
+static const struct snd_kcontrol_new dynamic_micbias_mux =
+	SOC_DAPM_ENUM("DYN MICBIAS MUX", dynamic_micbias_enum);
+#endif
+
 static const struct snd_soc_dapm_widget apq8064_dapm_widgets[] = {
 
 	SND_SOC_DAPM_SUPPLY("MCLK",  SND_SOC_NOPM, 0, 0,
@@ -512,6 +523,11 @@ static const struct snd_soc_dapm_widget apq8064_dapm_widgets[] = {
 	SND_SOC_DAPM_MIC("Handset SubMic", NULL),
 #endif
 
+#ifdef CONFIG_SND_SOC_ES310
+	SND_SOC_DAPM_MIC("LINE0_OUT Mic", NULL),
+	SND_SOC_DAPM_MIC("LINE1_OUT Mic", NULL),
+#endif
+
 	/*********** Digital Mics ***************/
 	SND_SOC_DAPM_MIC("Digital Mic1", NULL),
 	SND_SOC_DAPM_MIC("Digital Mic2", NULL),
@@ -519,6 +535,10 @@ static const struct snd_soc_dapm_widget apq8064_dapm_widgets[] = {
 	SND_SOC_DAPM_MIC("Digital Mic4", NULL),
 	SND_SOC_DAPM_MIC("Digital Mic5", NULL),
 	SND_SOC_DAPM_MIC("Digital Mic6", NULL),
+
+#ifdef CONFIG_SND_SOC_ES310
+	SND_SOC_DAPM_MUX("DYN MICBIAS MUX", SND_SOC_NOPM, 0 , 0, &dynamic_micbias_mux),
+#endif
 };
 
 static const struct snd_soc_dapm_route apq8064_common_audio_map[] = {
@@ -529,8 +549,12 @@ static const struct snd_soc_dapm_route apq8064_common_audio_map[] = {
 	{"HEADPHONE", NULL, "LDO_H"},
 
 	/* Speaker path */
-#ifdef CONFIG_SND_SOC_TPA2028D
+#if defined(CONFIG_SND_SOC_TPA2028D)
 	{"Ext Spk Top", NULL, "LINEOUT1"},
+#elif defined(CONFIG_SND_SOC_ES310)
+	{"Ext Spk Top Pos", NULL, "LINEOUT1"},
+	{"Ext Spk Top Neg", NULL, "LINEOUT3"},
+	{"Ext Spk Top", NULL, "LINEOUT5"},
 #else
 	{"Ext Spk Bottom Pos", NULL, "LINEOUT1"},
 	{"Ext Spk Bottom Neg", NULL, "LINEOUT3"},
@@ -548,9 +572,19 @@ static const struct snd_soc_dapm_route apq8064_common_audio_map[] = {
 	{"AMIC3", NULL, "MIC BIAS3 External"},
 	{"MIC BIAS3 External", NULL, "Handset SubMic"},
 #endif
+
+#ifdef CONFIG_SND_SOC_ES310
+	{"AMIC2", NULL, "DYN MICBIAS MUX"},
+	{"DYN MICBIAS MUX", "MB1", "MIC BIAS1 External"},
+	{"DYN MICBIAS MUX", "MB2", "MIC BIAS2 External"},
+	{"MIC BIAS1 External", NULL, "LINE0_OUT Mic"},
+	{"MIC BIAS2 External", NULL, "LINE0_OUT Mic"},
+	{"AMIC5", NULL, "LINE1_OUT Mic"},
+#else
 	/* Headset Mic */
 	{"AMIC2", NULL, "MIC BIAS2 External"},
 	{"MIC BIAS2 External", NULL, "Headset Mic"},
+#endif
 
 #ifndef CONFIG_SND_SOC_DUAL_AMIC
 	/* Headset ANC microphones */
@@ -614,6 +648,14 @@ static const struct snd_soc_dapm_route apq8064_liquid_cdp_audio_map[] = {
 	{"AMIC1", NULL, "MIC BIAS1 External"},
 	{"MIC BIAS1 External", NULL, "Analog mic7"},
 
+#ifdef CONFIG_SND_SOC_ES310
+	{"AMIC2", NULL, "DYN MICBIAS MUX"},
+	{"DYN MICBIAS MUX", "MB1", "MIC BIAS1 External"},
+	{"DYN MICBIAS MUX", "MB2", "MIC BIAS2 External"},
+	{"MIC BIAS1 External", NULL, "LINE0_OUT Mic"},
+	{"MIC BIAS2 External", NULL, "LINE0_OUT Mic"},
+	{"AMIC5", NULL, "LINE1_OUT Mic"},
+#endif
 
 	/************   Digital MIC Paths  ************/
 	/**
@@ -1283,7 +1325,8 @@ static int msm_audrx_init(struct snd_soc_pcm_runtime *rtd)
 		    SOCINFO_VERSION_MINOR(revision) >= 1 &&
 		    (machine_is_apq8064_cdp() ||
 		     machine_is_apq8064_liquid())) ||
-		   SOCINFO_VERSION_MAJOR(revision) > 1) {
+		   (SOCINFO_VERSION_MAJOR(revision) > 1 &&
+		     !machine_is_apq8064_mako())) {
 		pr_debug("%s: MBHC mechanical switch available APQ8064 "
 			 "detected\n", __func__);
 		apq8064_hs_detect_use_gpio = 1;
@@ -1304,6 +1347,12 @@ static int msm_audrx_init(struct snd_soc_pcm_runtime *rtd)
 			mbhc_cfg.detect_extn_cable = true;
 	} else
 		pr_debug("%s: Not using MBHC mechanical switch\n", __func__);
+
+#ifdef CONFIG_SND_SOC_ES310
+	mbhc_cfg.gpio = PM8921_GPIO_PM_TO_SYS(37);
+	mbhc_cfg.gpio_irq = gpio_to_irq(mbhc_cfg.gpio);
+	mbhc_cfg.gpio_level_insert = 0;
+#endif
 
 	mbhc_cfg.read_fw_bin = apq8064_hs_detect_use_firmware;
 
@@ -2141,7 +2190,7 @@ static int __init msm_audio_init(void)
 	u32	version = socinfo_get_platform_version();
 	if (!soc_class_is_apq8064() ||
 		(socinfo_get_id() == 130) ||
-		(machine_is_apq8064_mtp() &&
+		((machine_is_apq8064_mtp() || machine_is_apq8064_mako()) &&
 		(SOCINFO_VERSION_MINOR(version) == 1))) {
 		pr_info("%s: Not APQ8064 in SLIMBUS mode\n", __func__);
 		return -ENODEV;
