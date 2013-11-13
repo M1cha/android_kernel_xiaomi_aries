@@ -184,11 +184,10 @@ enum camera_vreg_type {
 	REG_LDO,
 	REG_VS,
 	REG_GPIO,
-	REG_MAX
 };
 
 struct camera_vreg_t {
-	const char *reg_name;
+	char *reg_name;
 	enum camera_vreg_type type;
 	int min_voltage;
 	int max_voltage;
@@ -202,8 +201,8 @@ struct msm_gpio_set_tbl {
 };
 
 struct msm_camera_csi_lane_params {
-	uint16_t csi_lane_assign;
-	uint16_t csi_lane_mask;
+	uint8_t csi_lane_assign;
+	uint8_t csi_lane_mask;
 };
 
 struct msm_camera_gpio_conf {
@@ -268,13 +267,10 @@ struct msm_actuator_info {
 struct msm_eeprom_info {
 	struct i2c_board_info const *board_info;
 	int bus_id;
-	int eeprom_reg_addr;
-	int eeprom_read_length;
-	int eeprom_i2c_slave_addr;
 };
 
 struct msm_camera_sensor_info {
-	const char *sensor_name;
+	char *sensor_name;
 	int sensor_reset_enable;
 	int sensor_reset;
 	int sensor_pwd;
