@@ -1543,7 +1543,7 @@ static struct clk_freq_tbl clk_tbl_sdc[] = {
 	F_END
 };
 
-static CLK_SDC(sdc1_clk, 1, 6,  52000000, 208000000);
+static CLK_SDC(sdc1_clk, 1, 6,  52000000, 104000000);
 static CLK_SDC(sdc2_clk, 2, 5,  52000000, 104000000);
 static CLK_SDC(sdc3_clk, 3, 4, 104000000, 208000000);
 static CLK_SDC(sdc4_clk, 4, 3,  33000000,  67000000);
@@ -5312,7 +5312,11 @@ static struct clk_lookup msm_clocks_8064[] = {
 #else
 	CLK_LOOKUP("core_clk",		gsbi4_uart_clk.c,	""),
 #endif
+#ifdef CONFIG_MACH_LGE
+	CLK_LOOKUP("core_clk",		gsbi5_uart_clk.c, "msm_serial_hs.2"),
+#else
 	CLK_LOOKUP("core_clk",		gsbi5_uart_clk.c,	""),
+#endif
 	CLK_LOOKUP("core_clk",		gsbi6_uart_clk.c,	""),
 #ifdef CONFIG_MACH_LGE
 	CLK_LOOKUP("core_clk",		gsbi7_uart_clk.c,	""),
@@ -5374,6 +5378,7 @@ static struct clk_lookup msm_clocks_8064[] = {
 	CLK_LOOKUP("iface_clk",		gsbi4_p_clk.c,		"qup_i2c.4"),
 	CLK_LOOKUP("iface_clk",		gsbi5_p_clk.c,		"spi_qsd.0"),
 	CLK_LOOKUP("iface_clk",		gsbi5_p_clk.c,		"qup_i2c.5"),
+	CLK_LOOKUP("iface_clk",		gsbi5_p_clk.c,	"msm_serial_hs.2"),
 	CLK_LOOKUP("iface_clk",		gsbi6_p_clk.c,		""),
 #ifdef CONFIG_MACH_LGE
 	CLK_LOOKUP("iface_clk",		gsbi7_p_clk.c,		""),

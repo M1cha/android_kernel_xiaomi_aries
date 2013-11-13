@@ -1622,6 +1622,7 @@ static struct msm_spm_platform_data msm_spm_data[] __initdata = {
 #define GSBI_DUAL_MODE_CODE	0x60
 #define MSM_GSBI1_PHYS		0x12440000
 #define MSM_GSBI4_PHYS		0x16300000
+#define MSM_GSBI5_PHYS		0x1A200000
 
 static void __init apq8064_init_buses(void)
 {
@@ -1683,6 +1684,7 @@ static struct platform_device *common_not_mpq_devices[] __initdata = {
 	&apq8064_device_qup_i2c_gsbi1,
 	&apq8064_device_qup_i2c_gsbi3,
 	&apq8064_device_qup_i2c_gsbi4,
+	&mpq8064_device_qup_i2c_gsbi5,
 };
 
 static struct platform_device *common_devices[] __initdata = {
@@ -1811,6 +1813,8 @@ static struct platform_device *common_devices[] __initdata = {
 };
 
 static struct platform_device *cdp_devices[] __initdata = {
+	&apq8064_device_uart_gsbi5,
+	&apq8064_device_uart_gsbi7,
 	&msm_device_sps_apq8064,
 #ifdef CONFIG_MSM_ROTATOR
        &msm_rotator_device,
@@ -1854,9 +1858,16 @@ static struct msm_i2c_platform_data apq8064_i2c_qup_gsbi4_pdata = {
 	.src_clk_rate = 24000000,
 };
 
+static struct msm_i2c_platform_data mpq8064_i2c_qup_gsbi5_pdata = {
+	.clk_freq = 100000,
+	.src_clk_rate = 24000000,
+};
+
+
 static void __init apq8064_i2c_init(void)
 {
 	void __iomem *gsbi_mem;
+	struct clk *ifclk;
 
 	apq8064_device_qup_i2c_gsbi1.dev.platform_data =
 					&apq8064_i2c_qup_gsbi1_pdata;
@@ -1884,6 +1895,24 @@ static void __init apq8064_i2c_init(void)
 	}
 	wmb();
 	iounmap(gsbi_mem);
+
+	ifclk = clk_get_sys("msm_serial_hs.2", "iface_clk");
+	if (IS_ERR(ifclk)) {
+		printk("%s: get clk for msm_serial_hs.2 failed\n", __func__);
+	}
+	else {
+		clk_set_rate(ifclk, 1843200);
+		clk_prepare_enable(ifclk);
+		gsbi_mem = ioremap_nocache(MSM_GSBI5_PHYS, 4);
+		writel_relaxed(GSBI_DUAL_MODE_CODE, gsbi_mem);
+		wmb();
+		iounmap(gsbi_mem);
+		clk_disable_unprepare(ifclk);
+	}
+
+	mpq8064_i2c_qup_gsbi5_pdata.use_gsbi_shared_mode = 1;
+	mpq8064_device_qup_i2c_gsbi5.dev.platform_data =
+					&mpq8064_i2c_qup_gsbi5_pdata;
 }
 
 /* Sensors DSPS platform data */
