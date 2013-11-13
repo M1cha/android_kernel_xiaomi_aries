@@ -33,6 +33,10 @@
 #include <linux/i2c/atmel_mxt_ts.h>
 #endif
 
+#ifdef CONFIG_RMI4_I2C
+#include <linux/rmi.h>
+#endif
+
 #include <mach/board_lge.h>
 #include "board-mako.h"
 
@@ -42,6 +46,8 @@
 #define ATMEL_TS_IRQ_GPIO			6
 #define ATMEL_TS_POWER_GPIO			PM8921_GPIO_PM_TO_SYS(5)
 #define ATMEL_TS_LCD_GPIO			PM8921_GPIO_PM_TO_SYS(12)
+#define RMI4_TS_POWER_GPIO			PM8921_GPIO_PM_TO_SYS(5)
+#define RMI4_TS_I2C_INT_GPIO		6
 
 /* unlock moving space is 200, the square value = 40000 */
 #define ATMEL_TS_MOVE_THRESHOLD			40000
@@ -701,12 +707,169 @@ static struct mxt_platform_data mxt336s_platform_data = {
 };
 #endif
 
+#ifdef CONFIG_RMI4_I2C
+static int rmi_power_on(bool on)
+{
+	gpio_set_value(RMI4_TS_POWER_GPIO, on != false);
+	msleep(100);
+	return 0;
+}
+
+static int rmi_gpio_config(void *gpio_data, bool configure)
+{
+	int error = 0;
+
+	if (configure) {
+		error = gpio_request(RMI4_TS_POWER_GPIO, "rmi4_gpio_power");
+		if (!error) {
+			error = gpio_direction_output(RMI4_TS_POWER_GPIO, 0);
+			if (error) {
+				gpio_free(RMI4_TS_POWER_GPIO);
+				pr_err("%s: unable to set direction gpio %d\n",
+				__func__, RMI4_TS_POWER_GPIO);
+				return error;
+			}
+		} else {
+			pr_err("%s: unable to request power gpio %d\n",
+			__func__, RMI4_TS_POWER_GPIO);
+			return error;
+		}
+		error = gpio_request(RMI4_TS_I2C_INT_GPIO, "rmi_intr");
+		if (error < 0) {
+			pr_err("%s: gpio_request fail", __func__);
+			return error;
+		}
+
+		error = gpio_direction_input(RMI4_TS_I2C_INT_GPIO);
+		if (error < 0) {
+			pr_err("%s: gpio_direction_input fail", __func__);
+			gpio_free(RMI4_TS_I2C_INT_GPIO);
+			return error;
+		}
+
+		rmi_power_on(true);
+	} else {
+		rmi_power_on(false);
+		gpio_free(RMI4_TS_I2C_INT_GPIO);
+		gpio_free(RMI4_TS_POWER_GPIO);
+	}
+
+	return error;
+}
+
+/* add built-in firmware to the kernel */
+#include "firmware/rmi_firmware_tpk_ito_aries_p1.h"
+#include "firmware/rmi_firmware_tpk_ito_aries_p2.h"
+#include "firmware/rmi_firmware_biel_ito_aries.h"
+#include "firmware/rmi_firmware_laibao_ito_aries.h"
+#include "firmware/rmi_factory_test_data_tpk_aries_p1.h"
+#include "firmware/rmi_factory_test_data_tpk_aries_p2.h"
+#include "firmware/rmi_factory_test_data_biel_aries.h"
+#include "firmware/rmi_factory_test_data_laibao_aries.h"
+#define TPK_FIRMWARE_P1_NAME	"rmi4/s3202_ver5.img"
+#define TPK_FIRMWARE_P2_NAME	"rmi4/S3202_ver5.img"
+#define BIEL_FIRMWARE_NAME	"rmi4/BM001.img"
+#define LAIBAO_FIRMWARE_NAME	"rmi4/Trs_lb00.img"
+DECLARE_BUILTIN_FIRMWARE(TPK_FIRMWARE_P1_NAME, rmi_firmware_tpk_ito_p1);
+DECLARE_BUILTIN_FIRMWARE(TPK_FIRMWARE_P2_NAME, rmi_firmware_tpk_ito_p2);
+DECLARE_BUILTIN_FIRMWARE(BIEL_FIRMWARE_NAME, rmi_firmware_biel_ito);
+DECLARE_BUILTIN_FIRMWARE(LAIBAO_FIRMWARE_NAME, rmi_firmware_laibao_ito);
+
+static unsigned char rmi_key_map[] = {KEY_MENU, KEY_HOME, KEY_BACK};
+
+static struct rmi_button_map rmi_button_map_s3202 = {
+	.nbuttons		= 3,
+	.map			= rmi_key_map,
+};
+
+static struct rmi_f54_self_test_data rmi_self_test_data_tpk_p1[] = {
+	{min_max_tpk_p1, sizeof(min_max_tpk_p1)},
+	{full_raw_capacitance_tpk_p1, sizeof(full_raw_capacitance_tpk_p1)},
+	{high_resistance_tpk_p1, sizeof(high_resistance_tpk_p1)},
+};
+
+static struct rmi_f54_self_test_data rmi_self_test_data_tpk_p2[] = {
+	{min_max_tpk_p2, sizeof(min_max_tpk_p2)},
+	{full_raw_capacitance_tpk_p2, sizeof(full_raw_capacitance_tpk_p2)},
+	{high_resistance_tpk_p2, sizeof(high_resistance_tpk_p2)},
+};
+
+static struct rmi_f54_self_test_data rmi_self_test_data_biel[] = {
+	{min_max_biel, sizeof(min_max_biel)},
+	{full_raw_capacitance_biel, sizeof(full_raw_capacitance_biel)},
+	{high_resistance_biel, sizeof(high_resistance_biel)},
+};
+
+static struct rmi_f54_self_test_data rmi_self_test_data_laibao[] = {
+	{min_max_laibao, sizeof(min_max_laibao)},
+	{full_raw_capacitance_laibao, sizeof(full_raw_capacitance_laibao)},
+	{high_resistance_laibao, sizeof(high_resistance_laibao)},
+};
+
+static struct rmi_config_info rmi_config_info_array[] = {
+	{
+		.product_name = "s3202_ver5",
+		.self_test_data = rmi_self_test_data_tpk_p1,
+	},
+	{
+		.product_name = "S3202_ver5",
+		.self_test_data = rmi_self_test_data_tpk_p2,
+	},
+	{
+		.product_name = "BM001",
+		.self_test_data = rmi_self_test_data_biel,
+	},
+	{
+		.product_name = "Trs_lb00",
+		.self_test_data = rmi_self_test_data_laibao,
+	},
+};
+
+static struct rmi_device_platform_data rmi_data = {
+	.driver_name		= "rmi_generic",
+	.sensor_name		= "s3202",
+	.attn_gpio		= RMI4_TS_I2C_INT_GPIO,
+	.attn_polarity		= RMI_ATTN_ACTIVE_LOW,
+	.level_triggered	= true,
+	.gpio_config		= rmi_gpio_config,
+	.axis_align		= {
+		.flip_x			= 1,
+		.flip_y			= 1,
+		.staying_threshold	= 12,
+		.landing_threshold	= 24,
+		.landing_jiffies	= HZ/8,
+	},
+		.f11_type_b		= true,
+		.reset_delay_ms		= 65,
+		.power_management	= {
+		.nosleep		= RMI_F01_NOSLEEP_ON,
+	},
+	.f1a_button_map		= &rmi_button_map_s3202,
+	.config_info_array		= rmi_config_info_array,
+	.config_array_size		= sizeof(rmi_config_info_array),
+};
+#endif
+
 static struct i2c_board_info touch_device_info[] = {
 #ifdef CONFIG_TOUCHSCREEN_ATMEL_MXT
 	{
 		I2C_BOARD_INFO("atmel_mxt_ts", 0x4b),
 		.platform_data = &mxt336s_platform_data,
 		.irq = MSM_GPIO_TO_INT(ATMEL_TS_I2C_INT_GPIO),
+	},
+#endif
+#ifdef CONFIG_RMI4_I2C
+	{
+		I2C_BOARD_INFO("rmi_i2c", 0x22),
+		.platform_data = &rmi_data,
+	},
+	{
+		I2C_BOARD_INFO("rmi_i2c", 0x20),
+		.platform_data = &rmi_data,
+	},
+	{
+		I2C_BOARD_INFO("rmi_i2c", 0x70),
+		.platform_data = &rmi_data,
 	},
 #endif
 };
