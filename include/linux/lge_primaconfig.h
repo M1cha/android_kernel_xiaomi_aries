@@ -14,5 +14,6 @@
 #ifndef __LINUX_LGE_PRIMACONFIG_H
 #define __LINUX_LGE_PRIMACONFIG_H
 extern v_MACADDR_t custom_mac_address;
+extern int mac_address_isset(void);
 #endif
 
