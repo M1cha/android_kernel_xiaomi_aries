@@ -5459,15 +5459,28 @@ int hdd_wlan_startup(struct device *dev )
 #endif
    int ret;
    struct wiphy *wiphy;
+#ifdef CONFIG_LGE_PRIMACONFIG_INTERFACE
+   int sleep_time = 500;
+   int time_slept = 0;
+#endif
 
    ENTER();
 
 #ifdef CONFIG_LGE_PRIMACONFIG_INTERFACE
-   if(custom_mac_address.bytes[0]==0 && custom_mac_address.bytes[1]==0 &&
-      custom_mac_address.bytes[2]==0 && custom_mac_address.bytes[3]==0 &&
-      custom_mac_address.bytes[4]==0 && custom_mac_address.bytes[5]==0) {
-      pr_info("wlan: prevented init before setting custom mac\n");
-      return -EIO;
+   while(true) {
+      if(mac_address_isset())
+         break;
+
+      pr_info("wlan: waiting for custom mac\n");
+
+      // for the case sth went wront
+      if(time_slept>=10000) {
+         pr_info("wlan: still didn't get custom mac. set sleep_time to 60s\n");
+         sleep_time = 60000;
+      }
+
+      time_slept+=sleep_time;
+      msleep(sleep_time);
    }
 #endif
 
