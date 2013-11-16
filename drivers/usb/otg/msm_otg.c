@@ -1197,6 +1197,7 @@ static void msm_otg_start_host(struct usb_otg *otg, int on)
 	struct msm_otg_platform_data *pdata = motg->pdata;
 	struct usb_hcd *hcd;
 	struct usb_device *rhub;
+	int rc;
 
 	if (!otg->host)
 		return;
@@ -1217,6 +1218,17 @@ static void msm_otg_start_host(struct usb_otg *otg, int on)
 		 */
 		if (pdata->setup_gpio)
 			pdata->setup_gpio(OTG_STATE_A_HOST);
+
+		/*
+		 * Increase 3.3V rail voltage to increase cross over voltage.
+		 * This is required to get some full speed audio headsets
+		 * working.
+		 */
+		rc = regulator_set_voltage(hsusb_3p3, USB_PHY_3P3_VOL_MAX,
+				USB_PHY_3P3_VOL_MAX);
+		if (rc)
+			dev_dbg(otg->phy->dev, "unable to increase 3.3V rail\n");
+
 		usb_add_hcd(hcd, hcd->irq, IRQF_SHARED);
 		rhub = otg->host->root_hub;
 		device_init_wakeup(&rhub->dev, 1);
@@ -1233,6 +1245,11 @@ static void msm_otg_start_host(struct usb_otg *otg, int on)
 		if (pdata->otg_control == OTG_PHY_CONTROL)
 			ulpi_write(otg->phy, OTG_COMP_DISABLE,
 				ULPI_CLR(ULPI_PWR_CLK_MNG_REG));
+
+		rc = regulator_set_voltage(hsusb_3p3, USB_PHY_3P3_VOL_MIN,
+				USB_PHY_3P3_VOL_MAX);
+		if (rc)
+			dev_dbg(otg->phy->dev, "unable to restore 3.075V rail\n");
 	}
 }
 

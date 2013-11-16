@@ -1063,7 +1063,7 @@ static DEVICE_ATTR(audio_data_block, S_IRUGO, hdmi_common_rda_audio_data_block,
 	NULL);
 static DEVICE_ATTR(spkr_alloc_data_block, S_IRUGO,
 	hdmi_common_rda_spkr_alloc_data_block, NULL);
-static DEVICE_ATTR(audio_caps, S_IRUGO, hdmi_common_rda_audio_caps,
+static DEVICE_ATTR(audio_caps, S_IRUGO | S_IWUSR, hdmi_common_rda_audio_caps,
 	hdmi_common_wta_audio_caps);
 
 static struct attribute *external_common_fs_attrs[] = {
@@ -1363,7 +1363,7 @@ static uint32 hdmi_edid_extract_ieee_reg_id(const uint8 *in_buf)
 	const uint8 *vsd = hdmi_edid_find_block(in_buf, DBC_START_OFFSET, 3,
 			&len);
 
-	if (vsd == NULL || len < 8)
+	if (vsd == NULL)
 		return 0;
 
 	DEV_DBG("EDID: VSD PhyAddr=%04x, MaxTMDS=%dMHz\n",
