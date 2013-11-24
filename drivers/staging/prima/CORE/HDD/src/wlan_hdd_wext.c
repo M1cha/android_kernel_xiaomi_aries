@@ -165,6 +165,7 @@ static const hdd_freq_chan_map_t freq_chan_map[] = { {2412, 1}, {2417, 2},
 #define WE_SET_MAX_TX_POWER  7
 #define WE_SET_HIGHER_DTIM_TRANSITION   8
 #define WE_SET_TM_LEVEL      9
+#define WE_ENABLE_STRICT_FCC_REG  10
 
 /* Private ioctls and their sub-ioctls */
 #define WLAN_PRIV_SET_NONE_GET_INT    (SIOCIWFIRSTPRIV + 1)
@@ -1071,14 +1072,15 @@ static int iw_set_mode(struct net_device *dev,
     }
 
     if ((WLAN_HDD_GET_CTX(pAdapter))->isLogpInProgress) {
-       VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_FATAL, "%s:LOGP in Progress. Ignore!!!",__func__);
+       VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_FATAL,
+                 "%s:LOGP in Progress. Ignore!!!", __func__);
        return 0;
     }
 
     pWextState = WLAN_HDD_GET_WEXT_STATE_PTR(pAdapter);
     if (pWextState == NULL)
     {
-        hddLog (LOGE, "%s ERROR: Data Storage Corruption", __func__);
+        hddLog(LOGE, "%s ERROR: Data Storage Corruption", __func__);
         return -EINVAL;
     }
 
@@ -1086,12 +1088,12 @@ static int iw_set_mode(struct net_device *dev,
     pRoamProfile = &pWextState->roamProfile;
     LastBSSType = pRoamProfile->BSSType;
 
-    hddLog( LOG1,"%s Old Bss type = %d", __func__, LastBSSType);
+    hddLog(LOG1, "%s Old Bss type = %d", __func__, LastBSSType);
 
     switch (wrqu->mode)
     {
     case IW_MODE_ADHOC:
-        hddLog( LOG1,"%s Setting AP Mode as IW_MODE_ADHOC", __func__);
+        hddLog(LOG1, "%s Setting AP Mode as IW_MODE_ADHOC", __func__);
         pRoamProfile->BSSType = eCSR_BSS_TYPE_START_IBSS;
         // Set the phymode correctly for IBSS.
         pConfig  = (WLAN_HDD_GET_CTX(pAdapter))->cfg_ini;
@@ -1099,16 +1101,16 @@ static int iw_set_mode(struct net_device *dev,
         wdev->iftype = NL80211_IFTYPE_ADHOC;
         break;
     case IW_MODE_INFRA:
-        hddLog( LOG1, "%s Setting AP Mode as IW_MODE_INFRA", __func__);
+        hddLog(LOG1, "%s Setting AP Mode as IW_MODE_INFRA", __func__);
         pRoamProfile->BSSType = eCSR_BSS_TYPE_INFRASTRUCTURE;
         wdev->iftype = NL80211_IFTYPE_STATION;
         break;
     case IW_MODE_AUTO:
-        hddLog(LOG1,"%s Setting AP Mode as IW_MODE_AUTO", __func__);
+        hddLog(LOG1, "%s Setting AP Mode as IW_MODE_AUTO", __func__);
         pRoamProfile->BSSType = eCSR_BSS_TYPE_ANY;
         break;
     default:
-        hddLog(LOG1,"%s Unknown AP Mode value", __func__);
+        hddLog(LOG1, "%s Unknown AP Mode value", __func__);
         return -EOPNOTSUPP;
     }
 
@@ -1131,8 +1133,6 @@ static int iw_set_mode(struct net_device *dev,
         }
     }
 
-
-
     EXIT();
     return 0;
 }
@@ -1140,13 +1140,14 @@ static int iw_set_mode(struct net_device *dev,
 
 static int iw_get_mode(struct net_device *dev,
                              struct iw_request_info *info,
-                             v_U32_t *uwrq, char *extra)
+                             union iwreq_data *wrqu,
+                             char *extra)
 {
 
     hdd_wext_state_t *pWextState;
     hdd_adapter_t *pAdapter = WLAN_HDD_GET_PRIV_PTR(dev);
 
-    hddLog (LOG1, "In %s",__func__);
+    hddLog(LOG1, "In %s", __func__);
 
     if (NULL == pAdapter)
     {
@@ -1156,14 +1157,15 @@ static int iw_get_mode(struct net_device *dev,
     }
 
     if ((WLAN_HDD_GET_CTX(pAdapter))->isLogpInProgress) {
-       VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_FATAL, "%s:LOGP in Progress. Ignore!!!",__func__);
+       VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_FATAL,
+                 "%s:LOGP in Progress. Ignore!!!", __func__);
        return 0;
     }
 
     pWextState = WLAN_HDD_GET_WEXT_STATE_PTR(pAdapter);
     if (pWextState == NULL)
     {
-        hddLog (LOGE, "%s ERROR: Data Storage Corruption", __func__);
+        hddLog(LOGE, "%s ERROR: Data Storage Corruption", __func__);
         return -EINVAL;
     }
 
@@ -1171,21 +1173,22 @@ static int iw_get_mode(struct net_device *dev,
     {
     case eCSR_BSS_TYPE_INFRASTRUCTURE:
         hddLog(LOG1, "%s returns IW_MODE_INFRA\n", __func__);
-        *uwrq = IW_MODE_INFRA ;
+        wrqu->mode = IW_MODE_INFRA;
         break;
     case eCSR_BSS_TYPE_IBSS:
     case eCSR_BSS_TYPE_START_IBSS:
-        hddLog( LOG1,"%s returns IW_MODE_ADHOC\n", __func__);
-        *uwrq= IW_MODE_ADHOC;
+        hddLog(LOG1, "%s returns IW_MODE_ADHOC\n", __func__);
+        wrqu->mode = IW_MODE_ADHOC;
         break;
     case eCSR_BSS_TYPE_ANY:
-        hddLog( LOG1,"%s returns IW_MODE_AUTO\n", __func__);
-        *uwrq= IW_MODE_AUTO;
+        hddLog(LOG1, "%s returns IW_MODE_AUTO\n", __func__);
+        wrqu->mode = IW_MODE_AUTO;
         break;
     default:
-        hddLog( LOG1,"%s returns APMODE_UNKNOWN\n", __func__);
+        hddLog(LOG1, "%s returns APMODE_UNKNOWN\n", __func__);
         break;
     }
+
     return 0;
 }
 
@@ -3840,6 +3843,45 @@ static int iw_setint_getnone(struct net_device *dev, struct iw_request_info *inf
            break;
         }
 
+        case WE_ENABLE_STRICT_FCC_REG:
+        {
+           hdd_context_t *hddCtxt = WLAN_HDD_GET_CTX(pAdapter);
+           struct wiphy *wiphy = NULL;
+           long lrc;
+           int status;
+
+           wiphy = hddCtxt->wiphy;
+           if(wiphy == NULL)
+           {
+               hddLog(VOS_TRACE_LEVEL_ERROR,"%s: wiphy is NULL ", __func__);
+               break;
+           }
+
+           init_completion(&hddCtxt->wiphy_channel_update_event);
+           hddCtxt->nEnableStrictRegulatoryForFCC = set_value;
+           status = regulatory_hint(wiphy, "00");
+           if(status < 0)
+           {
+               hddLog(VOS_TRACE_LEVEL_ERROR,"%s: Failure in setting regulatory rule ",
+                      __func__);
+               break;
+           }
+
+           /* Wait for completion */
+           lrc = wait_for_completion_interruptible_timeout(&hddCtxt->wiphy_channel_update_event,
+                                       msecs_to_jiffies(WLAN_WAIT_TIME_CHANNEL_UPDATE));
+           if (lrc <= 0)
+           {
+               hddLog(VOS_TRACE_LEVEL_ERROR,"%s: SME %s while setting strict FCC regulatory rule ",
+                      __func__, (0 == lrc) ? "Timeout" : "Interrupt");
+               return (0 == lrc) ? -ETIMEDOUT : -EINTR;
+           }
+           hddLog(VOS_TRACE_LEVEL_INFO,"%s: SUCCESS in setting strict FCC regulatory rule",
+                  __func__);
+
+           break;
+        }
+
         default:
         {
             hddLog(LOGE, "Invalid IOCTL setvalue command %d value %d \n",
@@ -4714,6 +4756,8 @@ static int iw_add_tspec(struct net_device *dev, struct iw_request_info *info,
       return 0;
    }
 
+   tSpec.ts_info.psb = params[HDD_WLAN_WMM_PARAM_APSD];
+
    // validate the user priority
    if (params[HDD_WLAN_WMM_PARAM_USER_PRIORITY] >= SME_QOS_WMM_UP_MAX)
    {
@@ -4722,6 +4766,10 @@ static int iw_add_tspec(struct net_device *dev, struct iw_request_info *info,
       return 0;
    }
    tSpec.ts_info.up = params[HDD_WLAN_WMM_PARAM_USER_PRIORITY];
+
+   VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO_HIGH,
+             "%s:TS_INFO PSB %d UP %d !!!", __func__,
+             tSpec.ts_info.psb, tSpec.ts_info.up);
 
    tSpec.nominal_msdu_size = params[HDD_WLAN_WMM_PARAM_NOMINAL_MSDU_SIZE];
    tSpec.maximum_msdu_size = params[HDD_WLAN_WMM_PARAM_MAXIMUM_MSDU_SIZE];
@@ -5175,11 +5223,9 @@ static int iw_set_dynamic_mcbc_filter(struct net_device *dev,
     hdd_context_t *pHddCtx = WLAN_HDD_GET_CTX(pAdapter);
     tpSirWlanSetRxpFilters wlanRxpFilterParam;
     tHalHandle hHal = WLAN_HDD_GET_HAL_CTX(pAdapter);
-    VOS_STATUS vstatus = VOS_STATUS_E_FAILURE;
     tpSirRcvFltMcAddrList mc_addr_list_ptr;
     int idx;
     eHalStatus ret_val;
-    tANI_U8 mcastBcastFilterSetting;
 
     if (pHddCtx->isLogpInProgress)
     {
@@ -5188,7 +5234,9 @@ static int iw_set_dynamic_mcbc_filter(struct net_device *dev,
        return -EBUSY;
     }
 
-    if (HDD_MULTICAST_FILTER_LIST == pRequest->mcastBcastFilterSetting) {
+    if (HDD_MULTICAST_FILTER_LIST == pRequest->mcastBcastFilterSetting)
+    {
+#ifdef WLAN_FEATURE_PACKET_FILTERING
 
         mc_addr_list_ptr = vos_mem_malloc(sizeof(tSirRcvFltMcAddrList));
         if (NULL == mc_addr_list_ptr)
@@ -5223,23 +5271,24 @@ static int iw_set_dynamic_mcbc_filter(struct net_device *dev,
                    __func__);
             return -EINVAL;
         }
-    } else {
+#endif //WLAN_FEATURE_PACKET_FILTERING
+    }
+    else
+    {
 
         hddLog(VOS_TRACE_LEVEL_INFO_HIGH,
                "%s: Set MC BC Filter Config request: %d suspend %d",
                __func__, pRequest->mcastBcastFilterSetting,
                pHddCtx->hdd_wlan_suspended);
 
-        pHddCtx->dynamic_mcbc_filter.mcastBcastFilterSetting =
-            pRequest->mcastBcastFilterSetting;
-        pHddCtx->dynamic_mcbc_filter.enableCfg = TRUE;
+        pHddCtx->configuredMcastBcastFilter = pRequest->mcastBcastFilterSetting;
 
         if (pHddCtx->hdd_wlan_suspended)
         {
             wlanRxpFilterParam = vos_mem_malloc(sizeof(tSirWlanSetRxpFilters));
             if (NULL == wlanRxpFilterParam)
             {
-                hddLog(VOS_TRACE_LEVEL_FATAL,
+                hddLog(VOS_TRACE_LEVEL_ERROR,
                        "%s: vos_mem_alloc failed", __func__);
                 return -EINVAL;
             }
@@ -5248,44 +5297,19 @@ static int iw_set_dynamic_mcbc_filter(struct net_device *dev,
                 pRequest->mcastBcastFilterSetting;
             wlanRxpFilterParam->setMcstBcstFilter = TRUE;
 
-            if ((pHddCtx->cfg_ini->fhostArpOffload) &&
-                (eConnectionState_Associated ==
-                 (WLAN_HDD_GET_STATION_CTX_PTR(pAdapter))->conn_info.connState))
-            {
-                vstatus = hdd_conf_hostarpoffload(pAdapter, TRUE);
-                if (!VOS_IS_STATUS_SUCCESS(vstatus))
-                {
-                    hddLog(VOS_TRACE_LEVEL_INFO,
-                           "%s:Failed to enable ARPOFFLOAD Feature %d",
-                           __func__, vstatus);
-                }
-                else
-                {
-                    if (HDD_MCASTBCASTFILTER_FILTER_ALL_MULTICAST_BROADCAST ==
-                        pHddCtx->dynamic_mcbc_filter.mcastBcastFilterSetting)
-                    {
-                        wlanRxpFilterParam->configuredMcstBcstFilterSetting =
-                            HDD_MCASTBCASTFILTER_FILTER_ALL_MULTICAST;
-                    }
-                    else if (HDD_MCASTBCASTFILTER_FILTER_ALL_BROADCAST ==
-                             pHddCtx->dynamic_mcbc_filter.mcastBcastFilterSetting)
-                    {
-                        wlanRxpFilterParam->configuredMcstBcstFilterSetting =
-                            HDD_MCASTBCASTFILTER_FILTER_NONE;
-                    }
-                }
-            }
+            hdd_conf_hostoffload(pAdapter, TRUE);
+            wlanRxpFilterParam->configuredMcstBcstFilterSetting =
+                                pHddCtx->configuredMcastBcastFilter;
 
             hddLog(VOS_TRACE_LEVEL_INFO, "%s:MC/BC changed Req %d Set %d En %d",
                    __func__,
-                   pHddCtx->dynamic_mcbc_filter.mcastBcastFilterSetting,
+                   pHddCtx->configuredMcastBcastFilter,
                    wlanRxpFilterParam->configuredMcstBcstFilterSetting,
                    wlanRxpFilterParam->setMcstBcstFilter);
 
-            mcastBcastFilterSetting = wlanRxpFilterParam->configuredMcstBcstFilterSetting;
-
-            if (eHAL_STATUS_SUCCESS != sme_ConfigureRxpFilter(WLAN_HDD_GET_HAL_CTX(pAdapter),
-                                                              wlanRxpFilterParam))
+            if (eHAL_STATUS_SUCCESS !=
+                    sme_ConfigureRxpFilter(WLAN_HDD_GET_HAL_CTX(pAdapter),
+                                           wlanRxpFilterParam))
             {
                 hddLog(VOS_TRACE_LEVEL_ERROR,
                        "%s: Failure to execute set HW MC/BC Filter request",
@@ -5294,8 +5318,6 @@ static int iw_set_dynamic_mcbc_filter(struct net_device *dev,
                 return -EINVAL;
             }
 
-            pHddCtx->dynamic_mcbc_filter.mcBcFilterSuspend =
-                mcastBcastFilterSetting;
         }
     }
 
@@ -5308,11 +5330,42 @@ static int iw_clear_dynamic_mcbc_filter(struct net_device *dev,
 {
     hdd_adapter_t *pAdapter = WLAN_HDD_GET_PRIV_PTR(dev);
     hdd_context_t *pHddCtx = WLAN_HDD_GET_CTX(pAdapter);
-
+    tpSirWlanSetRxpFilters wlanRxpFilterParam;
     hddLog(VOS_TRACE_LEVEL_INFO_HIGH, "%s: ", __func__);
 
-    pHddCtx->dynamic_mcbc_filter.enableCfg = FALSE;
+    //Reset the filter to INI value as we have to clear the dynamic filter
+    pHddCtx->configuredMcastBcastFilter = pHddCtx->cfg_ini->mcastBcastFilterSetting;
 
+    //Configure FW with new setting
+    if (pHddCtx->hdd_wlan_suspended)
+    {
+        wlanRxpFilterParam = vos_mem_malloc(sizeof(tSirWlanSetRxpFilters));
+        if (NULL == wlanRxpFilterParam)
+        {
+            hddLog(VOS_TRACE_LEVEL_ERROR,
+                   "%s: vos_mem_alloc failed", __func__);
+            return -EINVAL;
+        }
+
+        wlanRxpFilterParam->configuredMcstBcstFilterSetting =
+            pHddCtx->configuredMcastBcastFilter;
+        wlanRxpFilterParam->setMcstBcstFilter = TRUE;
+
+        hdd_conf_hostoffload(pAdapter, TRUE);
+        wlanRxpFilterParam->configuredMcstBcstFilterSetting =
+                            pHddCtx->configuredMcastBcastFilter;
+
+        if (eHAL_STATUS_SUCCESS !=
+                  sme_ConfigureRxpFilter(WLAN_HDD_GET_HAL_CTX(pAdapter),
+                                         wlanRxpFilterParam))
+        {
+            hddLog(VOS_TRACE_LEVEL_ERROR,
+                   "%s: Failure to execute set HW MC/BC Filter request",
+                   __func__);
+            vos_mem_free(wlanRxpFilterParam);
+            return -EINVAL;
+        }
+    }
     return 0;
 }
 
@@ -6747,6 +6800,11 @@ static const struct iw_priv_args we_private_args[] = {
         IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1,
         0, 
         "setTmLevel" },
+
+    {   WE_ENABLE_STRICT_FCC_REG,
+        IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1,
+        0,
+        "setStrictFCCreg" },
 
     /* handlers for main ioctl */
     {   WLAN_PRIV_SET_NONE_GET_INT,

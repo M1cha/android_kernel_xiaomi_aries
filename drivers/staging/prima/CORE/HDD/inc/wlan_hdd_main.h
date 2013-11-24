@@ -115,6 +115,9 @@
 #define WLAN_WAIT_TIME_DISCONNECT  500
 #define WLAN_WAIT_TIME_STATS       800
 #define WLAN_WAIT_TIME_POWER       800
+#define WLAN_WAIT_TIME_COUNTRY     1000
+#define WLAN_WAIT_TIME_CHANNEL_UPDATE   600
+
 /* Amount of time to wait for sme close session callback.
    This value should be larger than the timeout used by WDI to wait for
    a response from WCNSS */
@@ -190,6 +193,12 @@
 #define GTK_OFFLOAD_DISABLE 1
 #endif
 
+#ifdef FEATURE_WLAN_SCAN_PNO
+#define HDD_PNO_SCAN_TIMERS_SET_ONE      1
+/* value should not be greater than PNO_MAX_SCAN_TIMERS */
+#define HDD_PNO_SCAN_TIMERS_SET_MULTIPLE 6
+#endif
+
 #define HDD_MAC_ADDR_LEN    6
 typedef v_U8_t tWlanHddMacAddr[HDD_MAC_ADDR_LEN];
 
@@ -228,6 +237,8 @@ typedef struct hdd_tx_rx_stats_s
    __u32    rxDropped;
    __u32    rxDelivered;
    __u32    rxRefused;
+   __u32    pkt_tx_count; //TX pkt Counter used for dynamic splitscan
+   __u32    pkt_rx_count; //RX pkt Counter used for dynamic splitscan
 } hdd_tx_rx_stats_t;
 
 typedef struct hdd_chip_reset_stats_s
@@ -580,6 +591,9 @@ typedef struct {
    /**Track whether OS TX queue has been disabled.*/
    v_BOOL_t txSuspended[NUM_TX_QUEUES];
 
+   /**Track whether 3/4th of resources are used on softAP/P2P GO side. */
+   v_BOOL_t vosLowResource;
+
    /** Track QoS status of station */
    v_BOOL_t isQosEnabled;
 
@@ -641,6 +655,10 @@ typedef struct hdd_scaninfo_s
 
    /* The scan pending  */
    v_U32_t mScanPending;
+
+  /* Counter for mScanPending so that the scan pending
+     error log is not printed for more than 5 times    */
+   v_U32_t mScanPendingCounter;
 
    /* Client Wait Scan Result */
    v_U32_t waitScanResult;
@@ -761,6 +779,9 @@ struct hdd_adapter_s
    hdd_list_t wmm_tx_queue[NUM_TX_QUEUES];
    /**Track whether VOS is in a low resource state*/
    v_BOOL_t isVosOutOfResource;
+
+   /**Track whether 3/4th of resources are used on STA/p2p client side */
+   v_BOOL_t isVosLowResource;
   
    /**Track whether OS TX queue has been disabled.*/
    v_BOOL_t isTxSuspended[NUM_TX_QUEUES];
@@ -806,14 +827,6 @@ struct hdd_adapter_s
    v_U32_t magic;
    v_BOOL_t higherDtimTransition;
 };
-
-typedef struct hdd_dynamic_mcbcfilter_s
-{
-    v_BOOL_t     enableCfg;
-    v_U8_t       mcastBcastFilterSetting;
-    v_BOOL_t     enableSuspend;
-    v_U8_t       mcBcFilterSuspend;
-}hdd_dynamic_mcbcfilter_t;
 
 #define WLAN_HDD_GET_STATION_CTX_PTR(pAdapter) (&(pAdapter)->sessionCtx.station)
 #define WLAN_HDD_GET_AP_CTX_PTR(pAdapter) (&(pAdapter)->sessionCtx.ap)
@@ -908,6 +921,11 @@ struct hdd_context_s
    /* Completion  variable to wlan_hdd_get_crda_regd_entry  */
    struct completion driver_crda_req;
 
+   /* Completion variable to indicate updation of channel */
+   struct completion wiphy_channel_update_event;
+
+   v_BOOL_t nEnableStrictRegulatoryForFCC;
+
    v_BOOL_t isWlanSuspended;
 
    v_BOOL_t isTxThreadSuspended;
@@ -953,8 +971,6 @@ struct hdd_context_s
    /* Number of times riva restarted */
    v_U32_t  hddRivaResetStats;
    
-   hdd_dynamic_mcbcfilter_t dynamic_mcbc_filter;
-   
    /* Can we allow AMP connection right now*/
    v_BOOL_t isAmpAllowed;
    
@@ -998,9 +1014,21 @@ struct hdd_context_s
     /* TDLS peer connected count */
     tANI_U16 connected_peer_count;
     tdls_scan_context_t tdls_scan_ctxt;
+   /* Lock to avoid race condition during TDLS operations*/
+   struct mutex tdls_lock;
 #endif
 
     hdd_traffic_monitor_t traffic_monitor;
+
+    /* MC/BC Filter state variable
+     * This always contains the value that is currently
+     * configured
+     * */
+    v_U8_t configuredMcastBcastFilter;
+
+    v_U8_t sus_res_mcastbcast_filter;
+
+    v_BOOL_t sus_res_mcastbcast_filter_valid;
 
     /* Use below lock to protect access to isSchedScanUpdatePending
      * since it will be accessed in two different contexts.
@@ -1012,6 +1040,12 @@ struct hdd_context_s
 
     // Indicates about pending sched_scan results
     v_BOOL_t isSchedScanUpdatePending;
+    /*
+    * TX_rx_pkt_count_timer
+    */
+    vos_timer_t    tx_rx_trafficTmr;
+    v_U8_t         drvr_miracast;
+    v_U8_t         issplitscan_enabled;
 };
 
 

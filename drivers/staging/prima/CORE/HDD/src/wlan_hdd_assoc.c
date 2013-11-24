@@ -839,8 +839,8 @@ static eHalStatus hdd_DisConnectHandler( hdd_adapter_t *pAdapter, tCsrRoamInfo *
             }
         }
     }
-    
 
+     hdd_wmm_adapter_clear(pAdapter);
     //We should clear all sta register with TL, for now, only one.
     vstatus = hdd_roamDeregisterSTA( pAdapter, pHddStaCtx->conn_info.staId [0] );
     if ( !VOS_IS_STATUS_SUCCESS(vstatus ) )
@@ -886,7 +886,8 @@ static VOS_STATUS hdd_roamRegisterSTA( hdd_adapter_t *pAdapter,
    v_BOOL_t  fConnected;
    hdd_station_ctx_t *pHddStaCtx = WLAN_HDD_GET_STATION_CTX_PTR(pAdapter);
    hdd_context_t *pHddCtx = WLAN_HDD_GET_CTX(pAdapter);
-   
+   hdd_config_t *cfg_param = pHddCtx->cfg_ini;
+
    // Get the Station ID from the one saved during the assocation.
    staDesc.ucSTAId = staId;
 
@@ -1001,6 +1002,14 @@ static VOS_STATUS hdd_roamRegisterSTA( hdd_adapter_t *pAdapter,
                  vosStatus, vosStatus );
       return vosStatus;      
    }                                            
+
+   if ( cfg_param->dynSplitscan &&
+      ( VOS_TIMER_STATE_RUNNING !=
+                      vos_timer_getCurrentState(&pHddCtx->tx_rx_trafficTmr)))
+   {
+       vos_timer_start(&pHddCtx->tx_rx_trafficTmr,
+                       cfg_param->trafficMntrTmrForSplitScan);
+   }
 
    // if (WPA), tell TL to go to 'connected' and after keys come to the driver,
    // then go to 'authenticated'.  For all other authentication types
@@ -1860,6 +1869,8 @@ VOS_STATUS hdd_roamRegisterTDLSSTA( hdd_adapter_t *pAdapter,
     WLAN_STADescType staDesc = {0};
     eCsrEncryptionType connectedCipherAlgo = eCSR_ENCRYPT_TYPE_UNKNOWN;
     v_BOOL_t fConnected   = FALSE;
+    hdd_context_t *pHddCtx = WLAN_HDD_GET_CTX(pAdapter);
+    hdd_config_t *cfg_param = pHddCtx->cfg_ini;
 
     fConnected = hdd_connGetConnectedCipherAlgo( pHddStaCtx, &connectedCipherAlgo );
     if (!fConnected) {
@@ -1927,9 +1938,16 @@ VOS_STATUS hdd_roamRegisterTDLSSTA( hdd_adapter_t *pAdapter,
         VOS_TRACE( VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR, 
                      "%s: WLANTL_RegisterSTAClient() failed to register.  \
                             Status= %d [0x%08lX]", __func__, vosStatus, vosStatus );
-         return vosStatus;      
-    }                                            
-    
+         return vosStatus;
+    }
+
+    if ( cfg_param->dynSplitscan &&
+       ( VOS_TIMER_STATE_RUNNING !=
+                        vos_timer_getCurrentState(&pHddCtx->tx_rx_trafficTmr)) )
+    {
+        vos_timer_start(&pHddCtx->tx_rx_trafficTmr,
+                        cfg_param->trafficMntrTmrForSplitScan);
+    }
     return( vosStatus );
 }
 
@@ -2072,7 +2090,7 @@ eHalStatus hdd_RoamTdlsStatusUpdateHandler(hdd_adapter_t *pAdapter,
                     VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_WARN,
                                    ("HDD: del STA IDX = %x"), pRoamInfo->staId) ;
 
-                    curr_peer = wlan_hdd_tdls_find_peer(pAdapter, pRoamInfo->peerMac);
+                    curr_peer = wlan_hdd_tdls_find_peer(pAdapter, pRoamInfo->peerMac, TRUE);
                     if (NULL != curr_peer && TDLS_IS_CONNECTED(curr_peer))
                     {
                         hdd_roamDeregisterTDLSSTA ( pAdapter, pRoamInfo->staId );
@@ -2101,7 +2119,7 @@ eHalStatus hdd_RoamTdlsStatusUpdateHandler(hdd_adapter_t *pAdapter,
                        __func__, pRoamInfo->reasonCode);
 
 #ifdef CONFIG_TDLS_IMPLICIT
-            curr_peer = wlan_hdd_tdls_find_peer(pAdapter, pRoamInfo->peerMac);
+            curr_peer = wlan_hdd_tdls_find_peer(pAdapter, pRoamInfo->peerMac, TRUE);
             wlan_hdd_tdls_indicate_teardown(pAdapter, curr_peer, pRoamInfo->reasonCode);
 #endif
             status = eHAL_STATUS_SUCCESS ;
@@ -2283,8 +2301,20 @@ eHalStatus hdd_smeRoamCallback( void *pContext, tCsrRoamInfo *pRoamInfo, tANI_U3
                         "****eCSR_ROAM_DISASSOCIATED****");
                 halStatus = hdd_DisConnectHandler( pAdapter, pRoamInfo, roamId, roamStatus, roamResult );
                 /* Check if Mcast/Bcast Filters are set, if yes clear the filters here */
-                if ((WLAN_HDD_GET_CTX(pAdapter))->hdd_mcastbcast_filter_set == TRUE) {
-                    hdd_conf_mcastbcast_filter((WLAN_HDD_GET_CTX(pAdapter)), FALSE);
+                pHddCtx = WLAN_HDD_GET_CTX(pAdapter);
+                if (pHddCtx->hdd_mcastbcast_filter_set == TRUE)
+                {
+                    hdd_conf_mcastbcast_filter(pHddCtx, FALSE);
+                    pHddCtx->configuredMcastBcastFilter =
+                        pHddCtx->sus_res_mcastbcast_filter;
+                    pHddCtx->sus_res_mcastbcast_filter_valid = VOS_FALSE;
+
+                    hddLog(VOS_TRACE_LEVEL_INFO,
+                           "offload: disassociation happening, restoring configuredMcastBcastFilter");
+                    hddLog(VOS_TRACE_LEVEL_INFO,"McastBcastFilter = %d",
+                           pHddCtx->configuredMcastBcastFilter);
+                    hddLog(VOS_TRACE_LEVEL_INFO,
+                           "offload: already called mcastbcast filter");
                     (WLAN_HDD_GET_CTX(pAdapter))->hdd_mcastbcast_filter_set = FALSE;
                 }
 #ifdef WLAN_FEATURE_PACKET_FILTERING    
@@ -2399,6 +2429,44 @@ eHalStatus hdd_smeRoamCallback( void *pContext, tCsrRoamInfo *pRoamInfo, tANI_U3
            {
                /* Notify the supplicant of a new candidate */
                halStatus = wlan_hdd_cfg80211_pmksa_candidate_notify(pAdapter, pRoamInfo, 1, false);
+           }
+           break;
+#endif
+
+#ifdef FEATURE_WLAN_LFR_METRICS
+        case eCSR_ROAM_PREAUTH_INIT_NOTIFY:
+           /* This event is to notify pre-auth initiation */
+           if (VOS_STATUS_SUCCESS !=
+               wlan_hdd_cfg80211_roam_metrics_preauth(pAdapter, pRoamInfo))
+           {
+               halStatus = eHAL_STATUS_FAILURE;
+           }
+           break;
+        case eCSR_ROAM_PREAUTH_STATUS_SUCCESS:
+           /* This event will notify pre-auth completion in case of success */
+           if (VOS_STATUS_SUCCESS !=
+               wlan_hdd_cfg80211_roam_metrics_preauth_status(pAdapter,
+                                                             pRoamInfo, 1))
+           {
+               halStatus = eHAL_STATUS_FAILURE;
+           }
+           break;
+        case eCSR_ROAM_PREAUTH_STATUS_FAILURE:
+           /* This event will notify pre-auth completion in case of failure. */
+           if (VOS_STATUS_SUCCESS !=
+               wlan_hdd_cfg80211_roam_metrics_preauth_status(pAdapter,
+                                                             pRoamInfo, 0))
+           {
+               halStatus = eHAL_STATUS_FAILURE;
+           }
+           break;
+        case eCSR_ROAM_HANDOVER_SUCCESS:
+           /* This event is to notify handover success.
+              It will be only invoked on success */
+           if (VOS_STATUS_SUCCESS !=
+               wlan_hdd_cfg80211_roam_metrics_handover(pAdapter, pRoamInfo))
+           {
+               halStatus = eHAL_STATUS_FAILURE;
            }
            break;
 #endif

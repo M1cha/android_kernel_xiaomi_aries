@@ -122,6 +122,7 @@ moduleTraceInfo gVosTraceInfo[ VOS_MODULE_ID_MAX ] =
    [VOS_MODULE_ID_VOSS]       = { VOS_DEFAULT_TRACE_LEVEL, "VOS" },
    [VOS_MODULE_ID_SAP]        = { VOS_DEFAULT_TRACE_LEVEL, "SAP" },
    [VOS_MODULE_ID_HDD_SOFTAP] = { VOS_DEFAULT_TRACE_LEVEL, "HSP" },
+   [VOS_MODULE_ID_PMC]        = { VOS_DEFAULT_TRACE_LEVEL, "PMC" },
 };
 
 
@@ -371,6 +372,57 @@ void vos_trace_display(void)
              (gVosTraceInfo[moduleId].moduleTraceLevel & (1 << VOS_TRACE_LEVEL_DEBUG)) ? "X":" "
          );
    }
+}
+
+/*----------------------------------------------------------------------------
+
+  \brief vos_trace_hex_dump() - Externally called hex dump function
+
+  Checks the level of severity and accordingly prints the trace messages
+
+  \param module - module identifier.   A member of the VOS_MODULE_ID
+         enumeration that identifies the module issuing the trace message.
+
+  \param level - trace level.   A member of the VOS_TRACE_LEVEL
+         enumeration indicating the severity of the condition causing the
+         trace message to be issued.   More severe conditions are more
+         likely to be logged.
+
+  \param data - .  The base address of the buffer to be logged.
+
+  \param buf_len - .  The size of the buffer to be logged.
+
+  \return  nothing
+
+  \sa
+  --------------------------------------------------------------------------*/
+void vos_trace_hex_dump( VOS_MODULE_ID module, VOS_TRACE_LEVEL level,
+                                void *data, int buf_len )
+{
+    char *buf = (char *)data;
+    int i;
+    for (i=0; (i+7)<buf_len; i+=8)
+    {
+        vos_trace_msg( module, level,
+                 "%02x %02x %02x %02x %02x %02x %02x %02x \n",
+                 buf[i],
+                 buf[i+1],
+                 buf[i+2],
+                 buf[i+3],
+                 buf[i+4],
+                 buf[i+5],
+                 buf[i+6],
+                 buf[i+7]);
+    }
+
+    // Dump the bytes in the last line
+    for (; i < buf_len; i++)
+    {
+        vos_trace_msg( module, level, "%02x ", buf[i]);
+        if ((i+1) == buf_len)
+            vos_trace_msg( module, level, "\n");
+    }
+
 }
 
 #endif

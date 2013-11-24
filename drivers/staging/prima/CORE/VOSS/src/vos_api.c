@@ -662,6 +662,10 @@ VOS_STATUS vos_start( v_CONTEXT_t vosContext )
      }
      VOS_ASSERT(0);
      vos_event_reset( &(gpVosContext->wdaCompleteEvent) );
+     if (vos_is_logp_in_progress(VOS_MODULE_ID_VOSS, NULL))
+     {
+         VOS_BUG(0);
+     }
      WDA_setNeedShutdown(vosContext);
      return VOS_STATUS_E_FAILURE;
   }
@@ -1020,6 +1024,7 @@ v_VOID_t* vos_get_context( VOS_MODULE_ID moduleId,
 
     case VOS_MODULE_ID_SME:
     case VOS_MODULE_ID_PE:
+    case VOS_MODULE_ID_PMC:
     {
       /* 
       ** In all these cases, we just return the MAC Context
@@ -1225,6 +1230,7 @@ VOS_STATUS vos_alloc_context( v_VOID_t *pVosContext, VOS_MODULE_ID moduleID,
     }
     case VOS_MODULE_ID_SME:
     case VOS_MODULE_ID_PE:
+    case VOS_MODULE_ID_PMC:
     case VOS_MODULE_ID_HDD:
     case VOS_MODULE_ID_HDD_SOFTAP:
     default:
@@ -1350,6 +1356,7 @@ VOS_STATUS vos_free_context( v_VOID_t *pVosContext, VOS_MODULE_ID moduleID,
     case VOS_MODULE_ID_HDD:
     case VOS_MODULE_ID_SME:
     case VOS_MODULE_ID_PE:
+    case VOS_MODULE_ID_PMC:
     case VOS_MODULE_ID_HDD_SOFTAP:
     default:
     {     
