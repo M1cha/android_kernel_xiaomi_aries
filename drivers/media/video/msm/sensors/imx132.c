@@ -21,144 +21,144 @@ static struct msm_sensor_ctrl_t imx132_s_ctrl;
 static int vendor = 0;
 
 static struct msm_camera_i2c_reg_conf imx132_start_settings[] = {
-	{0x0100, 0x01},
+        {0x0100, 0x01},
 };
 
 static struct msm_camera_i2c_reg_conf imx132_stop_settings[] = {
-	{0x0100, 0x00},
+        {0x0100, 0x00},
 };
 
 static struct msm_camera_i2c_reg_conf imx132_groupon_settings[] = {
-	{0x104, 0x01},
+        {0x104, 0x01},
 };
 
 static struct msm_camera_i2c_reg_conf imx132_groupoff_settings[] = {
-	{0x104, 0x00},
+        {0x104, 0x00},
 };
 
 static struct msm_camera_i2c_reg_conf imx132_snap_settings[] = {
-	{0x0340, 0x04},
-	{0x0341, 0xA8},
-	{0x0342, 0x08},
-	{0x0343, 0xC8},
-	{0x0344, 0x00},
-	{0x0345, 0x0C},
-	{0x0346, 0x00},
-	{0x0347, 0x34},
-	{0x0348, 0x07},
-	{0x0349, 0xAB},
-	{0x034A, 0x04},
-	{0x034B, 0x7B},
-	{0x034C, 0x07},
-	{0x034D, 0xA0},
-	{0x034E, 0x04},
-	{0x034F, 0x48},
-	{0x0381, 0x01},
-	{0x0383, 0x01},
-	{0x0385, 0x01},
-	{0x0387, 0x01},
-	{0x303D, 0x10},
-	{0x303E, 0x5A},
-	{0x3040, 0x08},
-	{0x3041, 0x97},
-	{0x3048, 0x00},
-	{0x304C, 0x2F},
-	{0x304D, 0x02},
-	{0x306A, 0x10},
-	{0x309B, 0x00},
-	{0x309E, 0x41},
-	{0x30A0, 0x10},
-	{0x30A1, 0x0B},
-	{0x30B2, 0x00},
-	{0x30D5, 0x00},
-	{0x30D6, 0x00},
-	{0x30D7, 0x00},
-	{0x30DE, 0x00},
-	{0x3102, 0x0C},
-	{0x3103, 0x33},
-	{0x3104, 0x18},
-	{0x3105, 0x00},
-	{0x3106, 0x65},
-	{0x3107, 0x00},
-	{0x315C, 0x3D},
-	{0x315D, 0x3C},
-	{0x316E, 0x3E},
-	{0x316F, 0x3D},
-	{0x3301, 0x01},
-	{0x3318, 0x62}
+        {0x0340, 0x04},
+        {0x0341, 0xA8},
+        {0x0342, 0x08},
+        {0x0343, 0xC8},
+        {0x0344, 0x00},
+        {0x0345, 0x0C},
+        {0x0346, 0x00},
+        {0x0347, 0x34},
+        {0x0348, 0x07},
+        {0x0349, 0xAB},
+        {0x034A, 0x04},
+        {0x034B, 0x7B},
+        {0x034C, 0x07},
+        {0x034D, 0xA0},
+        {0x034E, 0x04},
+        {0x034F, 0x48},
+        {0x0381, 0x01},
+        {0x0383, 0x01},
+        {0x0385, 0x01},
+        {0x0387, 0x01},
+        {0x303D, 0x10},
+        {0x303E, 0x5A},
+        {0x3040, 0x08},
+        {0x3041, 0x97},
+        {0x3048, 0x00},
+        {0x304C, 0x2F},
+        {0x304D, 0x02},
+        {0x306A, 0x10},
+        {0x309B, 0x00},
+        {0x309E, 0x41},
+        {0x30A0, 0x10},
+        {0x30A1, 0x0B},
+        {0x30B2, 0x00},
+        {0x30D5, 0x00},
+        {0x30D6, 0x00},
+        {0x30D7, 0x00},
+        {0x30DE, 0x00},
+        {0x3102, 0x0C},
+        {0x3103, 0x33},
+        {0x3104, 0x18},
+        {0x3105, 0x00},
+        {0x3106, 0x65},
+        {0x3107, 0x00},
+        {0x315C, 0x3D},
+        {0x315D, 0x3C},
+        {0x316E, 0x3E},
+        {0x316F, 0x3D},
+        {0x3301, 0x01},
+        {0x3318, 0x62}
 };
 
 static struct msm_camera_i2c_reg_conf imx132_prev_settings[] = {
-	{0x0340, 0x04},
-	{0x0341, 0xA8},
-	{0x0342, 0x08},
-	{0x0343, 0xC8},
-	{0x0344, 0x00},
-	{0x0345, 0x0C},
-	{0x0346, 0x00},
-	{0x0347, 0x34},
-	{0x0348, 0x07},
-	{0x0349, 0xAB},
-	{0x034A, 0x04},
-	{0x034B, 0x7B},
-	{0x034C, 0x07},
-	{0x034D, 0xA0},
-	{0x034E, 0x04},
-	{0x034F, 0x48},
-	{0x0381, 0x01},
-	{0x0383, 0x01},
-	{0x0385, 0x01},
-	{0x0387, 0x01},
-	{0x303D, 0x10},
-	{0x303E, 0x5A},
-	{0x3040, 0x08},
-	{0x3041, 0x97},
-	{0x3048, 0x00},
-	{0x304C, 0x2F},
-	{0x304D, 0x02},
-	{0x306A, 0x10},
-	{0x309B, 0x00},
-	{0x309E, 0x41},
-	{0x30A0, 0x10},
-	{0x30A1, 0x0B},
-	{0x30B2, 0x00},
-	{0x30D5, 0x00},
-	{0x30D6, 0x00},
-	{0x30D7, 0x00},
-	{0x30DE, 0x00},
-	{0x3102, 0x0C},
-	{0x3103, 0x33},
-	{0x3104, 0x18},
-	{0x3105, 0x00},
-	{0x3106, 0x65},
-	{0x3107, 0x00},
-	{0x315C, 0x3D},
-	{0x315D, 0x3C},
-	{0x316E, 0x3E},
-	{0x316F, 0x3D},
-	{0x3301, 0x01},
-	{0x3318, 0x62}
+        {0x0340, 0x04},
+        {0x0341, 0xA8},
+        {0x0342, 0x08},
+        {0x0343, 0xC8},
+        {0x0344, 0x00},
+        {0x0345, 0x0C},
+        {0x0346, 0x00},
+        {0x0347, 0x34},
+        {0x0348, 0x07},
+        {0x0349, 0xAB},
+        {0x034A, 0x04},
+        {0x034B, 0x7B},
+        {0x034C, 0x07},
+        {0x034D, 0xA0},
+        {0x034E, 0x04},
+        {0x034F, 0x48},
+        {0x0381, 0x01},
+        {0x0383, 0x01},
+        {0x0385, 0x01},
+        {0x0387, 0x01},
+        {0x303D, 0x10},
+        {0x303E, 0x5A},
+        {0x3040, 0x08},
+        {0x3041, 0x97},
+        {0x3048, 0x00},
+        {0x304C, 0x2F},
+        {0x304D, 0x02},
+        {0x306A, 0x10},
+        {0x309B, 0x00},
+        {0x309E, 0x41},
+        {0x30A0, 0x10},
+        {0x30A1, 0x0B},
+        {0x30B2, 0x00},
+        {0x30D5, 0x00},
+        {0x30D6, 0x00},
+        {0x30D7, 0x00},
+        {0x30DE, 0x00},
+        {0x3102, 0x0C},
+        {0x3103, 0x33},
+        {0x3104, 0x18},
+        {0x3105, 0x00},
+        {0x3106, 0x65},
+        {0x3107, 0x00},
+        {0x315C, 0x3D},
+        {0x315D, 0x3C},
+        {0x316E, 0x3E},
+        {0x316F, 0x3D},
+        {0x3301, 0x01},
+        {0x3318, 0x62}
 };
 
 
 static struct msm_camera_i2c_reg_conf imx132_recommend_settings[] = {
-	{0x3087, 0x53},
-	{0x308B, 0x5A},
-	{0x3094, 0x11},
-	{0x309D, 0xA4},
-	{0x30AA, 0x01},
-	{0x30C6, 0x00},
-	{0x30C7, 0x00},
-	{0x3118, 0x2F},
-	{0x312A, 0x00},
-	{0x312B, 0x0B},
-	{0x312C, 0x0B},
-	{0x312D, 0x13},
-	{0x3032, 0x40},
-	{0x0305, 0x02},
-	{0x0307, 0x38},
-	{0x30A4, 0x02},
-	{0x303C, 0x4B}
+        {0x3087, 0x53},
+        {0x308B, 0x5A},
+        {0x3094, 0x11},
+        {0x309D, 0xA4},
+        {0x30AA, 0x01},
+        {0x30C6, 0x00},
+        {0x30C7, 0x00},
+        {0x3118, 0x2F},
+        {0x312A, 0x00},
+        {0x312B, 0x0B},
+        {0x312C, 0x0B},
+        {0x312D, 0x13},
+        {0x3032, 0x40},
+        {0x0305, 0x02},
+        {0x0307, 0x38},
+        {0x30A4, 0x02},
+        {0x303C, 0x4B}
 };
 
 static struct v4l2_subdev_info imx132_subdev_info[] = {
@@ -190,8 +190,8 @@ static struct msm_sensor_output_info_t imx132_dimensions[] = {
 		.y_output = 1096,
 		.line_length_pclk = 0x8C8,
 		.frame_length_lines = 0x4A8,
-		.vt_pixel_clk = 216000000,
-		.op_pixel_clk = 269000000,
+		.vt_pixel_clk = 216000000/*320000000*/,
+		.op_pixel_clk = 269000000/*320000000*/,
 		.binning_factor = 1,
 	},
 /*Sony 1952x1096,30fps*/
@@ -200,40 +200,40 @@ static struct msm_sensor_output_info_t imx132_dimensions[] = {
 		.y_output = 1096,
 		.line_length_pclk = 0x8C8,
 		.frame_length_lines = 0x9D0,
-		.vt_pixel_clk = 216000000,
-		.op_pixel_clk = 269000000,
+		.vt_pixel_clk = 216000000/*320000000*/,
+		.op_pixel_clk = 269000000/*320000000*/,
 		.binning_factor = 1,
 	},
 };
 
 
 static struct msm_camera_csid_vc_cfg imx132_cid_cfg[] = {
-	{0, CSI_RAW10, CSI_DECODE_10BIT},
-	{1, CSI_EMBED_DATA, CSI_DECODE_8BIT},
+        {0, CSI_RAW10, CSI_DECODE_10BIT},
+        {1, CSI_EMBED_DATA, CSI_DECODE_8BIT},
 };
 
 static struct msm_camera_csi2_params imx132_csi_params = {
-	.csid_params = {
-		.lane_assign = 0xe4,
-		.lane_cnt = 1,
-		.lut_params = {
-			.num_cid = 2,
-			.vc_cfg = imx132_cid_cfg,
-		},
-	},
-	.csiphy_params = {
-		.lane_cnt = 1,
-		.settle_cnt = 0x14,
-	},
+        .csid_params = {
+                .lane_assign = 0xe4,
+                .lane_cnt = 1,
+                .lut_params = {
+                        .num_cid = 2,
+                        .vc_cfg = imx132_cid_cfg,
+                },
+        },
+        .csiphy_params = {
+                .lane_cnt = 1,
+                .settle_cnt = 0x14,
+        },
 };
 
 static struct msm_camera_csi2_params *imx132_csi_params_array[] = {
-	&imx132_csi_params,
-	&imx132_csi_params,
-	&imx132_csi_params,
-	&imx132_csi_params,
-	&imx132_csi_params,
-	&imx132_csi_params,
+        &imx132_csi_params,
+        &imx132_csi_params,
+        &imx132_csi_params,
+        &imx132_csi_params,
+        &imx132_csi_params,
+        &imx132_csi_params,
 };
 
 
@@ -255,6 +255,7 @@ static struct msm_sensor_exp_gain_info_t imx132_exp_gain_info = {
 	.vert_offset = 4,
 };
 
+#if 1
 static int32_t imx132_write_exp_gain(struct msm_sensor_ctrl_t *s_ctrl,
 		uint16_t gain, uint32_t line)
 {
@@ -263,8 +264,8 @@ static int32_t imx132_write_exp_gain(struct msm_sensor_ctrl_t *s_ctrl,
 	uint16_t digital_gain_int = 0;
 	uint16_t digital_gain = 0x100;
 
-	fl_lines = s_ctrl->curr_frame_length_lines;
-	fl_lines = (fl_lines * s_ctrl->fps_divider) / Q10;
+        fl_lines = s_ctrl->curr_frame_length_lines;
+        fl_lines = (fl_lines * s_ctrl->fps_divider) / Q10;
 	offset = s_ctrl->sensor_exp_gain_info->vert_offset;
 
 	if (line > (fl_lines - offset))
@@ -279,7 +280,7 @@ static int32_t imx132_write_exp_gain(struct msm_sensor_ctrl_t *s_ctrl,
 		s_ctrl->sensor_exp_gain_info->coarse_int_time_addr, line,
 		MSM_CAMERA_I2C_WORD_DATA);
 
-	if (gain > 224) { /* large than 8x gain, use digital gain*/
+	if(gain > 224) { /* large than 8x gain, use digital gain*/
 		digital_gain_int = (gain & 0x00FF) - 224;
 		digital_gain = (digital_gain_int << 8) + ((gain & 0xFF00) >> 8);
 		gain = 224;
@@ -293,71 +294,77 @@ static int32_t imx132_write_exp_gain(struct msm_sensor_ctrl_t *s_ctrl,
 	msm_camera_i2c_write(s_ctrl->sensor_i2c_client, 0x0212, digital_gain, MSM_CAMERA_I2C_WORD_DATA);
 	msm_camera_i2c_write(s_ctrl->sensor_i2c_client, 0x0214, digital_gain, MSM_CAMERA_I2C_WORD_DATA);
 
+	pr_debug("imx132 gain:0x%x digital:0x%x digital_int:0x%x", gain, digital_gain, digital_gain_int);
 	s_ctrl->func_tbl->sensor_group_hold_off(s_ctrl);
 	return 0;
 }
+#endif
 
-static int32_t imx132_match_id(struct msm_sensor_ctrl_t *s_ctrl)
-{
-	int32_t rc = 0;
-	uint16_t chipid = 0;
+static int32_t imx132_match_id(struct msm_sensor_ctrl_t *s_ctrl) {
 
-	rc = msm_camera_i2c_read(
-		s_ctrl->sensor_i2c_client,
-		s_ctrl->sensor_id_info->sensor_id_reg_addr, &chipid,
-		MSM_CAMERA_I2C_WORD_DATA);
-	if (rc < 0) {
-		pr_err("%s: %s: read id failed\n", __func__,
-		s_ctrl->sensordata->sensor_name);
-		return rc;
-	}
+        int32_t rc = 0;
+        uint16_t chipid = 0;
 
-	if (chipid != 0x0132) {
-		pr_err("Chip id doesnot match 0x%04x\n", chipid);
-		return -ENODEV;
+        rc = msm_camera_i2c_read(
+                        s_ctrl->sensor_i2c_client,
+                        s_ctrl->sensor_id_info->sensor_id_reg_addr, &chipid,
+                        MSM_CAMERA_I2C_WORD_DATA);
+        if (rc < 0) {
+                pr_err("%s: %s: read id failed\n", __func__,
+                        s_ctrl->sensordata->sensor_name);
+                return rc;
+        }
+
+        CDBG("imx132_sensor id: 0x%04x\n", chipid);
+        if(chipid == 0x0132) {
+		pr_info("%s: IMX%x", __func__, chipid);
+        } else {
+                pr_err("imx_sensor_match_id chip id doesnot match 0x%04x\n", chipid);
+                return -ENODEV;
 	}
-	if (vendor == 0) {
-		/* read otp for vendor */
-		msm_camera_i2c_read(s_ctrl->sensor_i2c_client, 0x351F, &chipid, MSM_CAMERA_I2C_BYTE_DATA);
-		pr_info("0x351F: 0x%04x", chipid);
-		if ((chipid & 0x07) == 5) {
-			vendor = 2; /* LITEON */
-			goto init_probe_done;
-		} else if ((chipid & 0x07) == 6) {
-			vendor = 3 ;/*LITEON1*/
-			goto init_probe_done;
-		}
-		/* 2nd slot */
-		msm_camera_i2c_read(s_ctrl->sensor_i2c_client, 0x351E, &chipid, MSM_CAMERA_I2C_BYTE_DATA);
-		pr_info("0x351E: 0x%04x", chipid);
-		if ((chipid & 0x70) == 0x50) {
-			vendor = 2; /* LITEON */
-			goto init_probe_done;
-		} else if ((chipid & 0x70) == 0x60) {
-			vendor = 3; /* LITEON1 */
-			goto init_probe_done;
-		}
-		/* 3rd slot */
-		msm_camera_i2c_read(s_ctrl->sensor_i2c_client, 0x3517, &chipid, MSM_CAMERA_I2C_BYTE_DATA);
-		pr_info("0x3517: 0x%04x", chipid);
-		if ((chipid & 0x1C) == 0x14) {
-			vendor = 2; /* LITEON */
-			goto init_probe_done;
-		} else if ((chipid & 0x1C) == 0x18) {
-			vendor = 3; /* LITEON1 */
-			goto init_probe_done;
-		}
-		/* then, SUNNY's module */
-		vendor = 1;
-	}
+        if(vendor == 0) {
+                /* read otp for vendor */
+                msm_camera_i2c_read(s_ctrl->sensor_i2c_client,0x351F, &chipid, MSM_CAMERA_I2C_BYTE_DATA);
+pr_info("0x351F: 0x%04x", chipid);
+                if((chipid & 0x07) == 5) {
+                        vendor = 2; /* LITEON */
+                        goto init_probe_done;
+                } else if((chipid & 0x07) == 6) {
+                        vendor = 3 ;/*LITEON1*/
+                        goto init_probe_done;
+                }
+                /* 2nd slot */
+                msm_camera_i2c_read(s_ctrl->sensor_i2c_client,0x351E, &chipid, MSM_CAMERA_I2C_BYTE_DATA);
+pr_info("0x351E: 0x%04x", chipid);
+                if((chipid & 0x70) == 0x50) {
+                        vendor = 2; /* LITEON */
+                        goto init_probe_done;
+                } else if((chipid & 0x70) == 0x60) {
+                        vendor = 3; /* LITEON1 */
+                        goto init_probe_done;
+                }
+                /* 3rd slot */
+                msm_camera_i2c_read(s_ctrl->sensor_i2c_client,0x3517, &chipid, MSM_CAMERA_I2C_BYTE_DATA);
+pr_info("0x3517: 0x%04x", chipid);
+                if((chipid & 0x1C) == 0x14) {
+                        vendor = 2; /* LITEON */
+                        goto init_probe_done;
+                } else if((chipid & 0x1C) == 0x18) {
+                        vendor = 3; /* LITEON1 */
+                        goto init_probe_done;
+                }
+                /* then, SUNNY's module */
+                vendor = 1;
+        }
 init_probe_done:
-	return rc;
+        pr_info("imx132_probe_init_sensor finishes vendor:%d\n", vendor);
+        return rc;
 }
 
 
 static const struct i2c_device_id imx132_i2c_id[] = {
 	{SENSOR_NAME, (kernel_ulong_t)&imx132_s_ctrl},
-	{},
+	{ }
 };
 
 static struct i2c_driver imx132_i2c_driver = {
