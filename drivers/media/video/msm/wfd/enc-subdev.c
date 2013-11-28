@@ -1961,7 +1961,7 @@ static long venc_alloc_recon_buffers(struct v4l2_subdev *sd, void *arg)
 			ctrl->user_virtual_addr = (void *)i;
 			client_ctx->recon_buffer_ion_handle[i]
 				= ion_alloc(client_ctx->user_ion_client,
-			control.size, SZ_8K, flags, 0);
+                                            control.size, SZ_8K, flags, 0);
 
 			ctrl->kernel_virtual_addr = ion_map_kernel(
 				client_ctx->user_ion_client,
@@ -1985,8 +1985,7 @@ static long venc_alloc_recon_buffers(struct v4l2_subdev *sd, void *arg)
 				rc = ion_map_iommu(client_ctx->user_ion_client,
 					client_ctx->recon_buffer_ion_handle[i],
 					VIDEO_DOMAIN, VIDEO_MAIN_POOL, SZ_4K,
-					0, &phy_addr, (unsigned long *)&len,
-					0, 0);
+					0, &phy_addr, (unsigned long *)&len,0, 0);
 				 if (rc || !phy_addr) {
 					WFD_MSG_ERR(
 						"ion map iommu failed, rc = %d, phy_addr = 0x%lx\n",

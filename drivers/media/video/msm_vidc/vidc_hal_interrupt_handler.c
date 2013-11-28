@@ -734,7 +734,7 @@ static void hal_process_msg_packet(struct hal_device *device,
 		return;
 	}
 
-	HAL_MSG_INFO("Received: 0x%x in %s", msg_hdr->packet, __func__);
+	HAL_MSG_ERROR("Received: 0x%x in %s", msg_hdr->packet, __func__);
 
 	switch (msg_hdr->packet) {
 	case HFI_MSG_EVENT_NOTIFY:

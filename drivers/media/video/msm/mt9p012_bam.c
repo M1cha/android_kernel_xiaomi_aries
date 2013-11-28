@@ -11,7 +11,6 @@
  *
  */
 
-#include <linux/module.h>
 #include <linux/delay.h>
 #include <linux/types.h>
 #include <linux/i2c.h>
