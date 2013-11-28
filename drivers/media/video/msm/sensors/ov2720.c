@@ -1296,31 +1296,31 @@ static int32_t ov2720_write_exp_gain(struct msm_sensor_ctrl_t *s_ctrl,
 	return 0;
 }
 
-static char *ov2720_name[2] = {"ov2720", "ov2722"};
-static int32_t ov2720_match_id(struct msm_sensor_ctrl_t *s_ctrl)
-{
-	int32_t rc = 0;
-	uint16_t chipid = 0;
-	rc = msm_camera_i2c_read(
-		s_ctrl->sensor_i2c_client,
-		s_ctrl->sensor_id_info->sensor_id_reg_addr, &chipid,
-		MSM_CAMERA_I2C_WORD_DATA);
-	if (rc < 0) {
-		pr_err("%s: %s: read id failed\n", __func__,
-			s_ctrl->sensordata->sensor_name);
-		return rc;
-	}
+static char * ov2720_name[2] = {"ov2720", "ov2722"};
+static int32_t ov2720_match_id(struct msm_sensor_ctrl_t *s_ctrl) {
 
-	pr_info("ov272x_sensor id: 0x%04x\n", chipid);
-	if (chipid == 0x2720) {
+        int32_t rc = 0;
+        uint16_t chipid = 0;
+        rc = msm_camera_i2c_read(
+                        s_ctrl->sensor_i2c_client,
+                        s_ctrl->sensor_id_info->sensor_id_reg_addr, &chipid,
+                        MSM_CAMERA_I2C_WORD_DATA);
+        if (rc < 0) {
+                pr_err("%s: %s: read id failed\n", __func__,
+                        s_ctrl->sensordata->sensor_name);
+                return rc;
+        }
+
+        pr_info("ov272x_sensor id: 0x%04x\n", chipid);
+        if(chipid == 0x2720) {
 		s_ctrl->sensordata->sensor_name = ov2720_name[0];
 		return rc;
-	} else if (chipid == 0x2722) {
+	} else if(chipid == 0x2722) {
 		s_ctrl->sensordata->sensor_name = ov2720_name[1];
 		return rc;
-	} else {
-		pr_err("ov_sensor_match_id chip id doesnot match 0x%04x\n", chipid);
-		return -ENODEV;
+        } else {
+                pr_err("ov_sensor_match_id chip id doesnot match 0x%04x\n", chipid);
+                return -ENODEV;
 	}
 }
 
@@ -1328,7 +1328,7 @@ static int32_t ov2720_write_init_settings(struct msm_sensor_ctrl_t *s_ctrl)
 {
 	int32_t rc;
 
-	if (strcmp(s_ctrl->sensordata->sensor_name, "ov2720") == 0) {
+	if(strcmp(s_ctrl->sensordata->sensor_name, "ov2720") == 0) {
 		rc = msm_sensor_write_all_conf_array(
 				s_ctrl->sensor_i2c_client,
 				&ov2720_init_conf[0],
@@ -1347,7 +1347,7 @@ static int32_t ov2720_write_res_settings(struct msm_sensor_ctrl_t *s_ctrl, uint1
 {
 	int32_t rc;
 
-	if (strcmp(s_ctrl->sensordata->sensor_name, "ov2720") == 0) {
+	if(strcmp(s_ctrl->sensordata->sensor_name, "ov2720") == 0) {
 		rc = msm_sensor_write_conf_array(
 				s_ctrl->sensor_i2c_client,
 				&ov2720_confs[0], res);

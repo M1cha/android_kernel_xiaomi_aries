@@ -239,7 +239,6 @@ struct msm_smem *msm_smem_alloc(void *clt, size_t size, u32 align, u32 flags,
 	struct smem_client *client;
 	int rc = 0;
 	struct msm_smem *mem;
-
 	client = clt;
 	if (!client) {
 		pr_err("Invalid  client passed\n");

@@ -403,10 +403,10 @@ int msm_v4l2_prepare_buf(struct file *file, void *fh,
 			goto exit;
 		}
 		handle = msm_smem_user_to_kernel(v4l2_inst->mem_client,
-				b->m.planes[i].reserved[0],
-				b->m.planes[i].reserved[1],
-				vidc_inst->core->resources.io_map[NS_MAP].domain,
-				0);
+			b->m.planes[i].reserved[0],
+			b->m.planes[i].reserved[1],
+			vidc_inst->core->resources.io_map[NS_MAP].domain,
+			0);
 		if (!handle) {
 			pr_err("Failed to get device buffer address\n");
 			kfree(binfo);

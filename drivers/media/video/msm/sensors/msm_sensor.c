@@ -252,7 +252,7 @@ int32_t msm_sensor_setting(struct msm_sensor_ctrl_t *s_ctrl,
 	if (update_type == MSM_SENSOR_REG_INIT) {
 		s_ctrl->curr_csi_params = NULL;
 		msm_sensor_enable_debugfs(s_ctrl);
-		if (s_ctrl->func_tbl->sensor_write_init_settings)
+		if(s_ctrl->func_tbl->sensor_write_init_settings)
 			s_ctrl->func_tbl->sensor_write_init_settings(s_ctrl);
 		else
 			msm_sensor_write_init_settings(s_ctrl);
@@ -261,7 +261,7 @@ int32_t msm_sensor_setting(struct msm_sensor_ctrl_t *s_ctrl,
 
 		pr_info("%s res:%d", __func__, res);
 
-		if (s_ctrl->func_tbl->sensor_write_res_settings)
+		if(s_ctrl->func_tbl->sensor_write_res_settings)
 			s_ctrl->func_tbl->sensor_write_res_settings(s_ctrl, res);
 		else
 			msm_sensor_write_res_settings(s_ctrl, res);
@@ -301,7 +301,7 @@ int32_t msm_sensor_set_sensor_mode(struct msm_sensor_ctrl_t *s_ctrl,
 
 	pr_info("%s res:%d cur:%d mode:%d", __func__, res, s_ctrl->curr_res, mode);
 	/* Switching between fullsize preview and snapshot */
-	if (((s_ctrl->curr_res == 0) && (res == 1)) || ((s_ctrl->curr_res == 1) && (res == 0)))
+	if ( ((s_ctrl->curr_res == 0) && (res == 1)) || ((s_ctrl->curr_res == 1) && (res == 0)))
 		return rc;
 
 	if (s_ctrl->curr_res != res) {
@@ -485,19 +485,22 @@ int32_t msm_sensor_config(struct msm_sensor_ctrl_t *s_ctrl, void __user *argp)
 			break;
 
 		case CFG_SET_PICT_EXP_GAIN:
-			if (s_ctrl->func_tbl->sensor_write_snapshot_exp_gain == NULL) {
+			if (s_ctrl->func_tbl->
+			sensor_write_snapshot_exp_gain == NULL) {
 				rc = -EFAULT;
 				break;
 			}
 
-			if (s_ctrl->func_tbl-> sensor_write_snapshot_exp_gain_hdr == NULL) {
+			if (s_ctrl->func_tbl->
+			sensor_write_snapshot_exp_gain_hdr == NULL) {
+
 				rc =	s_ctrl->func_tbl->
 					sensor_write_snapshot_exp_gain(
 						s_ctrl,
 						cdata.cfg.exp_gain.gain,
 						cdata.cfg.exp_gain.line);
 			} else {
-				if (s_ctrl->curr_res == 2) {
+				if(s_ctrl->curr_res == 2) {
 					rc = s_ctrl->func_tbl->
 						sensor_write_snapshot_exp_gain_hdr(
 							s_ctrl,
