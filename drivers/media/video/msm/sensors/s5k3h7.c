@@ -2229,11 +2229,7 @@ static struct msm_camera_i2c_client s5k3h7_sensor_i2c_client = {
 	.addr_type = MSM_CAMERA_I2C_WORD_ADDR,
 };
 
-#if defined(CONFIG_MACH_MITWO)
 static char * s5k3h7_name[3] = {"s5k3h7", "s5k3h7a", "s5k3h7l"};
-#else
-static char * s5k3h7_name[3] = {"s5k3h7a", "s5k3h7a", "s5k3h7l"};
-#endif
 static int32_t s5k3h7_match_id(struct msm_sensor_ctrl_t *s_ctrl) {
 
 	int32_t rc = 0;
