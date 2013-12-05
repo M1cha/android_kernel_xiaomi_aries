@@ -31,6 +31,7 @@
 #include <asm/uaccess.h>
 #include <asm/setup.h>
 #include <mach/peripheral-loader.h>
+#include <mach/subsystem_restart.h>
 
 #include "peripheral-loader.h"
 
@@ -347,6 +348,12 @@ static void pil_set_state(struct pil_device *pil, enum pil_state state)
 }
 
 /**
+ * pil_modem_loaded is temp solution to modem cannot start
+ * instead of pil load but to reset modem subsystem.
+ */
+static uint16_t pil_modem_loaded = 0;
+
+/**
  * pil_get() - Load a peripheral into memory and take it out of reset
  * @name: pointer to a string containing the name of the peripheral to load
  *
@@ -373,6 +380,18 @@ void *pil_get(const char *name)
 		return ERR_PTR(-ENODEV);
 	}
 
+	if(!strcmp("modem", name)) {
+//		pr_info("pil_get %s, pil->count=%d, pil_modem_loaded = %d", name, pil->count, pil_modem_loaded);
+		if((pil_modem_loaded == 1) && (pil->count==0)) {
+			pr_info("will reset modem.");
+			ret = subsystem_restart("modem");
+			if(ret != 0) {
+				return ERR_PTR(-ENODEV);
+			}
+			return retval;
+		}
+	}
+
 	pil_d = pil_get(pil->desc->depends_on);
 	if (IS_ERR(pil_d)) {
 		retval = pil_d;
@@ -386,6 +405,9 @@ void *pil_get(const char *name)
 			retval = ERR_PTR(ret);
 			goto err_load;
 		}
+//		pr_info("%s image loaded.", name);
+		if(!strcmp("modem", name))
+			pil_modem_loaded++;
 	}
 	pil->count++;
 	pil_set_state(pil, PIL_ONLINE);
