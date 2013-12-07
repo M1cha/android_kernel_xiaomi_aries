@@ -43,7 +43,6 @@
 #include <linux/power_supply.h>
 #include <linux/mhl_8334.h>
 #include <linux/slimport.h>
-#include <linux/irq.h>
 
 #include <asm/mach-types.h>
 
@@ -890,11 +889,11 @@ static int msm_otg_suspend(struct msm_otg *motg)
 	}
 
 	/* usb phy no more require TCXO clock, hence vote for TCXO disable */
-	if (!host_bus_suspend || (motg->caps & ALLOW_XO_SHUTDOWN)) {
+	if (!host_bus_suspend) {
 		ret = msm_xo_mode_vote(motg->xo_handle, MSM_XO_MODE_OFF);
 		if (ret)
-			dev_err(phy->dev, "%s failed to devote for TCXO D0 buffer%d\n",
-				__func__, ret);
+			dev_err(phy->dev, "%s failed to devote for "
+				"TCXO D0 buffer%d\n", __func__, ret);
 		else
 			motg->lpm_flags |= XO_SHUTDOWN;
 	}
@@ -911,11 +910,9 @@ static int msm_otg_suspend(struct msm_otg *motg)
 	}
 
 	if (device_may_wakeup(phy->dev)) {
+		enable_irq_wake(motg->irq);
 		if (motg->async_irq)
 			enable_irq_wake(motg->async_irq);
-		else
-			enable_irq_wake(motg->irq);
-
 		if (motg->pdata->pmic_id_irq)
 			enable_irq_wake(motg->pdata->pmic_id_irq);
 		if (pdata->otg_control == OTG_PHY_CONTROL &&
@@ -1018,11 +1015,9 @@ static int msm_otg_resume(struct msm_otg *motg)
 
 skip_phy_resume:
 	if (device_may_wakeup(phy->dev)) {
+		disable_irq_wake(motg->irq);
 		if (motg->async_irq)
 			disable_irq_wake(motg->async_irq);
-		else
-			disable_irq_wake(motg->irq);
-
 		if (motg->pdata->pmic_id_irq)
 			disable_irq_wake(motg->pdata->pmic_id_irq);
 		if (pdata->otg_control == OTG_PHY_CONTROL &&
@@ -2654,9 +2649,6 @@ static void msm_otg_sm_work(struct work_struct *w)
 			if (TA_WAIT_BCON > 0)
 				msm_otg_start_timer(motg, TA_WAIT_BCON,
 					A_WAIT_BCON);
-
-			/* Clear BSV in host mode */
-			clear_bit(B_SESS_VLD, &motg->inputs);
 			msm_otg_start_host(otg, 1);
 			msm_chg_enable_aca_det(motg);
 			msm_chg_disable_aca_intr(motg);
@@ -3779,11 +3771,6 @@ static int __init msm_otg_probe(struct platform_device *pdev)
 
 	if (pdata->otg_control == OTG_PHY_CONTROL && pdata->mpm_otgsessvld_int)
 		msm_mpm_enable_pin(pdata->mpm_otgsessvld_int, 1);
-	if (pdata->mpm_xo_wakeup_int) {
-		msm_mpm_set_pin_type(pdata->mpm_xo_wakeup_int,
-				IRQ_TYPE_LEVEL_HIGH);
-		msm_mpm_set_pin_wake(pdata->mpm_xo_wakeup_int, 1);
-	}
 
 	phy->init = msm_otg_reset;
 	phy->set_power = msm_otg_set_power;
@@ -3850,9 +3837,6 @@ static int __init msm_otg_probe(struct platform_device *pdev)
 	if (motg->pdata->enable_lpm_on_dev_suspend)
 		motg->caps |= ALLOW_LPM_ON_DEV_SUSPEND;
 
-	if (motg->pdata->mpm_xo_wakeup_int)
-		motg->caps |= ALLOW_XO_SHUTDOWN;
-
 	wake_lock(&motg->wlock);
 	pm_runtime_set_active(&pdev->dev);
 	pm_runtime_enable(&pdev->dev);
@@ -3874,10 +3858,6 @@ remove_phy:
 free_async_irq:
 	if (motg->async_irq)
 		free_irq(motg->async_irq, motg);
-	if (pdata->mpm_xo_wakeup_int) {
-		msm_mpm_set_pin_wake(pdata->mpm_xo_wakeup_int, 0);
-		msm_mpm_enable_pin(pdata->mpm_xo_wakeup_int, 0);
-	}
 free_irq:
 	free_irq(motg->irq, motg);
 destroy_wlock:
@@ -3919,7 +3899,6 @@ static int __devexit msm_otg_remove(struct platform_device *pdev)
 {
 	struct msm_otg *motg = platform_get_drvdata(pdev);
 	struct usb_otg *otg = motg->phy.otg;
-	struct msm_otg_platform_data *pdata = motg->pdata;
 	int cnt = 0;
 
 	if (otg->host || otg->gadget)
@@ -3951,10 +3930,6 @@ static int __devexit msm_otg_remove(struct platform_device *pdev)
 	if (motg->pdata->otg_control == OTG_PHY_CONTROL &&
 		motg->pdata->mpm_otgsessvld_int)
 		msm_mpm_enable_pin(motg->pdata->mpm_otgsessvld_int, 0);
-	if (pdata->mpm_xo_wakeup_int) {
-		msm_mpm_set_pin_wake(pdata->mpm_xo_wakeup_int, 0);
-		msm_mpm_enable_pin(pdata->mpm_xo_wakeup_int, 0);
-	}
 
 	/*
 	 * Put PHY in low power mode.

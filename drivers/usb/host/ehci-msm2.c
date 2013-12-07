@@ -28,7 +28,6 @@
 #include <linux/wakelock.h>
 #include <linux/pm_runtime.h>
 #include <linux/regulator/consumer.h>
-#include <linux/irq.h>
 
 #include <linux/usb/ulpi.h>
 #include <linux/usb/msm_hsusb_hw.h>
@@ -36,8 +35,6 @@
 #include <mach/clk.h>
 #include <mach/msm_xo.h>
 #include <mach/msm_iomap.h>
-#include <mach/mpm.h>
-#include <linux/debugfs.h>
 
 #define MSM_USB_BASE (hcd->regs)
 
@@ -562,13 +559,11 @@ static void msm_ehci_phy_susp_fail_work(struct work_struct *w)
 #ifdef CONFIG_PM_SLEEP
 static int msm_ehci_suspend(struct msm_hcd *mhcd)
 {
-	struct msm_usb_host_platform_data *pdata;
 	struct usb_hcd *hcd = mhcd_to_hcd(mhcd);
 	unsigned long timeout;
 	int ret;
 	u32 portsc;
 
-	pdata = mhcd->dev->platform_data;
 	if (atomic_read(&mhcd->in_lpm)) {
 		dev_dbg(mhcd->dev, "%s called in lpm\n", __func__);
 		return 0;
@@ -622,8 +617,7 @@ static int msm_ehci_suspend(struct msm_hcd *mhcd)
 		dev_err(mhcd->dev, "%s failed to devote for "
 			"TCXO D0 buffer%d\n", __func__, ret);
 
-	if (!pdata->mpm_xo_wakeup_int)
-		msm_ehci_config_vddcx(mhcd, 0);
+	msm_ehci_config_vddcx(mhcd, 0);
 
 	atomic_set(&mhcd->in_lpm, 1);
 	enable_irq(hcd->irq);
@@ -641,13 +635,10 @@ static int msm_ehci_suspend(struct msm_hcd *mhcd)
 
 static int msm_ehci_resume(struct msm_hcd *mhcd)
 {
-	struct msm_usb_host_platform_data *pdata;
 	struct usb_hcd *hcd = mhcd_to_hcd(mhcd);
 	unsigned long timeout;
 	unsigned temp;
 	int ret;
-
-	pdata = mhcd->dev->platform_data;
 
 	if (!atomic_read(&mhcd->in_lpm)) {
 		dev_dbg(mhcd->dev, "%s called in !in_lpm\n", __func__);
@@ -670,8 +661,7 @@ static int msm_ehci_resume(struct msm_hcd *mhcd)
 	clk_prepare_enable(mhcd->core_clk);
 	clk_prepare_enable(mhcd->iface_clk);
 
-	if (!pdata->mpm_xo_wakeup_int)
-		msm_ehci_config_vddcx(mhcd, 1);
+	msm_ehci_config_vddcx(mhcd, 1);
 
 	temp = readl_relaxed(USB_USBCMD);
 	temp &= ~ASYNC_INTR_CTRL;
@@ -798,135 +788,6 @@ static int msm_ehci_reset(struct usb_hcd *hcd)
 	ehci_port_power(ehci, 1);
 	return 0;
 }
-
-#if defined(CONFIG_DEBUG_FS)
-static u32 addr;
-#define BUF_SIZE	32
-static ssize_t debug_read_phy_data(struct file *file, char __user *ubuf,
-				 size_t count, loff_t *ppos)
-{
-	struct msm_hcd *mhcd = file->private_data;
-	char *kbuf;
-	size_t c = 0;
-	u32 data = 0;
-	int ret = 0;
-
-	kbuf = kzalloc(sizeof(char) * BUF_SIZE, GFP_KERNEL);
-	pm_runtime_get(mhcd->dev);
-	data = msm_ulpi_read(mhcd, addr);
-	pm_runtime_put(mhcd->dev);
-	if (data < 0) {
-		dev_err(mhcd->dev,
-				"%s(): ulpi read timeout\n", __func__);
-		return -ETIMEDOUT;
-	}
-
-	c = scnprintf(kbuf, BUF_SIZE, "addr: 0x%x: data: 0x%x\n", addr, data);
-
-	ret = simple_read_from_buffer(ubuf, count, ppos, kbuf, c);
-
-	kfree(kbuf);
-
-	return ret;
-}
-
-static ssize_t debug_write_phy_data(struct file *file, const char __user *buf,
-				 size_t count, loff_t *ppos)
-{
-	struct msm_hcd *mhcd = file->private_data;
-	char kbuf[10];
-	u32 data = 0;
-
-	memset(kbuf, 0, 10);
-
-	if (copy_from_user(kbuf, buf, count > 10 ? 10 : count))
-		return -EFAULT;
-
-	if (sscanf(kbuf, "%x", &data) != 1)
-		return -EINVAL;
-
-	pm_runtime_get(mhcd->dev);
-	if (msm_ulpi_write(mhcd, data, addr) < 0) {
-		dev_err(mhcd->dev,
-				"%s(): ulpi write timeout\n", __func__);
-		return -ETIMEDOUT;
-	}
-	pm_runtime_put(mhcd->dev);
-
-	return count;
-}
-
-static ssize_t debug_phy_write_addr(struct file *file, const char __user *buf,
-				 size_t count, loff_t *ppos)
-{
-	char kbuf[10];
-	u32 temp;
-
-	memset(kbuf, 0, 10);
-
-	if (copy_from_user(kbuf, buf, count > 10 ? 10 : count))
-		return -EFAULT;
-
-	if (sscanf(kbuf, "%x", &temp) != 1)
-		return -EINVAL;
-
-	if (temp > 0x3F)
-		return -EINVAL;
-
-	addr = temp;
-
-	return count;
-}
-
-static int debug_open(struct inode *inode, struct file *file)
-{
-	file->private_data = inode->i_private;
-	return 0;
-}
-
-const struct file_operations debug_rw_phy_ops = {
-	.open = debug_open,
-	.read = debug_read_phy_data,
-	.write = debug_write_phy_data,
-};
-
-const struct file_operations debug_write_phy_ops = {
-	.open = debug_open,
-	.write = debug_phy_write_addr,
-};
-
-static struct dentry *dent_ehci;
-
-static int ehci_debugfs_init(struct msm_hcd *mhcd)
-{
-	struct dentry *debug_phy_data;
-	struct dentry *debug_phy_addr;
-
-	dent_ehci = debugfs_create_dir(dev_name(mhcd->dev), 0);
-	if (IS_ERR(dent_ehci))
-		return -ENOENT;
-
-	debug_phy_data = debugfs_create_file("phy_reg_data", 0666,
-					dent_ehci, mhcd, &debug_rw_phy_ops);
-	if (!debug_phy_data) {
-		debugfs_remove(dent_ehci);
-		return -ENOENT;
-	}
-
-	debug_phy_addr = debugfs_create_file("phy_reg_addr", 0666,
-					dent_ehci, mhcd, &debug_write_phy_ops);
-	if (!debug_phy_addr) {
-		debugfs_remove_recursive(dent_ehci);
-		return -ENOENT;
-	}
-	return 0;
-}
-#else
-static int ehci_debugfs_init(struct msm_hcd *mhcd)
-{
-	return 0;
-}
-#endif
 
 static struct hc_driver msm_hc2_driver = {
 	.description		= hcd_name,
@@ -1170,16 +1031,9 @@ static int __devinit ehci_msm2_probe(struct platform_device *pdev)
 					mhcd->pmic_gpio_dp_irq, ret);
 			mhcd->pmic_gpio_dp_irq = 0;
 		}
-	} else if (pdata->mpm_xo_wakeup_int) {
-		msm_mpm_set_pin_type(pdata->mpm_xo_wakeup_int,
-					IRQ_TYPE_LEVEL_HIGH);
-		msm_mpm_set_pin_wake(pdata->mpm_xo_wakeup_int, 1);
 	}
 	pm_runtime_set_active(&pdev->dev);
 	pm_runtime_enable(&pdev->dev);
-
-	if (ehci_debugfs_init(mhcd) < 0)
-		dev_err(mhcd->dev, "%s: debugfs init failed\n", __func__);
 
 	return 0;
 
@@ -1207,18 +1061,13 @@ put_hcd:
 
 static int __devexit ehci_msm2_remove(struct platform_device *pdev)
 {
-	struct msm_usb_host_platform_data *pdata;
 	struct usb_hcd *hcd = platform_get_drvdata(pdev);
 	struct msm_hcd *mhcd = hcd_to_mhcd(hcd);
 
-	pdata = mhcd->dev->platform_data;
 	if (mhcd->pmic_gpio_dp_irq) {
 		if (mhcd->pmic_gpio_dp_irq_enabled)
 			disable_irq_wake(mhcd->pmic_gpio_dp_irq);
 		free_irq(mhcd->pmic_gpio_dp_irq, mhcd);
-	} else if (pdata->mpm_xo_wakeup_int) {
-		msm_mpm_set_pin_wake(pdata->mpm_xo_wakeup_int, 0);
-		msm_mpm_enable_pin(pdata->mpm_xo_wakeup_int, 0);
 	}
 	device_init_wakeup(&pdev->dev, 0);
 	pm_runtime_set_suspended(&pdev->dev);
@@ -1237,9 +1086,6 @@ static int __devexit ehci_msm2_remove(struct platform_device *pdev)
 	iounmap(hcd->regs);
 	usb_put_hcd(hcd);
 
-#if defined(CONFIG_DEBUG_FS)
-	debugfs_remove_recursive(dent_ehci);
-#endif
 	return 0;
 }
 
