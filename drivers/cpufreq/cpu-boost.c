@@ -21,7 +21,6 @@
 #include <linux/jiffies.h>
 #include <linux/kthread.h>
 #include <linux/moduleparam.h>
-#include <linux/freezer.h>
 
 struct cpu_sync {
 	struct task_struct *thread;
@@ -97,7 +96,7 @@ static int boost_mig_sync_thread(void *data)
 	unsigned long flags;
 
 	while(1) {
-		wait_event_freezable(s->sync_wq, s->pending || kthread_should_stop());
+		wait_event(s->sync_wq, s->pending || kthread_should_stop());
 
 		if (kthread_should_stop())
 			break;
