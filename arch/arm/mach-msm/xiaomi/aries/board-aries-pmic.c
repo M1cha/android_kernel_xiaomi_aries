@@ -29,6 +29,7 @@
 #include <mach/socinfo.h>
 #include "devices.h"
 #include "board-aries.h"
+#include "board-aries-pmic.h"
 
 struct pm8xxx_gpio_init {
 	unsigned			gpio;
@@ -491,9 +492,17 @@ static struct msm_ssbi_platform_data apq8064_ssbi_pm8821_pdata __devinitdata = {
 	},
 };
 
+void __init aries_set_adcmap(void)
+{
+	pm8xxx_set_adcmap_btm_threshold(adcmap_btm_threshold,
+			ARRAY_SIZE(adcmap_btm_threshold));
+}
+
 void __init apq8064_init_pmic(void)
 {
 	pmic_reset_irq = PM8921_IRQ_BASE + PM8921_RESOUT_IRQ;
+
+	aries_set_adcmap();
 
 	apq8064_device_ssbi_pmic1.dev.platform_data =
 						&apq8064_ssbi_pm8921_pdata;
