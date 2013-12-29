@@ -124,8 +124,6 @@ static void z180_cmdwindow_write(struct kgsl_device *device,
 	| (MMU_CONFIG << MH_MMU_CONFIG__TC_R_CLNT_BEHAVIOR__SHIFT)   \
 	| (MMU_CONFIG << MH_MMU_CONFIG__PA_W_CLNT_BEHAVIOR__SHIFT))
 
-#define KGSL_LOG_LEVEL_DEFAULT 3
-
 static const struct kgsl_functable z180_functable;
 
 static struct z180_device device_2d0 = {
@@ -151,12 +149,6 @@ static struct z180_device device_2d0 = {
 		},
 		.iomemname = KGSL_2D0_REG_MEMORY,
 		.ftbl = &z180_functable,
-		.cmd_log = KGSL_LOG_LEVEL_DEFAULT,
-		.ctxt_log = KGSL_LOG_LEVEL_DEFAULT,
-		.drv_log = KGSL_LOG_LEVEL_DEFAULT,
-		.mem_log = KGSL_LOG_LEVEL_DEFAULT,
-		.pwr_log = KGSL_LOG_LEVEL_DEFAULT,
-		.pm_dump_enable = 0,
 	},
 	.cmdwin_lock = __SPIN_LOCK_INITIALIZER(device_2d1.cmdwin_lock),
 };
@@ -224,7 +216,8 @@ static irqreturn_t z180_irq_handler(struct kgsl_device *device)
 		}
 	}
 
-	if (device->requested_state == KGSL_STATE_NONE) {
+	if ((device->pwrctrl.nap_allowed == true) &&
+		(device->requested_state == KGSL_STATE_NONE)) {
 		kgsl_pwrctrl_request_state(device, KGSL_STATE_NAP);
 		queue_work(device->work_queue, &device->idle_check_ws);
 	}
@@ -406,9 +399,7 @@ z180_cmdstream_issueibcmds(struct kgsl_device_private *dev_priv,
 
 	mutex_lock(&device->mutex);
 
-	result = kgsl_active_count_get(device);
-	if (result)
-		goto error_active_count;
+	kgsl_active_count_get(device);
 
 	if (cmdbatch == NULL) {
 		result = EINVAL;
@@ -497,10 +488,10 @@ z180_cmdstream_issueibcmds(struct kgsl_device_private *dev_priv,
 	addmarker(&z180_dev->ringbuffer, z180_dev->current_timestamp);
 
 	/* monkey patch the IB so that it jumps back to the ringbuffer */
-	kgsl_sharedmem_writel(device, &entry->memdesc,
+	kgsl_sharedmem_writel(&entry->memdesc,
 		      ((sizedwords + 1) * sizeof(unsigned int)),
 		      rb_gpuaddr(z180_dev, z180_dev->current_timestamp));
-	kgsl_sharedmem_writel(device, &entry->memdesc,
+	kgsl_sharedmem_writel(&entry->memdesc,
 			      ((sizedwords + 2) * sizeof(unsigned int)),
 			      nextcnt);
 
@@ -517,7 +508,7 @@ error:
 		*timestamp, cmdbatch->flags, result, 0);
 
 	kgsl_active_count_put(device);
-error_active_count:
+
 	mutex_unlock(&device->mutex);
 
 	return (int)result;
@@ -630,12 +621,8 @@ error_clk_off:
 
 static int z180_stop(struct kgsl_device *device)
 {
-	int ret;
-
 	device->ftbl->irqctrl(device, 0);
-	ret = z180_idle(device);
-	if (ret)
-		return ret;
+	z180_idle(device);
 
 	del_timer_sync(&device->idle_timer);
 
@@ -747,7 +734,7 @@ static void _z180_regwrite_simple(struct kgsl_device *device,
 	BUG_ON(offsetwords*sizeof(uint32_t) >= device->reg_len);
 
 	reg = (unsigned int *)(device->reg_virt + (offsetwords << 2));
-	kgsl_cffdump_regwrite(device, offsetwords << 2, value);
+	kgsl_cffdump_regwrite(device->id, offsetwords << 2, value);
 	/*ensure previous writes post before this one,
 	 * i.e. act like normal writel() */
 	wmb();
@@ -866,13 +853,9 @@ static int z180_waittimestamp(struct kgsl_device *device,
 	if (msecs == -1)
 		msecs = Z180_IDLE_TIMEOUT;
 
-	status = kgsl_active_count_get(device);
-	if (!status) {
-		mutex_unlock(&device->mutex);
-		status = z180_wait(device, context, timestamp, msecs);
-		mutex_lock(&device->mutex);
-		kgsl_active_count_put(device);
-	}
+	mutex_unlock(&device->mutex);
+	status = z180_wait(device, context, timestamp, msecs);
+	mutex_lock(&device->mutex);
 
 	return status;
 }
@@ -921,29 +904,21 @@ z180_drawctxt_create(struct kgsl_device_private *dev_priv,
 static int
 z180_drawctxt_detach(struct kgsl_context *context)
 {
-	int ret;
 	struct kgsl_device *device;
 	struct z180_device *z180_dev;
 
 	device = context->device;
 	z180_dev = Z180_DEVICE(device);
 
-	ret = kgsl_active_count_get(device);
-	if (ret)
-		return ret;
-
 	z180_idle(device);
 
 	if (z180_dev->ringbuffer.prevctx == context->id) {
 		z180_dev->ringbuffer.prevctx = Z180_INVALID_CONTEXT;
 		device->mmu.hwpagetable = device->mmu.defaultpagetable;
-
-		/* Ignore the result - we are going down anyway */
 		kgsl_setstate(&device->mmu, KGSL_MEMSTORE_GLOBAL,
 				KGSL_MMUFLAGS_PTUPDATE);
 	}
 
-	kgsl_active_count_put(device);
 	return 0;
 }
 
