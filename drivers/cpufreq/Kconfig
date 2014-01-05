@@ -17,6 +17,16 @@ config CPU_FREQ
 
 if CPU_FREQ
 
+config CPU_BOOST
+	bool "CPU frequency booster"
+	default n
+	help
+	  When certain bursty and important events take place, it might take a while
+	  for the current cpufreq governor to notice the new load and react to it.
+	  That would result in poor user experience. To alleviate this, the cpu-boost
+	  driver boosts the frequency of a CPU for a short duration to maintain good
+	  user experience while the governor catches up.
+
 config CPU_FREQ_TABLE
 	tristate
 
