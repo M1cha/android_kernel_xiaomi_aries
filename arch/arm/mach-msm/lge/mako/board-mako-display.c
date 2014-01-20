@@ -18,7 +18,7 @@
 #include <linux/kernel.h>
 #include <linux/gpio.h>
 #include <linux/platform_device.h>
-#include <linux/platform_data/lm35xx_bl.h>
+#include <linux/led-lm3530.h>
 #include <linux/bootmem.h>
 #include <linux/ion.h>
 #include <asm/mach-types.h>
@@ -685,8 +685,8 @@ static int hdmi_cec_power(int on)
 #if defined(CONFIG_FB_MSM_MIPI_HITACHI_CMD_720P_PT)
 static int mipi_hitachi_backlight_level(int level, int max, int min)
 {
-#ifdef CONFIG_BACKLIGHT_LM3530
-	lm3530_lcd_backlight_set_level(level);
+#ifdef CONFIG_LEDS_LM3530
+	backlight_brightness_set(level);
 #endif
 
 	return 0;
@@ -745,12 +745,6 @@ static struct msm_panel_common_pdata mipi_hitachi_pdata = {
 
 	.power_off_set_1 = hitachi_power_off_set_1,
 	.power_off_set_size_1 = ARRAY_SIZE(hitachi_power_off_set_1),
-
-#ifdef CONFIG_HITACHI_CMD_720P_CABC
-	.bl_pwm_disable = lm3530_lcd_backlight_pwm_disable,
-#endif
-	.bl_on_status = lm3530_lcd_backlight_on_status,
-	.power_on_notify = lm3530_lcd_power_on_notify,
 };
 
 static struct platform_device mipi_dsi_hitachi_panel_device = {
@@ -796,27 +790,28 @@ void __init apq8064_init_fb(void)
 #define PWM_BRIGHTNESS 0x20
 #endif
 
-#if defined (CONFIG_BACKLIGHT_LM3530)
-static struct backlight_platform_data lm3530_data = {
-
-	.gpio = PM8921_GPIO_PM_TO_SYS(13),
+#if defined (CONFIG_LEDS_LM3530)
+static struct lm3530_platform_data lm3530_data = {
 #ifdef CONFIG_HITACHI_CMD_720P_CABC
-	.max_current = 0x17 | PWM_BRIGHTNESS,
+	.mode = LM3530_BL_MODE_I2C_PWM,
 #else
-	.max_current = 0x17,
+	.mode = LM3530_BL_MODE_MANUAL,
 #endif
-	.min_brightness = 0x01,
-	.max_brightness = 0x72,
-	.default_brightness = 0x11,
-	.blmap = NULL,
-	.blmap_size = 0,
+	.max_current = 0x5,
+	.pwm_pol_hi = 0,
+	.brt_ramp_law = 0x1,		/* linear */
+	.brt_ramp_fall = 0,
+	.brt_ramp_rise = 0,
+	.brt_val = 0,
+	.bl_en_gpio = PM8921_GPIO_PM_TO_SYS(13),
+	.regulator_used = 0,
 };
 #endif
 
 static struct i2c_board_info msm_i2c_backlight_info[] = {
 	{
-#if defined(CONFIG_BACKLIGHT_LM3530)
-		I2C_BOARD_INFO("lm3530", 0x38),
+#if defined(CONFIG_LEDS_LM3530)
+		I2C_BOARD_INFO("lm3530-led", 0x38),
 		.platform_data = &lm3530_data,
 #endif
 	}
