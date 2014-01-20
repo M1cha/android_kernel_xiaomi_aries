@@ -889,7 +889,7 @@ static void msmfb_early_resume(struct early_suspend *h)
 }
 #endif
 
-static int unset_bl_level, bl_updated;
+static int unset_bl_level = 0x2A, bl_updated;
 #if defined(CONFIG_BACKLIGHT_LM3530)
 static int bl_level_old = 0x2A;
 #else
