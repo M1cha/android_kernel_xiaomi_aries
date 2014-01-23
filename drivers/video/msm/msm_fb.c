@@ -889,7 +889,7 @@ static void msmfb_early_resume(struct early_suspend *h)
 }
 #endif
 
-static int unset_bl_level = 0x2A, bl_updated;
+static int unset_bl_level, bl_updated;
 #if defined(CONFIG_BACKLIGHT_LM3530)
 static int bl_level_old = 0x2A;
 #else
@@ -975,6 +975,7 @@ static int msm_fb_blank_sub(int blank_mode, struct fb_info *info,
 
 	switch (blank_mode) {
 	case FB_BLANK_UNBLANK:
+		unset_bl_level = 0x2A;
 		if (!mfd->panel_power_on) {
 			ret = pdata->on(mfd->pdev);
 			if (ret == 0) {
@@ -2001,10 +2002,8 @@ static void bl_workqueue_handler(struct work_struct *work)
 	down(&mfd->sem);
 	if ((pdata) && (pdata->set_backlight) && (!bl_updated)
 					&& (mfd->panel_power_on)) {
-		printk("%s: mfd->bl_level: %d->%d\n", __func__, mfd->bl_level, unset_bl_level);
 		mfd->bl_level = unset_bl_level;
 		pdata->set_backlight(mfd);
-		printk("%s: bl_level_old: %d->%d\n", __func__, bl_level_old, unset_bl_level);
 		bl_level_old = unset_bl_level;
 		bl_updated = 1;
 	}
