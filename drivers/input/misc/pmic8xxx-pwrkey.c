@@ -213,7 +213,9 @@ static int __devinit pmic8xxx_pwrkey_probe(struct platform_device *pdev)
 
 	device_init_wakeup(&pdev->dev, pdata->wakeup);
 
+#ifdef CONFIG_TOUCHSCREEN_LGE_COMMON
 	wake_up_display(pwr);
+#endif
 
 	return 0;
 
