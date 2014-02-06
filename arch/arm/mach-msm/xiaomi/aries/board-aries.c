@@ -2081,6 +2081,7 @@ static struct platform_device *common_not_mpq_devices[] __initdata = {
 static struct platform_device *early_common_devices[] __initdata = {
 	&apq8064_device_acpuclk,
 	&apq8064_device_dmov,
+	&apq8064_device_qup_spi_gsbi5,
 };
 
 static struct platform_device *pm8921_common_devices[] __initdata = {
@@ -2463,12 +2464,6 @@ static void __init apq8064_common_init(void)
 	platform_add_devices(common_devices, ARRAY_SIZE(common_devices));
 	platform_add_devices(common_not_mpq_devices,
 		ARRAY_SIZE(common_not_mpq_devices));
-
-	/* Add GSBI4 I2C Device for non-fusion3 platform */
-	if (socinfo_get_platform_subtype() !=
-				PLATFORM_SUBTYPE_SGLTE2) {
-		platform_device_register(&apq8064_device_qup_i2c_gsbi4);
-	}
 
 	msm_hsic_pdata.swfi_latency =
 		msm_rpmrs_levels[0].latency_us;
