@@ -76,6 +76,7 @@
 #include <mach/restart.h>
 #include <mach/msm_iomap.h>
 #include <mach/msm_serial_hs.h>
+#include <mach/board_xiaomi.h>
 
 #include "msm_watchdog.h"
 #include "board-aries.h"
@@ -722,6 +723,7 @@ static void __init apq8064_reserve(void)
 	apq8064_set_display_params(prim_panel_name, ext_panel_name,
 		ext_resolution);
 	msm_reserve();
+	xiaomi_reserve();
 }
 
 static void __init apq8064_early_reserve(void)
@@ -2801,6 +2803,7 @@ static void __init apq8064_aries_init(void)
 	if (SOCINFO_VERSION_MINOR(socinfo_get_platform_version()) == 1)
 			cyttsp_pdata.sleep_gpio = CYTTSP_TS_GPIO_SLEEP_ALT;
 	apq8064_common_init();
+	xiaomi_add_ramconsole_devices();
 	ethernet_init();
 	msm_rotator_set_split_iommu_domain();
 	platform_add_devices(cdp_devices, ARRAY_SIZE(cdp_devices));
