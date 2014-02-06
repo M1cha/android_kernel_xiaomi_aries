@@ -21,6 +21,7 @@
 #include <linux/workqueue.h>
 #include <linux/err.h>
 #include <linux/ctype.h>
+#include <asm/mach-types.h>
 
 #include <linux/mfd/pm8xxx/core.h>
 #include <linux/mfd/pm8xxx/pwm.h>
@@ -506,7 +507,10 @@ static int pm8xxx_led_pwm_pattern_update(struct pm8xxx_led_data * led)
 	flags = PM8XXX_LED_PWM_FLAGS;
 	switch (led->max_current) {
 	case PM8XXX_PWM_CURRENT_4MA:
-		flags |= PM_PWM_BANK_LO;
+		if(machine_is_apq8064_aries())
+			flags |= PM_PWM_BANK_HI;
+		else
+			flags |= PM_PWM_BANK_LO;
 		break;
 	case PM8XXX_PWM_CURRENT_8MA:
 		flags |= PM_PWM_BANK_HI;
