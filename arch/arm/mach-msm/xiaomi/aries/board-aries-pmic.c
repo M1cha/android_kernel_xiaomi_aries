@@ -203,15 +203,15 @@ static struct pm8xxx_misc_platform_data apq8064_pm8921_misc_pdata = {
 
 static struct led_info pm8921_led_info[] = {
 	[0] = {
-		.name			= "led:red",
+		.name			= "red",
 		.default_trigger	= "battery-charging",
 	},
 	[1] = {
-		.name			= "led:green",
+		.name			= "green",
 		.default_trigger	= "battery-full",
 	},
 	[2] = {
-		.name			= "led:blue",
+		.name			= "blue",
 		.default_trigger	= "dc-online",
 	},
 };
@@ -367,20 +367,22 @@ apq8064_pm8921_chg_pdata __devinitdata = {
 	.uvd_thresh_voltage	= 4050,
 	.alarm_low_mv		= 3400,
 	.alarm_high_mv		= 4000,
-	.resume_voltage_delta	= 60,
+	.resume_voltage_delta	= 20,
 	.resume_charge_percent	= 99,
 	.term_current		= CHG_TERM_MA,
-	.cool_temp		= 10,
+	.cool_temp		= 0,
 	.warm_temp		= 45,
 	.temp_check_period	= 1,
-	.max_bat_chg_current	= 1100,
+	.max_bat_chg_current	= 1000,
 	.cool_bat_chg_current	= 350,
 	.warm_bat_chg_current	= 350,
 	.cool_bat_voltage	= 4100,
 	.warm_bat_voltage	= 4100,
+	.keep_btm_on_suspend	= 1,
 	.thermal_mitigation	= apq8064_pm8921_therm_mitigation,
 	.thermal_levels		= ARRAY_SIZE(apq8064_pm8921_therm_mitigation),
-	.rconn_mohm		= 18,
+	.cold_thr		= PM_SMBC_BATT_TEMP_COLD_THR__HIGH,
+	.rconn_mohm		= 50,
 	.enable_tcxo_warmup_delay = true,
 };
 
@@ -396,7 +398,7 @@ apq8064_pm8921_bms_pdata __devinitdata = {
 	.r_sense_uohm			= 10000,
 	.v_cutoff			= 3400,
 	.max_voltage_uv			= MAX_VOLTAGE_MV * 1000,
-	.rconn_mohm			= 18,
+	.rconn_mohm			= 50, /* 25 mohm for each pin*/
 	.shutdown_soc_valid_limit	= 20,
 	.adjust_soc_low_threshold	= 25,
 	.chg_term_ua			= CHG_TERM_MA * 1000,
