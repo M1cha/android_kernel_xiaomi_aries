@@ -81,6 +81,7 @@ int __init apq8064_add_sdcc(unsigned int controller,
 		struct mmc_platform_data *plat);
 int __init apq8064_add_uio(void);
 
+extern void __init xiaomi_add_sound_devices(void);
 extern void __init xiaomi_add_backlight_devices(void);
 
 void apq8064_init_mmc(void);

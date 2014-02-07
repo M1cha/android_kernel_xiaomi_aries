@@ -569,13 +569,6 @@ struct platform_device mpq8064_device_qup_i2c_gsbi5 = {
 	.resource	= resources_qup_i2c_gsbi5,
 };
 
-struct platform_device apq8064_device_qup_i2c_gsbi5 = {
-	.name			= "qup_i2c",
-	.id				= 5,
-	.num_resources	= ARRAY_SIZE(resources_qup_i2c_gsbi5),
-	.resource			= resources_qup_i2c_gsbi5,
-};
-
 static struct resource resources_uart_gsbi5[] = {
 	{
 		.start	= GSBI5_UARTDM_IRQ,
@@ -594,14 +587,37 @@ static struct resource resources_uart_gsbi5[] = {
 		.name	= "gsbi_resource",
 		.flags	= IORESOURCE_MEM,
 	},
+	{
+		.start	= DMOV_HSUART_GSBI5_TX_CHAN,
+		.end    = DMOV_HSUART_GSBI5_RX_CHAN,
+		.name   = "uartdm_channels",
+		.flags  = IORESOURCE_DMA,
+	},
+	{
+		.start  = DMOV_HSUART_GSBI5_RX_CRCI,
+		.end    = DMOV_HSUART_GSBI5_TX_CRCI,
+		.name   = "uartdm_crci",
+		.flags  = IORESOURCE_DMA,
+	},
 };
 
-/* GSBI 5 used for UART on Oppo N1 */
+static u64 msm_uart_gsbi5_dma_mask = DMA_BIT_MASK(32);
 struct platform_device apq8064_device_uart_gsbi5 = {
-	.name	= "msm_serial_hsl",
-	.id	= 0,
+	.name	= "msm_serial_hs",
+	.id	= 2,
 	.num_resources	= ARRAY_SIZE(resources_uart_gsbi5),
 	.resource	= resources_uart_gsbi5,
+	.dev	= {
+		.dma_mask		= &msm_uart_gsbi5_dma_mask,
+		.coherent_dma_mask	= DMA_BIT_MASK(32),
+	},
+};
+
+struct platform_device apq8064_device_qup_i2c_gsbi5 = {
+	.name			= "qup_i2c",
+	.id				= 5,
+	.num_resources	= ARRAY_SIZE(resources_qup_i2c_gsbi5),
+	.resource			= resources_qup_i2c_gsbi5,
 };
 
 /* GSBI 6 used into UARTDM Mode */
