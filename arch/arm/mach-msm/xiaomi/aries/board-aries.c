@@ -215,13 +215,6 @@ static struct platform_device apq8064_android_pmem_audio_device = {
 #endif /* CONFIG_MSM_MULTIMEDIA_USE_ION */
 #endif /* CONFIG_ANDROID_PMEM */
 
-#ifdef CONFIG_BATTERY_BCL
-static struct platform_device battery_bcl_device = {
-	.name = "battery_current_limit",
-	.id = -1,
-	};
-#endif
-
 struct fmem_platform_data apq8064_fmem_pdata = {
 };
 
@@ -2111,14 +2104,14 @@ static struct platform_device *common_devices[] __initdata = {
 	&msm_tsens_device,
 	&apq8064_cache_dump_device,
 	&msm_8064_device_tspp,
-#ifdef CONFIG_BATTERY_BCL
-	&battery_bcl_device,
-#endif
 	&apq8064_msm_mpd_device,
 };
 
 static struct platform_device *cdp_devices[] __initdata = {
 	&apq8064_device_uart_gsbi1,
+#ifdef CONFIG_SND_SOC_ES310
+	&apq8064_device_uart_gsbi5,
+#endif
 	&apq8064_device_uart_gsbi7,
 	&msm_device_sps_apq8064,
 #ifdef CONFIG_MSM_ROTATOR
@@ -2407,6 +2400,7 @@ static void __init apq8064_aries_init(void)
 	apq8064_common_init();
 	xiaomi_add_ramconsole_devices();
 	xiaomi_add_backlight_devices();
+	xiaomi_add_sound_devices();
 	msm_rotator_set_split_iommu_domain();
 	platform_add_devices(cdp_devices, ARRAY_SIZE(cdp_devices));
 	spi_register_board_info(spi_board_info,
