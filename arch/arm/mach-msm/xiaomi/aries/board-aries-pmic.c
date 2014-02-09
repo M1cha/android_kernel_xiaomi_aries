@@ -119,7 +119,7 @@ static struct pm8xxx_gpio_init pm8921_gpios[] __initdata = {
 	PM8921_GPIO_OUTPUT(8, 0, HIGH),			/* touchscreen reset pin */
 	PM8921_GPIO_INPUT(12, PM_GPIO_PULL_NO),		/* LCD DET ID */
 	PM8921_GPIO_INPUT(16, PM_GPIO_PULL_NO),		/* MHL WAKEUP */
-	PM8921_GPIO_OUTPUT(14, 0, HIGH),		/* MHL 1V8 */
+	PM8921_GPIO_OUTPUT(14, 1, HIGH),		/* MHL 1V8 */
 	PM8921_GPIO_OUTPUT(19, 0, HIGH),		/* MHL 3V3 */
 	PM8921_GPIO_OUTPUT(22, 0, HIGH),		/* MHL Reset */
 	PM8921_GPIO_OUTPUT(21, 0, HIGH),		/* HDMI MHL level shift */
