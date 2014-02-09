@@ -4,3 +4,17 @@ config MACH_XIAOMI
 menu "XIAOMI Board Selection"
 source "arch/arm/mach-msm/xiaomi/Kconfig.board"
 endmenu
+
+config UPDATE_LCDC_LUT
+	bool "Set initial Qualcomm LCDC lut"
+	default n
+	depends on MACH_XIAOMI
+	help
+	  Set initial Qualcomm LCDC Look Up Table.
+
+config LCD_KCAL
+	bool "Interface to calibrate LCD color temperature"
+	default n
+	depends on MACH_XIAOMI && UPDATE_LCDC_LUT
+	help
+	  Interface to calibrate LCD color temperature
