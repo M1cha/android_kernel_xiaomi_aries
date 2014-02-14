@@ -2400,6 +2400,7 @@ static void __init apq8064_aries_init(void)
 	apq8064_common_init();
 	xiaomi_add_ramconsole_devices();
 	xiaomi_add_backlight_devices();
+	xiaomi_add_mhl_devices();
 	xiaomi_add_sound_devices();
 	msm_rotator_set_split_iommu_domain();
 	platform_add_devices(cdp_devices, ARRAY_SIZE(cdp_devices));
