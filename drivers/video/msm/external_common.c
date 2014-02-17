@@ -165,8 +165,8 @@ struct msm_hdmi_mode_timing_info
 	hdmi_mhl_supported_video_mode_lut[HDMI_VFRMT_MAX] = {
 	VFRMT_NOT_SUPPORTED(HDMI_VFRMT_UNKNOWN),
 	HDMI_VFRMT_640x480p60_4_3_TIMING,
-	HDMI_SETTINGS_720x480p60_4_3,
-	HDMI_SETTINGS_720x480p60_16_9,
+	HDMI_VFRMT_720x480p60_4_3_TIMING,
+	HDMI_VFRMT_720x480p60_16_9_TIMING,
 	HDMI_VFRMT_1280x720p60_16_9_TIMING,
 	VFRMT_NOT_SUPPORTED(HDMI_VFRMT_1920x1080i60_16_9),
 	VFRMT_NOT_SUPPORTED(HDMI_VFRMT_1440x480i60_4_3),
@@ -1484,10 +1484,11 @@ static void hdmi_edid_extract_extended_data_blocks(const uint8 *in_buf)
 {
 	uint8 len = 0;
 	uint32 start_offset = DBC_START_OFFSET;
-	video_cap_d_block_found = false;
 
 	/* A Tage code of 7 identifies extended data blocks */
 	uint8 const *etag = hdmi_edid_find_block(in_buf, start_offset, 7, &len);
+
+	video_cap_d_block_found = false;
 
 	while (etag != NULL) {
 		/* The extended data block should at least be 2 bytes long */
