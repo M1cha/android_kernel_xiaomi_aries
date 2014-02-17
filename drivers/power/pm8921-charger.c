@@ -91,6 +91,9 @@
 #define UNPLUG_CHECK_WAIT_PERIOD_MS 200
 #define UNPLUG_CHECK_RAMP_MS 25
 #define USB_TRIM_ENTRIES 16
+/* check invalid charger after plugin */
+#define INVALID_CHG_IN_CHECK_WAIT_PERIOD_MS 3000
+#define INVALID_CHG_OUT_CHECK_WAIT_PERIOD_MS 1000
 
 enum chg_fsm_state {
 	FSM_STATE_OFF_0 = 0,
@@ -276,6 +279,7 @@ struct pm8921_chg_chip {
 	struct delayed_work		update_heartbeat_work;
 	struct delayed_work		eoc_work;
 	struct delayed_work		unplug_check_work;
+	struct delayed_work		invalid_chg_check_work;
 	struct delayed_work		vin_collapse_check_work;
 	struct delayed_work		btc_override_work;
 	struct wake_lock		eoc_wake_lock;
@@ -1566,12 +1570,28 @@ static int pm_power_get_property_usb(struct power_supply *psy,
 		}
 		break;
 	case POWER_SUPPLY_PROP_PRESENT:
-	case POWER_SUPPLY_PROP_ONLINE:
 		val->intval = 0;
 
 		if (the_chip->usb_type == POWER_SUPPLY_TYPE_USB)
 			val->intval = is_usb_chg_plugged_in(the_chip);
 
+		break;
+	case POWER_SUPPLY_PROP_ONLINE:
+		val->intval = 0;
+		if (charging_disabled)
+			return 0;
+
+		if (pm_is_chg_charge_dis(the_chip))
+			return 0;
+
+		if (!is_usb_chg_plugged_in(the_chip))
+			return 0;
+
+		pm_chg_iusbmax_get(the_chip, &current_max);
+		if (usb_target_ma == 0 && current_max > 100)
+			val->intval = 1;
+		else
+			val->intval = 0;
 		break;
 
 	case POWER_SUPPLY_PROP_SCOPE:
@@ -2316,11 +2336,23 @@ static void handle_usb_insertion_removal(struct pm8921_chg_chip *chip)
 	if (usb_present) {
 		schedule_delayed_work(&chip->unplug_check_work,
 			msecs_to_jiffies(UNPLUG_CHECK_RAMP_MS));
+		/* invalid charge work */
+		if (delayed_work_pending(&chip->invalid_chg_check_work))
+			__cancel_delayed_work(&chip->invalid_chg_check_work);
+		schedule_delayed_work(&chip->invalid_chg_check_work,
+			round_jiffies_relative(msecs_to_jiffies
+				(INVALID_CHG_IN_CHECK_WAIT_PERIOD_MS)));
 		pm8921_chg_enable_irq(chip, CHG_GONE_IRQ);
 	} else {
 		/* USB unplugged reset target current */
 		usb_target_ma = 0;
 		pm8921_chg_disable_irq(chip, CHG_GONE_IRQ);
+		/* invalid charge work */
+		if (delayed_work_pending(&chip->invalid_chg_check_work))
+			__cancel_delayed_work(&chip->invalid_chg_check_work);
+                schedule_delayed_work(&chip->invalid_chg_check_work,
+                        round_jiffies_relative(msecs_to_jiffies
+                                (INVALID_CHG_OUT_CHECK_WAIT_PERIOD_MS)));
 	}
 	bms_notify_check(chip);
 }
@@ -2790,6 +2822,54 @@ static void attempt_reverse_boost_fix(struct pm8921_chg_chip *chip)
 	pr_debug("End\n");
 }
 
+extern int mhl_vbus_status(void);
+static void invalid_chg_check_worker(struct work_struct *work)
+{
+	struct delayed_work *dwork = to_delayed_work(work);
+	struct pm8921_chg_chip *chip = container_of(dwork,
+				struct pm8921_chg_chip,invalid_chg_check_work);
+	int usb_present, chg_gone;
+	int usb_ma;
+	int fsm_state;
+	static int invalid_chg_set = 0;
+	int vbus_is_on = mhl_vbus_status();
+
+	/* Below work arounds only for SDP port charging*/
+	if (usb_target_ma != 0)
+		return;
+
+	usb_present = is_usb_chg_plugged_in(chip);
+	chg_gone = pm_chg_get_rt_status(chip, CHG_GONE_IRQ);
+
+	/* chg_gone = 1 and usb_present = 1 */
+	if (chg_gone == 1 && usb_present  == 1) {
+		pr_info("active path %x\n", chip->active_path);
+		unplug_ovp_fet_open(chip);
+	}
+
+	usb_present = is_usb_chg_plugged_in(chip);
+	chg_gone = pm_chg_get_rt_status(chip, CHG_GONE_IRQ);
+
+	/* chg out check*/
+	if (usb_present == 0 && invalid_chg_set == 1) {
+		pr_info("set current to 0\n");
+		__pm8921_charger_vbus_draw(0);
+		invalid_chg_set = 0;
+	}
+
+	pm_chg_iusbmax_get(chip, &usb_ma);
+	fsm_state = pm_chg_get_fsm_state(chip);
+
+	/* chg in check */
+	if (usb_present == 1 &&
+		vbus_is_on == 0 &&
+		usb_ma <= 100 && !is_battery_charging(fsm_state)) {
+		pr_info("invalid charger, set curr 500mA\n");
+		__pm8921_charger_vbus_draw(500);
+		invalid_chg_set = 1;
+	}
+}
+
 #define VIN_ACTIVE_BIT BIT(0)
 #define UNPLUG_WRKARND_RESTORE_WAIT_PERIOD_US	200
 #define VIN_MIN_INCREASE_MV	100
@@ -3040,6 +3120,13 @@ static irqreturn_t chg_gone_irq_handler(int irq, void *data)
 
 	usb_chg_plugged_in = is_usb_chg_plugged_in(chip);
 	chg_gone = pm_chg_get_rt_status(chip, CHG_GONE_IRQ);
+	if (usb_chg_plugged_in && chg_gone &&
+		!delayed_work_pending(&chip->unplug_check_work))
+		if (delayed_work_pending(&chip->invalid_chg_check_work))
+			__cancel_delayed_work(&chip->invalid_chg_check_work);
+		schedule_delayed_work(&chip->invalid_chg_check_work,
+			round_jiffies_relative(msecs_to_jiffies
+				(INVALID_CHG_OUT_CHECK_WAIT_PERIOD_MS)));
 
 	pr_debug("chg_gone=%d, usb_valid = %d\n", chg_gone, usb_chg_plugged_in);
 	pr_debug("Chg gone fsm_state=%d\n", pm_chg_get_fsm_state(data));
@@ -3236,7 +3323,7 @@ static void update_heartbeat(struct work_struct *work)
 						     (chip->update_time)));
 }
 #define VDD_LOOP_ACTIVE_BIT	BIT(3)
-#define VDD_MAX_INCREASE_MV	400
+#define VDD_MAX_INCREASE_MV	40 /* Based on the test */
 static int vdd_max_increase_mv = VDD_MAX_INCREASE_MV;
 module_param(vdd_max_increase_mv, int, 0644);
 
@@ -3863,6 +3950,12 @@ static void __devinit determine_initial_state(struct pm8921_chg_chip *chip)
 	if (chip->usb_present || chip->dc_present) {
 		schedule_delayed_work(&chip->unplug_check_work,
 			msecs_to_jiffies(UNPLUG_CHECK_WAIT_PERIOD_MS));
+
+		/* invalid charge work */
+		schedule_delayed_work(&chip->invalid_chg_check_work,
+			round_jiffies_relative(msecs_to_jiffies
+				(INVALID_CHG_IN_CHECK_WAIT_PERIOD_MS)));
+
 		pm8921_chg_enable_irq(chip, CHG_GONE_IRQ);
 
 		if (chip->btc_override)
@@ -3881,6 +3974,10 @@ static void __devinit determine_initial_state(struct pm8921_chg_chip *chip)
 	pm8921_chg_enable_irq(chip, FASTCHG_IRQ);
 	pm8921_chg_enable_irq(chip, VBATDET_LOW_IRQ);
 	pm8921_chg_enable_irq(chip, BAT_TEMP_OK_IRQ);
+	pm8921_chg_enable_irq(chip, VBATDET_IRQ);
+	pm8921_chg_enable_irq(chip, BATTTEMP_HOT_IRQ);
+	pm8921_chg_enable_irq(chip, BATTTEMP_COLD_IRQ);
+	pm8921_chg_enable_irq(chip, CHGSTATE_IRQ);
 
 	if (get_prop_batt_present(the_chip) || is_dc_chg_plugged_in(the_chip))
 		if (usb_chg_current)
@@ -3904,8 +4001,8 @@ static void __devinit determine_initial_state(struct pm8921_chg_chip *chip)
 
 	fsm_state = pm_chg_get_fsm_state(chip);
 	if (is_battery_charging(fsm_state)) {
-		chip->bms_notify.is_charging = 1;
-		pm8921_bms_charging_began();
+		/* It will keep charging status broung up by trickle charging */
+		fastchg_irq_handler(chip->pmic_chg_irq[FASTCHG_IRQ], chip);
 	}
 
 	check_battery_valid(chip);
@@ -4878,6 +4975,7 @@ static int __devinit pm8921_charger_probe(struct platform_device *pdev)
 	INIT_DELAYED_WORK(&chip->vin_collapse_check_work,
 						vin_collapse_check_worker);
 	INIT_DELAYED_WORK(&chip->unplug_check_work, unplug_check_worker);
+	INIT_DELAYED_WORK(&chip->invalid_chg_check_work, invalid_chg_check_worker);
 
 	INIT_WORK(&chip->bms_notify.work, bms_notify);
 	INIT_WORK(&chip->battery_id_valid_work, battery_id_valid);
