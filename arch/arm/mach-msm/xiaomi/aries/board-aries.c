@@ -1038,7 +1038,7 @@ static struct wcd9xxx_pdata apq8064_tabla20_platform_data = {
 	.reset_gpio = PM8921_GPIO_PM_TO_SYS(34),
 	.micbias = {
 		.ldoh_v = TABLA_LDOH_2P85_V,
-		.cfilt1_mv = 1800,
+		.cfilt1_mv = 2700,
 		.cfilt2_mv = 2700,
 		.cfilt3_mv = 1800,
 		.bias1_cfilt_sel = TABLA_CFILT1_SEL,
@@ -1928,18 +1928,9 @@ static struct platform_device apq8064_device_ext_5p4v_vreg __devinitdata = {
 
 static struct platform_device apq8064_device_rpm_regulator __devinitdata = {
 	.name	= "rpm-regulator",
-	.id	= 0,
+	.id	= -1,
 	.dev	= {
 		.platform_data = &apq8064_rpm_regulator_pdata,
-	},
-};
-
-static struct platform_device
-apq8064_pm8921_device_rpm_regulator __devinitdata = {
-	.name	= "rpm-regulator",
-	.id	= 1,
-	.dev	= {
-		.platform_data = &apq8064_rpm_regulator_pm8921_pdata,
 	},
 };
 
@@ -1952,7 +1943,6 @@ static struct platform_device *common_not_mpq_devices[] __initdata = {
 static struct platform_device *early_common_devices[] __initdata = {
 	&apq8064_device_acpuclk,
 	&apq8064_device_dmov,
-	&apq8064_device_qup_spi_gsbi5,
 };
 
 static struct platform_device *pm8921_common_devices[] __initdata = {
@@ -1962,13 +1952,6 @@ static struct platform_device *pm8921_common_devices[] __initdata = {
 	&apq8064_device_ssbi_pmic1,
 	&apq8064_device_ssbi_pmic2,
 	&apq8064_device_ext_5p4v_vreg,
-};
-
-static struct platform_device *pm8917_common_devices[] __initdata = {
-	&apq8064_device_ext_mpp8_vreg,
-	&apq8064_device_ext_3p3v_vreg,
-	&apq8064_device_ssbi_pmic1,
-	&apq8064_device_ssbi_pmic2,
 };
 
 static struct platform_device *common_devices[] __initdata = {
@@ -2101,10 +2084,6 @@ static struct platform_device *cdp_devices[] __initdata = {
 	&msm_rotator_device,
 #endif
 	&msm8064_cpu_slp_status,
-};
-
-static struct msm_spi_platform_data apq8064_qup_spi_gsbi5_pdata = {
-	.max_clock_speed = 1100000,
 };
 
 #define KS8851_IRQ_GPIO		43
@@ -2301,20 +2280,13 @@ static void __init apq8064_common_init(void)
 	BUG_ON(msm_rpm_init(&apq8064_rpm_data));
 	BUG_ON(msm_rpmrs_levels_init(&msm_rpmrs_data));
 	regulator_suppress_info_printing();
-	if (socinfo_get_pmic_model() == PMIC_MODEL_PM8917)
-		configure_apq8064_pm8917_power_grid();
 	platform_device_register(&apq8064_device_rpm_regulator);
-	if (socinfo_get_pmic_model() != PMIC_MODEL_PM8917)
-		platform_device_register(&apq8064_pm8921_device_rpm_regulator);
 	if (msm_xo_init())
 		pr_err("Failed to initialize XO votes\n");
 	msm_clock_init(&apq8064_clock_init_data);
 	apq8064_init_gpiomux();
 	apq8064_i2c_init();
 	register_i2c_devices();
-
-	apq8064_device_qup_spi_gsbi5.dev.platform_data =
-						&apq8064_qup_spi_gsbi5_pdata;
 	apq8064_init_pmic();
 
 	android_usb_pdata.swfi_latency =
@@ -2326,12 +2298,9 @@ static void __init apq8064_common_init(void)
 
 	platform_add_devices(early_common_devices,
 				ARRAY_SIZE(early_common_devices));
-	if (socinfo_get_pmic_model() != PMIC_MODEL_PM8917)
-		platform_add_devices(pm8921_common_devices,
-					ARRAY_SIZE(pm8921_common_devices));
-	else
-		platform_add_devices(pm8917_common_devices,
-					ARRAY_SIZE(pm8917_common_devices));
+	platform_add_devices(pm8921_common_devices,
+				ARRAY_SIZE(pm8921_common_devices));
+
 
 	platform_device_register(&apq8064_device_ext_ts_sw_vreg);
 
