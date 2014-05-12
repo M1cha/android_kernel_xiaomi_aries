@@ -1,4 +1,4 @@
-/* Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2012-2014, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -93,22 +93,22 @@ enum {
 
 static inline void set_gpio_bits(unsigned n, void __iomem *reg)
 {
-	__raw_writel(__raw_readl(reg) | n, reg);
+	__raw_writel_no_log(__raw_readl_no_log(reg) | n, reg);
 }
 
 static inline void clr_gpio_bits(unsigned n, void __iomem *reg)
 {
-	__raw_writel(__raw_readl(reg) & ~n, reg);
+	__raw_writel_no_log(__raw_readl_no_log(reg) & ~n, reg);
 }
 
 unsigned __msm_gpio_get_inout(unsigned gpio)
 {
-	return __raw_readl(GPIO_IN_OUT(gpio)) & BIT(GPIO_IN_BIT);
+	return __raw_readl_no_log(GPIO_IN_OUT(gpio)) & BIT(GPIO_IN_BIT);
 }
 
 void __msm_gpio_set_inout(unsigned gpio, unsigned val)
 {
-	__raw_writel(val ? BIT(GPIO_OUT_BIT) : 0, GPIO_IN_OUT(gpio));
+	__raw_writel_no_log(val ? BIT(GPIO_OUT_BIT) : 0, GPIO_IN_OUT(gpio));
 }
 
 void __msm_gpio_set_config_direction(unsigned gpio, int input, int val)
@@ -131,18 +131,18 @@ void __msm_gpio_set_polarity(unsigned gpio, unsigned val)
 
 unsigned __msm_gpio_get_intr_status(unsigned gpio)
 {
-	return __raw_readl(GPIO_INTR_STATUS(gpio)) &
+	return __raw_readl_no_log(GPIO_INTR_STATUS(gpio)) &
 					BIT(INTR_STATUS_BIT);
 }
 
 void __msm_gpio_set_intr_status(unsigned gpio)
 {
-	__raw_writel(BIT(INTR_STATUS_BIT), GPIO_INTR_STATUS(gpio));
+	__raw_writel_no_log(BIT(INTR_STATUS_BIT), GPIO_INTR_STATUS(gpio));
 }
 
 unsigned __msm_gpio_get_intr_config(unsigned gpio)
 {
-	return __raw_readl(GPIO_INTR_CFG(gpio));
+	return __raw_readl_no_log(GPIO_INTR_CFG(gpio));
 }
 
 void __msm_gpio_set_intr_cfg_enable(unsigned gpio, unsigned val)
@@ -170,8 +170,8 @@ void __msm_gpio_set_intr_cfg_type(unsigned gpio, unsigned type)
 	 */
 	cfg  = __msm_gpio_get_intr_config(gpio);
 	cfg |= INTR_RAW_STATUS_EN;
-	__raw_writel(cfg, GPIO_INTR_CFG(gpio));
-	__raw_writel(TARGET_PROC_SCORPION, GPIO_INTR_CFG_SU(gpio));
+	__raw_writel_no_log(cfg, GPIO_INTR_CFG(gpio));
+	__raw_writel_no_log(TARGET_PROC_SCORPION, GPIO_INTR_CFG_SU(gpio));
 
 	cfg  = __msm_gpio_get_intr_config(gpio);
 	if (type & IRQ_TYPE_EDGE_BOTH)
@@ -184,7 +184,7 @@ void __msm_gpio_set_intr_cfg_type(unsigned gpio, unsigned type)
 	else
 		cfg &= ~INTR_POL_CTL_HI;
 
-	__raw_writel(cfg, GPIO_INTR_CFG(gpio));
+	__raw_writel_no_log(cfg, GPIO_INTR_CFG(gpio));
 	/* Sometimes it might take a little while to update
 	 * the interrupt status after the RAW_STATUS is enabled
 	 * We clear the interrupt status before enabling the
@@ -206,7 +206,7 @@ void __gpio_tlmm_config(unsigned config)
 		((GPIO_DRVSTR(config) << 6) & (0x7 << 6)) |
 		((GPIO_FUNC(config) << 2) & (0xf << 2)) |
 		((GPIO_PULL(config) & 0x3));
-	__raw_writel(flags, GPIO_CONFIG(gpio));
+	__raw_writel_no_log(flags, GPIO_CONFIG(gpio));
 }
 
 void __msm_gpio_install_direct_irq(unsigned gpio, unsigned irq,
@@ -214,16 +214,16 @@ void __msm_gpio_install_direct_irq(unsigned gpio, unsigned irq,
 {
 	uint32_t bits;
 
-	__raw_writel(__raw_readl(GPIO_CONFIG(gpio)) | BIT(GPIO_OE_BIT),
+	__raw_writel_no_log(__raw_readl_no_log(GPIO_CONFIG(gpio)) | BIT(GPIO_OE_BIT),
 		GPIO_CONFIG(gpio));
-	__raw_writel(__raw_readl(GPIO_INTR_CFG(gpio)) &
+	__raw_writel_no_log(__raw_readl_no_log(GPIO_INTR_CFG(gpio)) &
 		~(INTR_RAW_STATUS_EN | INTR_ENABLE),
 		GPIO_INTR_CFG(gpio));
-	__raw_writel(DC_IRQ_ENABLE | TARGET_PROC_NONE,
+	__raw_writel_no_log(DC_IRQ_ENABLE | TARGET_PROC_NONE,
 		GPIO_INTR_CFG_SU(gpio));
 
 	bits = TARGET_PROC_SCORPION | (gpio << 3);
 	if (input_polarity)
 		bits |= DC_POLARITY_HI;
-	__raw_writel(bits, DIR_CONN_INTR_CFG_SU(irq));
+	__raw_writel_no_log(bits, DIR_CONN_INTR_CFG_SU(irq));
 }
