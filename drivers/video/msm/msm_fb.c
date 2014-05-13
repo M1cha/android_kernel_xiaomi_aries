@@ -122,8 +122,8 @@ static int msm_fb_ioctl(struct fb_info *info, unsigned int cmd,
 static int msm_fb_mmap(struct fb_info *info, struct vm_area_struct * vma);
 static int mdp_bl_scale_config(struct msm_fb_data_type *mfd,
 						struct mdp_bl_scale_data *data);
-static void msm_fb_scale_bl(__u32 bl_max, __u32 *bl_lvl);
 static int msm_fb_commit_thread(void *data);
+static void msm_fb_scale_bl(__u32 bl_max, __u32 *bl_lvl);
 static int msm_fb_pan_idle(struct msm_fb_data_type *mfd);
 
 #ifdef MSM_FB_ENABLE_DBGFS
@@ -2041,7 +2041,7 @@ static void bl_workqueue_handler(struct work_struct *work)
 	down(&mfd->sem);
 	if ((pdata) && (pdata->set_backlight) && (!bl_updated)
 					&& (mfd->panel_power_on)) {
-		msm_fb_scale_bl(&temp);
+		msm_fb_scale_bl(mfd->panel_info.bl_max, &temp);
 		mfd->bl_level = temp;
 		pdata->set_backlight(mfd);
 		bl_level_old = unset_bl_level;
