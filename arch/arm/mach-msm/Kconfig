@@ -255,6 +255,47 @@ config ARCH_MSM8226
 	select PINCTRL_MSM_TLMM
 	select ENABLE_VMALLOC_SAVINGS
 	select MSM_IRQ
+
+config ARCH_APQ8064
+	bool "APQ8064"
+	select ARM_GIC
+	select GIC_SECURE
+	select ARCH_MSM_CORTEXMP
+	select CPU_V7
+	select MSM_SCM
+	select ARM_TICKET_LOCKS
+	select GPIO_MSM_V2
+	select MSM_GPIOMUX
+	select HAVE_ARM_ARCH_TIMER
+	select MSM_QDSP6_APRV2
+	select MSM_QDSP6V2_CODECS
+	select QMI_ENCDEC
+	select MSM_RPM_SMD
+	select MSM_SPM_V2
+	select MSM_L2_SPM
+	select MSM_PM if PM
+	select MEMORY_HOLE_CARVEOUT
+	select MSM_BUS_SCALING
+	select MSM_CORTEX_A7
+	select CPU_FREQ_MSM
+	select CPU_FREQ
+	select PM_DEVFREQ
+	select MSM_DEVFREQ_CPUBW
+	select MSM_PIL
+	select MSM_RUN_QUEUE_STATS
+	select ARM_HAS_SG_CHAIN
+	select REGULATOR
+	select REGULATOR_RPM_SMD
+	select REGULATOR_SPM
+	select MSM_JTAG_MM if CORESIGHT_ETM
+	select REGULATOR_CPR
+	select MSM_RPM_LOG
+	select MSM_RPM_STATS_LOG
+	select ARCH_WANT_KMAP_ATOMIC_FLUSH
+	select PINCTRL
+	select PINCTRL_MSM_TLMM_V3
+	select ENABLE_VMALLOC_SAVINGS
+	select MSM_IRQ
 endmenu
 
 config MSM_KRAIT_TBB_ABORT_HANDLER
@@ -339,6 +380,7 @@ config PHYS_OFFSET
 	default "0x0b600000" if ARCH_FSM9900
 	default "0x00000000" if ARCH_MDM9630
 	default "0x80000000" if ARCH_MSMZIRC
+	default "0x80200000" if ARCH_APQ8064
 	default "0x00200000" if !MSM_STACKED_MEMORY
 	default "0x10000000"
 
@@ -437,6 +479,14 @@ choice
 		help
 		  Say Y here if you want the debug print routines to direct
 		  their output to the serial port on MSM ZIRC devices.
+
+	config DEBUG_APQ8064_UART
+		bool "Kernel low-level debugging messages via APQ 8064 UART"
+		depends on ARCH_APQ8064 && DEBUG_LL
+		select MSM_HAS_DEBUG_UART_HS
+		help
+		Say Y here if you want the debug print routines to direct
+		their output to the serial port on APQ 8064 devices.
 endchoice
 
 choice

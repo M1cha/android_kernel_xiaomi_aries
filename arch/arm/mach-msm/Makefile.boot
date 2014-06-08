@@ -22,3 +22,6 @@
 # MSM8610
    zreladdr-$(CONFIG_ARCH_MSM8610)	:= 0x00008000
 
+# APQ8064
+   zreladdr-$(CONFIG_ARCH_APQ8064)	:= 0x80208000
+

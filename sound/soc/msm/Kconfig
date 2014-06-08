@@ -162,7 +162,7 @@ config SND_SOC_APQ8074
 
 config SND_SOC_MSM8226
 	tristate "SoC Machine driver for MSM8226 boards"
-	depends on ARCH_MSM8226
+	depends on ARCH_MSM8226 || ARCH_APQ8064
 	select SND_SOC_QDSP6V2
 	select SND_SOC_MSM_STUB
 	select SND_SOC_MSM_HOSTLESS_PCM

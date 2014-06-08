@@ -652,6 +652,9 @@ void msm8226_init_gpiomux(void);
 void msm8610_init_gpiomux(void);
 void msm_map_msm8610_io(void);
 void msm8610_init_irq(void);
+void msm_map_apq8064_io(void);
+void apq8064_init_irq(void);
+void apq8064_init_gpiomux(void);
 
 /* Dump debug info (states, rate, etc) of clocks */
 #if defined(CONFIG_ARCH_MSM7X27)
