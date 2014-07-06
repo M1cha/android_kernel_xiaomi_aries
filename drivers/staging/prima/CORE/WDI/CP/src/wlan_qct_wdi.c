@@ -3208,6 +3208,7 @@ WDI_SetPwrSaveCfgReq
 WDI_Status
 WDI_EnterImpsReq
 (
+   WDI_EnterImpsReqParamsType *pwdiEnterImpsReqParams,
    WDI_EnterImpsRspCb  wdiEnterImpsRspCb,
    void*                   pUserData
 )
@@ -3230,8 +3231,8 @@ WDI_EnterImpsReq
     Fill in Event data and post to the Main FSM
   ------------------------------------------------------------------------*/
   wdiEventData.wdiRequest      = WDI_ENTER_IMPS_REQ;
-  wdiEventData.pEventData      = NULL;
-  wdiEventData.uEventDataSize  = 0;
+  wdiEventData.pEventData      = pwdiEnterImpsReqParams;
+  wdiEventData.uEventDataSize  = sizeof(*pwdiEnterImpsReqParams);
   wdiEventData.pCBfnc          = wdiEnterImpsRspCb;
   wdiEventData.pUserData       = pUserData;
 
@@ -12117,10 +12118,6 @@ WDI_SetPowerStateCb
    wpt_status              wptStatus;
    WDI_ControlBlockType *pCB = NULL;
    /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
-   if(eWLAN_PAL_STATUS_E_FAILURE == status )
-   {
-      //it shouldn't happen, put an error msg
-   }
    /*
     * Trigger the event to bring the Enter BMPS req function to come
     * out of wait
@@ -12133,6 +12130,15 @@ WDI_SetPowerStateCb
    {
       //put an error msg
       pCB = &gWDICb;
+   }
+
+   if(eWLAN_PAL_STATUS_SUCCESS == status )
+   {
+      pCB->dxeRingsEmpty = eWLAN_PAL_TRUE;
+   }
+   else
+   {
+      pCB->dxeRingsEmpty = eWLAN_PAL_FALSE;
    }
    pCB->dxePhyAddr = dxePhyAddr;
    wptStatus  = wpalEventSet(&pCB->setPowerStateEvent);
@@ -12169,13 +12175,16 @@ WDI_ProcessEnterImpsReq
    wpt_uint8*               pSendBuffer         = NULL;
    wpt_uint16               usDataOffset        = 0;
    wpt_uint16               usSendSize          = 0;
+   WDI_EnterImpsReqParamsType*  pwdiEnterImpsReqParams = NULL;
    /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
    /*-------------------------------------------------------------------------
      Sanity check
    -------------------------------------------------------------------------*/
-   if (( NULL == pEventData ) ||
-       ( NULL == (wdiEnterImpsRspCb   = (WDI_EnterImpsRspCb)pEventData->pCBfnc)))
+   if ((NULL == pEventData ) ||
+       (NULL == (wdiEnterImpsRspCb = (WDI_EnterImpsRspCb)pEventData->pCBfnc)) ||
+       (NULL == (pwdiEnterImpsReqParams =
+                  (WDI_EnterImpsReqParamsType*)pEventData->pEventData)))
    {
       WPAL_TRACE( eWLAN_MODULE_DAL_CTRL, eWLAN_PAL_TRACE_LEVEL_WARN,
                   "%s: Invalid parameters", __func__);
@@ -12233,6 +12242,16 @@ WDI_ProcessEnterImpsReq
       goto fail;
    }
 
+   if (pWDICtx->dxeRingsEmpty == eWLAN_PAL_FALSE)
+   {
+      WPAL_TRACE(eWLAN_MODULE_DAL_CTRL, eWLAN_PAL_TRACE_LEVEL_FATAL,
+                "%s: DXE Rings not empty, cannot enter IMPS",__func__);
+
+      goto fail;
+   }
+
+   pWDICtx->wdiReqStatusCB     = pwdiEnterImpsReqParams->wdiReqStatusCB;
+   pWDICtx->pReqStatusUserData = pwdiEnterImpsReqParams->pUserData;
    /*-------------------------------------------------------------------------
      Send Get STA Request to HAL
    -------------------------------------------------------------------------*/
@@ -17309,7 +17328,6 @@ WDI_ProcessSetMaxTxPowerRsp
   {
      WPAL_TRACE( eWLAN_MODULE_DAL_CTRL,  eWLAN_PAL_TRACE_LEVEL_ERROR,
               "Error status returned in Set Max Tx Power Response ");
-     WDI_DetectedDeviceError( pWDICtx, WDI_ERR_BASIC_OP_FAILURE);
      return WDI_STATUS_E_FAILURE;
   }
 
@@ -20074,7 +20092,10 @@ WDI_SendMsg
        (eWLAN_PAL_STATUS_E_RESOURCES != ret))
    {
      WPAL_TRACE(eWLAN_MODULE_DAL_CTRL, eWLAN_PAL_TRACE_LEVEL_FATAL,
-                "Failed to send message over the bus - catastrophic failure");
+                "Failed to send message with expected response %s (%d)"
+                " over the bus - catastrophic failure",
+                WDI_getRespMsgString(pWDICtx->wdiExpectedResponse),
+                pWDICtx->wdiExpectedResponse);
 
      wdiStatus = WDI_STATUS_E_FAILURE;
    }
@@ -20320,6 +20341,10 @@ WDI_ResponseTimerCB
     }
 #ifndef WDI_RE_ENABLE_WIFI_ON_WDI_TIMEOUT
     wpalWcnssResetIntr();
+    if(wpalIsWDresetInProgress())
+    {
+        wpalDevicePanic();
+    }
     /* if this timer fires, it means Riva did not receive the FIQ */
     wpalTimerStart(&pWDICtx->ssrTimer, WDI_SSR_TIMEOUT);
 #else
@@ -20604,6 +20629,7 @@ WDI_DequeuePendingReq
 
   /*Save the global state as we need it on the other side*/
   palMsg->val      = pWDICtx->uGlobalState;
+  palMsg->type     = 0;
 
   /*Transition back to BUSY as we need to handle a queued request*/
   WDI_STATE_TRANSITION( pWDICtx, WDI_BUSY_ST);
@@ -22821,6 +22847,10 @@ WDI_ExtractRequestCBFromEvent
     *ppfnReqCB   =  ((WDI_ExitBmpsReqParamsType*)pEvent->pEventData)->wdiReqStatusCB;
     *ppUserData  =  ((WDI_ExitBmpsReqParamsType*)pEvent->pEventData)->pUserData;
      break;
+  case  WDI_ENTER_IMPS_REQ:
+    *ppfnReqCB   =  ((WDI_EnterImpsReqParamsType*)pEvent->pEventData)->wdiReqStatusCB;
+    *ppUserData  =  ((WDI_EnterImpsReqParamsType*)pEvent->pEventData)->pUserData;
+     break;
   case  WDI_ENTER_UAPSD_REQ:
     *ppfnReqCB   =  ((WDI_EnterUapsdReqParamsType*)pEvent->pEventData)->wdiReqStatusCB;
     *ppUserData  =  ((WDI_EnterUapsdReqParamsType*)pEvent->pEventData)->pUserData;
@@ -22991,6 +23021,32 @@ WDI_IsHwFrameTxTranslationCapable
   return gWDICb.bFrameTransEnabled;
 }/*WDI_IsHwFrameTxTranslationCapable*/
 
+
+/**
+ @brief WDI_IsSelfSTA - check if staid is self sta index
+
+
+ @param  pWDICtx:   pointer to the WLAN DAL context
+         ucSTAIdx:  station index
+
+ @return Result of the function call
+*/
+wpt_boolean WDI_IsSelfSTA(  void*  pWDICtx, wpt_uint8 ucSTAIdx )
+{
+   wpt_uint8              ucSTAType;
+
+   if( WDI_STATableGetStaType( (WDI_ControlBlockType*)pWDICtx,
+                                ucSTAIdx,&ucSTAType) == WDI_STATUS_SUCCESS)
+   {
+        if( ucSTAType == WDI_STA_ENTRY_SELF )
+           return eWLAN_PAL_TRUE;
+   }
+
+  return eWLAN_PAL_FALSE;
+}
+
+
+
 #ifdef FEATURE_WLAN_SCAN_PNO
 /**
  @brief WDI_SetPreferredNetworkList
@@ -23025,6 +23081,18 @@ WDI_SetPreferredNetworkReq
    {
      WPAL_TRACE(eWLAN_MODULE_DAL_CTRL, eWLAN_PAL_TRACE_LEVEL_ERROR,
                "WDI API call before module is initialized - Fail request");
+
+     return WDI_STATUS_E_NOT_ALLOWED;
+   }
+
+   /*----------------------------------------------------------------------
+     Avoid Enable PNO during any active session or an ongoing session
+   ----------------------------------------------------------------------*/
+   if ( (pwdiPNOScanReqParams->wdiPNOScanInfo.bEnable &&
+        WDI_GetActiveSessionsCount(&gWDICb)) )
+   {
+     WPAL_TRACE(eWLAN_MODULE_DAL_CTRL, eWLAN_PAL_TRACE_LEVEL_ERROR,
+               "%s:(Active/Ongoing Session) - Fail request", __func__);
 
      return WDI_STATUS_E_NOT_ALLOWED;
    }
@@ -26737,19 +26805,20 @@ WDI_UpdateVHTOpModeReq
     Or if host driver detects any abnormal stcuk may display
         
  @param  displaySnapshot : Display DXE snapshot option
- @param  enableStallDetect : Enable stall detect feature
-                        This feature will take effect to data performance
-                        Not integrate till fully verification
+ @param  debugFlags      : Enable stall detect features
+                           defined by WPAL_DeviceDebugFlags
+                           These features may effect
+                           data performance.
  @see
  @return none
 */
 void WDI_TransportChannelDebug
 (
    wpt_boolean  displaySnapshot,
-   wpt_boolean  toggleStallDetect
+   wpt_uint8    debugFlags
 )
 {
-   WDTS_ChannelDebug(displaySnapshot, toggleStallDetect);
+   WDTS_ChannelDebug(displaySnapshot, debugFlags);
    return;
 }
 /**

@@ -1297,7 +1297,7 @@ typedef enum
 #define CFG_ENABLE_BYPASS_11D_NAME                 "gEnableBypass11d"
 #define CFG_ENABLE_BYPASS_11D_MIN                  ( 0 )
 #define CFG_ENABLE_BYPASS_11D_MAX                  ( 1 )
-#define CFG_ENABLE_BYPASS_11D_DEFAULT              ( 0 )
+#define CFG_ENABLE_BYPASS_11D_DEFAULT              ( 1 )
 
 #define CFG_ENABLE_DFS_CHNL_SCAN_NAME              "gEnableDFSChnlScan"
 #define CFG_ENABLE_DFS_CHNL_SCAN_MIN               ( 0 )
@@ -1357,12 +1357,6 @@ typedef enum
 #define CFG_P2P_DEVICE_ADDRESS_ADMINISTRATED_MAX                 ( 1 )
 #define CFG_P2P_DEVICE_ADDRESS_ADMINISTRATED_DEFAULT             ( 0 )
 
-#ifdef WLAN_FEATURE_PACKET_FILTERING
-#define CFG_MC_ADDR_LIST_FILTER_NAME               "isMcAddrListFilter"
-#define CFG_MC_ADDR_LIST_FILTER_MIN                ( 0 )
-#define CFG_MC_ADDR_LIST_FILTER_MAX                ( 1 )
-#define CFG_MC_ADDR_LIST_FILTER_DEFAULT            ( 0 )
-#endif
 
 #define CFG_ENABLE_SSR                      "gEnableSSR"
 #define CFG_ENABLE_SSR_MIN                  ( 0 )
@@ -1624,7 +1618,7 @@ typedef enum
 #define CFG_TDLS_IMPLICIT_TRIGGER_DEFAULT           ( 0 )
 
 #define CFG_TDLS_TX_STATS_PERIOD                    "gTDLSTxStatsPeriod"
-#define CFG_TDLS_TX_STATS_PERIOD_MIN                ( 2000 )
+#define CFG_TDLS_TX_STATS_PERIOD_MIN                ( 10 )
 #define CFG_TDLS_TX_STATS_PERIOD_MAX                ( 4294967295UL )
 #define CFG_TDLS_TX_STATS_PERIOD_DEFAULT            ( 5000 )
 
@@ -1649,7 +1643,7 @@ typedef enum
 #define CFG_TDLS_IDLE_TIMEOUT_DEFAULT               ( 5000 )
 
 #define CFG_TDLS_IDLE_PACKET_THRESHOLD              "gTDLSIdlePacketThreshold"
-#define CFG_TDLS_IDLE_PACKET_THRESHOLD_MIN          ( 1 )
+#define CFG_TDLS_IDLE_PACKET_THRESHOLD_MIN          ( 0 )
 #define CFG_TDLS_IDLE_PACKET_THRESHOLD_MAX          ( 40000 )
 #define CFG_TDLS_IDLE_PACKET_THRESHOLD_DEFAULT      ( 5 )
 
@@ -1667,6 +1661,10 @@ typedef enum
 #define CFG_TDLS_RSSI_TEARDOWN_THRESHOLD_MIN        ( -120 )
 #define CFG_TDLS_RSSI_TEARDOWN_THRESHOLD_MAX        ( 0 )
 #define CFG_TDLS_RSSI_TEARDOWN_THRESHOLD_DEFAULT    ( -75 )
+#define CFG_TDLS_EXTERNAL_CONTROL                   "gTDLSExternalControl"
+#define CFG_TDLS_EXTERNAL_CONTROL_MIN               (0)
+#define CFG_TDLS_EXTERNAL_CONTROL_MAX               (1)
+#define CFG_TDLS_EXTERNAL_CONTROL_DEFAULT           (0)
 #endif
 
 #ifdef WLAN_ACTIVEMODE_OFFLOAD_FEATURE
@@ -1785,6 +1783,11 @@ typedef enum
 #define CFG_TRAFFIC_IDLE_TIMEOUT_DEFAULT          ( 5000 )
 
 #ifdef FEATURE_WLAN_SCAN_PNO
+#define CFG_PNO_SCAN_SUPPORT                         "gPNOScanSupport"
+#define CFG_PNO_SCAN_SUPPORT_ENABLE                  ( 1 )
+#define CFG_PNO_SCAN_SUPPORT_DISABLE                 ( 0 )
+#define CFG_PNO_SCAN_SUPPORT_DEFAULT                 ( 1 )
+
 #define CFG_PNO_SCAN_TIMER_REPEAT_VALUE              "gPNOScanTimerRepeatValue"
 #define CFG_PNO_SCAN_TIMER_REPEAT_VALUE_DEFAULT      ( 6 )
 #define CFG_PNO_SCAN_TIMER_REPEAT_VALUE_MIN          ( 0 )
@@ -1808,6 +1811,28 @@ typedef enum
 #define CFG_SPLIT_SCAN_TRAFFIC_MONITOR_TIMER_MIN       ( 1000 )
 #define CFG_SPLIT_SCAN_TRAFFIC_MONITOR_TIMER_MAX       ( 10000 )
 #define CFG_SPLIT_SCAN_TRAFFIC_MONITOR_TIMER_DEFAULT   ( 5000 )
+
+//Enable debug for remain on channel issues
+#define CFG_DEBUG_P2P_REMAIN_ON_CHANNEL_NAME    "gDebugP2pRemainOnChannel"
+#define CFG_DEBUG_P2P_REMAIN_ON_CHANNEL_DEFAULT ( 0 )
+#define CFG_DEBUG_P2P_REMAIN_ON_CHANNEL_MIN     ( 0 )
+#define CFG_DEBUG_P2P_REMAIN_ON_CHANNEL_MAX     ( 1 )
+
+
+#define CFG_AMSDU_SUPPORT_IN_AMPDU_NAME                "gAmsduSupportInAMPDU"
+#define CFG_AMSDU_SUPPORT_IN_AMPDU_MIN                 (0)
+#define CFG_AMSDU_SUPPORT_IN_AMPDU_MAX                 (1)
+#define CFG_AMSDU_SUPPORT_IN_AMPDU_DEFAULT             (0) //disabled
+
+#define CFG_ROAMING_DFS_CHANNEL_NAME                "gAllowDFSChannelRoam"
+#define CFG_ROAMING_DFS_CHANNEL_MIN                 (0)
+#define CFG_ROAMING_DFS_CHANNEL_MAX                 (1)
+#define CFG_ROAMING_DFS_CHANNEL_DEFAULT             (0)
+
+#define CFG_ENABLE_STRICT_REGULATORY_FOR_FCC_NAME                "gEnableStrictRegulatoryForFCC"
+#define CFG_ENABLE_STRICT_REGULATORY_FOR_FCC_MIN                 ( 0 )
+#define CFG_ENABLE_STRICT_REGULATORY_FOR_FCC_MAX                 ( 1 )
+#define CFG_ENABLE_STRICT_REGULATORY_FOR_FCC_DEFAULT             ( 0 )
 
 /*---------------------------------------------------------------------------
   Type declarations
@@ -2129,9 +2154,6 @@ sme_QosWmmDirType            InfraDirAcVi;
    v_U8_t                      allowMCCGODiffBI;
    v_BOOL_t                    isP2pDeviceAddrAdministrated;
    v_U8_t                      thermalMitigationEnable;
-#ifdef WLAN_FEATURE_PACKET_FILTERING
-   v_BOOL_t                    isMcAddrListFilter;
-#endif
 #ifdef WLAN_FEATURE_11AC
    v_U8_t                      vhtChannelWidth;
    v_U8_t                      vhtRxMCS;
@@ -2159,6 +2181,7 @@ v_U16_t                     configMccParam;
    v_U32_t                     fTDLSRSSIHysteresis;
    v_S31_t                     fTDLSRSSITriggerThreshold;
    v_S31_t                     fTDLSRSSITeardownThreshold;
+   v_BOOL_t                    fTDLSExternalControl;
 #endif
    v_U32_t                     enableLpwrImgTransition;
 #ifdef WLAN_SOFTAP_VSTA_FEATURE
@@ -2184,7 +2207,8 @@ v_U16_t                     configMccParam;
    v_U8_t                      enableTrafficMonitor;
    v_U32_t                     trafficIdleTimeout;
    /*PNO related parameters */
-#if FEATURE_WLAN_SCAN_PNO
+#ifdef FEATURE_WLAN_SCAN_PNO
+   v_BOOL_t                    configPNOScanSupport;
    v_U32_t                     configPNOScanTimerRepeatValue;
 #endif
    v_U32_t                     cfgBtcActiveWlanLen;
@@ -2198,6 +2222,10 @@ v_U16_t                     configMccParam;
                                                  //splitscan
    //Traffic monitor timer for split scan
    v_U32_t                     trafficMntrTmrForSplitScan;
+   v_BOOL_t                    debugP2pRemainOnChannel;
+   v_U8_t                      isAmsduSupportInAMPDU;
+   v_U8_t                      allowDFSChannelRoam;
+   v_BOOL_t                    gEnableStrictRegulatoryForFCC;
 } hdd_config_t;
 /*--------------------------------------------------------------------------- 
   Function declarations and documenation

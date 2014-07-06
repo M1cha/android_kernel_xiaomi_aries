@@ -199,6 +199,16 @@ typedef enum
    eCSR_SCAN_FOUND_PEER,
 }eCsrScanStatus;
 
+/* Reason to abort the scan
+ * The reason can used later to decide whether to update the scan results
+ * to upper layer or not
+ */
+typedef enum
+{
+    eCSR_SCAN_ABORT_DEFAULT,
+    eCSR_SCAN_ABORT_DUE_TO_BAND_CHANGE, //Scan aborted due to band change
+}eCsrAbortReason;
+
 #define CSR_SCAN_TIME_DEFAULT       0
 #define CSR_VALUE_IGNORED           0xFFFFFFFF
 #define CSR_RSN_PMKID_SIZE          16
@@ -853,8 +863,13 @@ typedef struct tagCsrRoamProfile
     tANI_U8 *pWAPIReqIE;   //If not null, it has the IE byte stream for WAPI
 #endif /* FEATURE_WLAN_WAPI */
 
-    tANI_U32 nAddIEScanLength;   //The byte count in the pAddIE for scan (at the time of join)
-    tANI_U8 *pAddIEScan;       //If not null, it has the IE byte stream for additional IE, which can be WSC IE and/or P2P IE
+    //The byte count in the pAddIE for scan (at the time of join)
+    tANI_U32 nAddIEScanLength;
+    /* Additional IE information.
+     * It has the IE byte stream for additional IE,
+     * which can be WSC IE and/or P2P IE
+     */
+    tANI_U8  addIEScan[SIR_MAC_MAX_IE_LENGTH+2];       //Additional IE information.
     tANI_U32 nAddIEAssocLength;   //The byte count in the pAddIE for assoc
     tANI_U8 *pAddIEAssoc;       //If not null, it has the IE byte stream for additional IE, which can be WSC IE and/or P2P IE
 
@@ -1099,6 +1114,10 @@ typedef struct tagCsrConfigParam
     tANI_U8 scanCfgAgingTime;
 
     tANI_U8   enableTxLdpc;
+
+    tANI_U8 isAmsduSupportInAMPDU;
+    tANI_U8 allowDFSChannelRoam;
+
 }tCsrConfigParam;
 
 //Tush
