@@ -214,13 +214,6 @@ static struct platform_device apq8064_android_pmem_audio_device = {
 #endif /* CONFIG_MSM_MULTIMEDIA_USE_ION */
 #endif /* CONFIG_ANDROID_PMEM */
 
-#ifdef CONFIG_BATTERY_BCL
-static struct platform_device battery_bcl_device = {
-	.name = "battery_current_limit",
-	.id = -1,
-	};
-#endif
-
 static struct memtype_reserve apq8064_reserve_table[] __initdata = {
 	[MEMTYPE_SMI] = {
 	},
