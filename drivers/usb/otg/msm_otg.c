@@ -38,7 +38,11 @@
 #include <linux/usb/msm_hsusb.h>
 #include <linux/usb/msm_hsusb_hw.h>
 #include <linux/regulator/consumer.h>
+#ifdef CONFIG_MACH_XIAOMI
+#include <linux/mfd/pm8xxx/pm8921-charger-xiaomi.h>
+#else
 #include <linux/mfd/pm8xxx/pm8921-charger.h>
+#endif
 #include <linux/mfd/pm8xxx/misc.h>
 #include <linux/power_supply.h>
 #include <linux/mhl_8334.h>
