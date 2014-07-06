@@ -5,6 +5,9 @@ menu "XIAOMI Board Selection"
 source "arch/arm/mach-msm/xiaomi/Kconfig.board"
 endmenu
 
+
+menu "XIAOMI Specific Patches"
+
 config UPDATE_LCDC_LUT
 	bool "Set initial Qualcomm LCDC lut"
 	default n
@@ -25,3 +28,5 @@ config XIAOMI_EARJACK_UART
 	depends on MACH_XIAOMI
 	help
 	  Enable Earjack UART debugger. This disables headphone support
+
+endmenu
