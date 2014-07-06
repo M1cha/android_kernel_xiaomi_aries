@@ -64,6 +64,20 @@ static const struct mxt_address_pair mxt_slave_addresses[] = {
 
 enum mxt_device_state { INIT, APPMODE, BOOTLOADER };
 
+struct mxt_dt2w {
+	struct class *class;
+	struct work_struct work;
+	struct input_dev *pwrdev;
+	int suspended;
+	int keyarray_ctrl;
+
+	int enabled;
+	unsigned int timeout_max;
+	unsigned int timeout_min;
+	unsigned int delta_x;
+	unsigned int delta_y;
+};
+
 /* Firmware */
 #define MXT_FW_NAME		"maxtouch.fw"
 
@@ -317,6 +331,17 @@ enum mxt_device_state { INIT, APPMODE, BOOTLOADER };
 
 #define MXT_MAX_FINGER		16
 
+static int dt2w_switch = 0;
+
+module_param(dt2w_switch, int, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+MODULE_PARM_DESC(dt2w_switch, "dt2w integer");
+
+#define DT2W_ENABLED 1
+#define DT2W_TIMEOUT_MAX 400
+#define DT2W_TIMEOUT_MIN 100
+#define DT2W_DELTA_X 60
+#define DT2W_DELTA_Y 60
+
 #define T7_DATA_SIZE		3
 #define T8_DATA_SIZE		10
 #define MXT_MAX_RW_TRIES	3
@@ -422,7 +447,150 @@ struct mxt_data {
 	bool is_crc_got;
 	bool is_key_verify;
 	bool disable_keys;
+	struct mxt_dt2w dt2w;
 };
+
+static ssize_t dt2w_enabled_show(struct device *dev,
+				struct device_attribute *attr, char *buf)
+{
+	struct mxt_data *data = dev_get_drvdata(dev);
+
+	return sprintf(buf, "%d\n", data->dt2w.enabled);
+}
+
+static ssize_t dt2w_enabled_store(struct device *dev,
+				struct device_attribute *attr, const char *buf, size_t count)
+{
+	struct mxt_data *data = dev_get_drvdata(dev);
+	int val;
+
+	if (data->dt2w.suspended) {
+		dev_err(dev, "%s: the screen must be on\n", __func__);
+		return -EPERM;
+	}
+
+	sscanf(buf, "%d", &val);
+	if (val != 0 && data->dt2w.enabled == 0) {
+		data->dt2w.enabled = 1;
+		irq_set_irq_wake(data->irq, 1);
+	} else if (data->dt2w.enabled == 1) {
+		data->dt2w.enabled = 0;
+		irq_set_irq_wake(data->irq, 0);
+	}
+
+	return count;
+}
+
+static DEVICE_ATTR(dt2w_enabled, S_IWUSR | S_IRUGO,
+dt2w_enabled_show, dt2w_enabled_store);
+
+#define dt2w_dev_attr(_dev_name, _name_show, _name_store, _ret_val)	\
+				static ssize_t _name_show(struct device *dev, 		\
+				struct device_attribute *attr, char *buf)			\
+{																	\
+	struct mxt_data *data = dev_get_drvdata(dev);					\
+	return sprintf(buf, "%u\n", _ret_val);							\
+}																	\
+static ssize_t _name_store(struct device *dev,						\
+				struct device_attribute *attr,						\
+				const char *buf, size_t count)						\
+{																	\
+	struct mxt_data *data = dev_get_drvdata(dev);					\
+	sscanf(buf, "%u", &_ret_val);									\
+	return count;													\
+}																	\
+static DEVICE_ATTR(_dev_name, S_IWUSR | S_IRUGO,					\
+				_name_show, _name_store);
+
+dt2w_dev_attr(dt2w_timeout_max, dt2w_timeout_max_show,
+				dt2w_timeout_max_store, data->dt2w.timeout_max)
+dt2w_dev_attr(dt2w_timeout_min, dt2w_timeout_min_show,
+				dt2w_timeout_min_store, data->dt2w.timeout_min)
+dt2w_dev_attr(dt2w_delta_x, dt2w_delta_x_show,
+				dt2w_delta_x_store, data->dt2w.delta_x)
+dt2w_dev_attr(dt2w_delta_y, dt2w_delta_y_show,
+				dt2w_delta_y_store, data->dt2w.delta_y)
+
+static struct attribute *dt2w_attrs[] = {
+	&dev_attr_dt2w_enabled.attr,
+	&dev_attr_dt2w_timeout_max.attr,
+	&dev_attr_dt2w_timeout_min.attr,
+	&dev_attr_dt2w_delta_x.attr,
+	&dev_attr_dt2w_delta_y.attr,
+	NULL
+};
+
+static const struct attribute_group dt2w_attr_group = {
+	.attrs = dt2w_attrs,
+};
+
+static void dt2w_presspwr_work(struct work_struct *work)
+{
+	struct mxt_dt2w *dt2w = container_of(work, struct mxt_dt2w, work);
+	struct input_dev *pwrdev = dt2w->pwrdev;
+
+	if (!mutex_trylock(&pwrdev->mutex))
+		return;
+
+	input_event(pwrdev, EV_KEY, KEY_POWER, 1);
+	input_event(pwrdev, EV_SYN, 0, 0);
+	msleep(30);
+	input_event(pwrdev, EV_KEY, KEY_POWER, 0);
+	input_event(pwrdev, EV_SYN, 0, 0);
+	msleep(30);
+	mutex_unlock(&pwrdev->mutex);
+}
+
+static void dt2w_detect(struct mxt_data *data,
+				struct mxt_message *message, int id)
+{
+	static int dt2w_x = 0;
+	static int dt2w_y = 0;
+	static unsigned long dt2w_time = 0;
+	static int dt2w_id = 0;
+	int x;
+	int y;
+	unsigned long now = jiffies;
+	unsigned int delta_x;
+	unsigned int delta_y;
+	unsigned long delta_t;
+	u8 status = message->message[0];
+
+	/* If different finger, start over */
+	if (dt2w_id != id) {
+		dt2w_id = id;
+		dt2w_time = 0;
+		return;
+	}
+
+
+	if (!(status & MXT_RELEASE))
+		return;
+
+	x = (message->message[1] << 4) | ((message->message[3] >> 4) & 0xf);
+	y = (message->message[2] << 4) | ((message->message[3] & 0xf));
+	if (data->pdata->panel_maxx < 1024)
+		x >>= 2;
+		//x = x >> 2;
+	if (data->pdata->panel_maxy < 1024)
+		y >>= 2;
+		//y = y >> 2;
+
+	delta_x = abs(x - dt2w_x);
+	delta_y = abs(y - dt2w_y);
+	delta_t = jiffies_to_msecs(now - dt2w_time);
+
+	if (delta_t > data->dt2w.timeout_min &&
+		delta_t < data->dt2w.timeout_max)
+	if (delta_x < data->dt2w.delta_x &&
+		delta_y < data->dt2w.delta_y)
+	schedule_work(&data->dt2w.work);
+
+	dt2w_id = id;
+	dt2w_x = x;
+	dt2w_y = y;
+	dt2w_time = jiffies;
+}
 
 static struct dentry *debug_base;
 
@@ -1228,8 +1396,12 @@ static irqreturn_t mxt_interrupt(int irq, void *dev_id)
 		id = reportid - data->t9_min_reportid;
 
 		if (reportid >= data->t9_min_reportid &&
-					reportid <= data->t9_max_reportid)
-			mxt_input_touchevent(data, &message, id);
+					reportid <= data->t9_max_reportid) {
+			if (data->dt2w.enabled && data->dt2w.suspended)
+					dt2w_detect(data, &message, id);
+			else
+				mxt_input_touchevent(data, &message, id);
+		}
 		else if (reportid >= data->t15_min_reportid &&
 					reportid <= data->t15_max_reportid)
 			mxt_handle_key_array(data, &message);
@@ -1788,7 +1960,7 @@ static int mxt_initialize(struct mxt_data *data)
 		error = mxt_update_fw_for_abnormal(data, BOOTLOADER_MODE);
 		if (error)
 			return error;
-		return 0;
+		goto out;
 	}
 
 	dev_info(&client->dev,
@@ -1856,7 +2028,7 @@ static int mxt_initialize(struct mxt_data *data)
 		error = mxt_update_fw_for_abnormal(data, NO_CONFIG_MODE);
 		if (error)
 			return error;
-		return 0;
+		goto out;
 	}
 
 	error = __mxt_read_reg(client, data->t7_start_addr,
@@ -1890,6 +2062,23 @@ static int mxt_initialize(struct mxt_data *data)
 			"Matrix X Size: %d Matrix Y Size: %d\n",
 			info->matrix_xsize, info->matrix_ysize);
 
+	data->dt2w.enabled = DT2W_ENABLED;
+	if (data->dt2w.enabled)
+		irq_set_irq_wake(data->irq, 1);
+	data->dt2w.timeout_max = DT2W_TIMEOUT_MAX;
+	data->dt2w.timeout_min = DT2W_TIMEOUT_MIN;
+	data->dt2w.delta_x = DT2W_DELTA_X;
+	data->dt2w.delta_y = DT2W_DELTA_Y;
+	data->dt2w.suspended = 0;
+	error = mxt_read_object(data,
+	MXT_TOUCH_KEYARRAY_T15, MXT_TOUCH_CTRL, &val);
+	if (error) {
+		dev_err(&client->dev, "Failed to get keyarray ctrl\n");
+		data->dt2w.keyarray_ctrl = 0;
+	} else
+		data->dt2w.keyarray_ctrl = val;
+
+out:
 	return 0;
 
 free_object_table:
@@ -2178,6 +2367,11 @@ static ssize_t mxt_update_fw_store(struct device *dev,
 	const char *fw_name;
 	u8 bootldr_id;
 	struct input_dev *input_dev = data->input_dev;
+
+	if (data->dt2w.enabled) {
+		dev_err(dev, "Disable DoubleTap2Wake first\n");
+		return -EPERM;
+	}
 
 	if (count > 0) {
 		fw_name = buf;
@@ -2866,6 +3060,18 @@ static int mxt_suspend(struct device *dev)
 	struct input_dev *input_dev = data->input_dev;
 	int error;
 
+	if(dt2w_switch ==1)
+	{
+		data->dt2w.suspended = 1;
+		if (data->dt2w.enabled) {
+			/* Disable touchkeys */
+			mxt_write_object(data, MXT_TOUCH_KEYARRAY_T15,
+			MXT_TOUCH_CTRL, 0);
+
+			return 0;
+		}
+	}
+
 	disable_irq(data->irq);
 
 	mutex_lock(&input_dev->mutex);
@@ -2906,6 +3112,21 @@ static int mxt_resume(struct device *dev)
 	struct mxt_data *data = i2c_get_clientdata(client);
 	struct input_dev *input_dev = data->input_dev;
 	int error;
+
+	if(dt2w_switch ==1)
+	{
+		data->dt2w.suspended = 0;
+		if (data->dt2w.enabled) {
+			/* Enable touchkeys */
+			mxt_write_object(data, MXT_TOUCH_KEYARRAY_T15,
+			MXT_TOUCH_CTRL, data->dt2w.keyarray_ctrl);
+
+			/* Even if the chip hasn't been in deep sleep,
+			* a calibration could be required. */
+			mxt_do_force_calibration(data);
+			return 0;
+		}
+	}
 
 	/* put regulators in high power mode */
 	error = mxt_regulator_lpm(data, false);
@@ -3241,6 +3462,30 @@ static int __devinit mxt_probe(struct i2c_client *client,
 	if (error)
 		goto err_unregister_device;
 
+	INIT_WORK(&data->dt2w.work, dt2w_presspwr_work);
+
+	data->dt2w.pwrdev = input_allocate_device();
+	if (!data->dt2w.pwrdev) {
+		dev_err(&client->dev, "Can't allocate power button\n");
+		goto err_free_dt2w;
+	}
+
+	input_set_capability(data->dt2w.pwrdev, EV_KEY, KEY_POWER);
+	data->dt2w.pwrdev->name = "dt2w_pwrkey";
+	data->dt2w.pwrdev->phys = "dt2w_pwrkey/input0";
+
+	error = input_register_device(data->dt2w.pwrdev);
+	if (error) {
+		dev_err(&client->dev, "Can't register power button: %d\n", error);
+		goto err_free_dt2w;
+	}
+
+	error = sysfs_create_group(&client->dev.kobj, &dt2w_attr_group);
+	if (error) {
+		dev_err(&client->dev, "Can't create dt2w device group: %d\n", error);
+		goto err_unregister_dt2w;
+	}
+
 #if defined(CONFIG_HAS_EARLYSUSPEND)
 	data->early_suspend.level = EARLY_SUSPEND_LEVEL_BLANK_SCREEN +
 						MXT_SUSPEND_LEVEL;
@@ -3271,6 +3516,14 @@ static int __devinit mxt_probe(struct i2c_client *client,
 	mxt_handle_extra_touchdata(data, MXT_REFERENCE_DATA);
 	return 0;
 
+err_unregister_dt2w:
+	input_unregister_device(data->dt2w.pwrdev);
+err_free_dt2w:
+	input_free_device(data->dt2w.pwrdev);
+	data->dt2w.pwrdev = NULL;
+	/* Force disable */
+	data->dt2w.enabled = 0;
+	return error;
 err_remove_sysfs_group:
 	sysfs_remove_group(&client->dev.kobj, &mxt_attr_group);
 err_unregister_device:
@@ -3311,6 +3564,10 @@ static int __devexit mxt_remove(struct i2c_client *client)
 	cancel_delayed_work_sync(&data->force_calibrate_delayed_work);
 	cancel_delayed_work_sync(&data->disable_antipalm_delayed_work);
 	free_irq(data->irq, data);
+
+	sysfs_remove_group(&client->dev.kobj, &dt2w_attr_group);
+	input_unregister_device(data->dt2w.pwrdev);
+
 	input_unregister_device(data->input_dev);
 #if defined(CONFIG_HAS_EARLYSUSPEND)
 	unregister_early_suspend(&data->early_suspend);
