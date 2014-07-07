@@ -64,12 +64,14 @@ static const struct mxt_address_pair mxt_slave_addresses[] = {
 
 enum mxt_device_state { INIT, APPMODE, BOOTLOADER };
 
-struct mxt_dt2w {
-	struct class *class;
-	struct work_struct work;
-	struct input_dev *pwrdev;
+struct mxt_wake_common {
 	int suspended;
 	int keyarray_ctrl;
+};
+
+struct mxt_dt2w {
+	struct work_struct work;
+	struct input_dev *pwrdev;
 
 	int enabled;
 	unsigned int timeout_max;
@@ -79,11 +81,8 @@ struct mxt_dt2w {
 };
 
 struct mxt_s2w {
-	struct class *class;
 	struct work_struct work;
 	struct input_dev *pwrdev;
-	int suspended;
-	int keyarray_ctrl;
 
 	int enabled;
 	unsigned int start;
@@ -344,11 +343,6 @@ struct mxt_s2w {
 
 #define MXT_MAX_FINGER		16
 
-static int wake_switch = 0;
-
-module_param(wake_switch, int, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
-MODULE_PARM_DESC(wake_switch, "wake integer");
-
 #define DT2W_ENABLED 1
 #define DT2W_TIMEOUT_MAX 400
 #define DT2W_TIMEOUT_MIN 100
@@ -464,6 +458,7 @@ struct mxt_data {
 	bool is_crc_got;
 	bool is_key_verify;
 	bool disable_keys;
+	struct mxt_wake_common wake_common;
 	struct mxt_dt2w dt2w;
 	struct mxt_s2w s2w;
 };
@@ -490,7 +485,7 @@ static ssize_t dt2w_enabled_store(struct device *dev,
 	struct mxt_data *data = dev_get_drvdata(dev);
 	int val;
 
-	if (data->dt2w.suspended) {
+	if (data->wake_common.suspended) {
 		dev_err(dev, "%s: the screen must be on\n", __func__);
 		return -EPERM;
 	}
@@ -513,7 +508,7 @@ static ssize_t s2w_enabled_store(struct device *dev,
 	struct mxt_data *data = dev_get_drvdata(dev);
 	int val;
 
-	if (data->s2w.suspended) {
+	if (data->wake_common.suspended) {
 		dev_err(dev, "%s: the screen must be on\n", __func__);
 		return -EPERM;
 	}
@@ -1600,10 +1595,12 @@ static irqreturn_t mxt_interrupt(int irq, void *dev_id)
 
 		if (reportid >= data->t9_min_reportid &&
 					reportid <= data->t9_max_reportid) {
-			if (data->dt2w.enabled && data->dt2w.suspended)
-					dt2w_detect(data, &message, id);
-			if(data->s2w.enabled && data->s2w.suspended)
-					s2w_detect(data, &message, id);
+			if(data->wake_common.suspended) {
+				if (data->dt2w.enabled)
+						dt2w_detect(data, &message, id);
+				if(data->s2w.enabled)
+						s2w_detect(data, &message, id);
+			}
 			else
 				mxt_input_touchevent(data, &message, id);
 		}
@@ -2267,37 +2264,30 @@ static int mxt_initialize(struct mxt_data *data)
 			"Matrix X Size: %d Matrix Y Size: %d\n",
 			info->matrix_xsize, info->matrix_ysize);
 
-	data->s2w.enabled = S2W_ENABLED;
-	if (data->s2w.enabled)
-		irq_set_irq_wake(data->irq, 1);
-	//	data->s2w.start = S2W_TIMEOUT_MAX;
-	// 	data->s2w.end = S2W_TIMEOUT_MIN;
-	data->s2w.suspended = 0;
+	// wake common
+	data->wake_common.suspended = 0;
+
 	error = mxt_read_object(data,
 					MXT_TOUCH_KEYARRAY_T15, MXT_TOUCH_CTRL, &val);
 	if (error) {
 		dev_err(&client->dev, "Failed to get keyarray ctrl\n");
-		data->s2w.keyarray_ctrl = 0;
-	}
-	else
-		data->s2w.keyarray_ctrl = val;
+		data->wake_common.keyarray_ctrl = 0;
+	} else
+		data->wake_common.keyarray_ctrl = val;
 
+	// sleep2wake
+	data->s2w.enabled = S2W_ENABLED;
 
+	// doubletape2wake
 	data->dt2w.enabled = DT2W_ENABLED;
-	if (data->dt2w.enabled)
-		irq_set_irq_wake(data->irq, 1);
 	data->dt2w.timeout_max = DT2W_TIMEOUT_MAX;
 	data->dt2w.timeout_min = DT2W_TIMEOUT_MIN;
 	data->dt2w.delta_x = DT2W_DELTA_X;
 	data->dt2w.delta_y = DT2W_DELTA_Y;
-	data->dt2w.suspended = 0;
-	error = mxt_read_object(data,
-					MXT_TOUCH_KEYARRAY_T15, MXT_TOUCH_CTRL, &val);
-	if (error) {
-		dev_err(&client->dev, "Failed to get keyarray ctrl\n");
-		data->dt2w.keyarray_ctrl = 0;
-	} else
-		data->dt2w.keyarray_ctrl = val;
+
+	if (data->s2w.enabled || data->dt2w.enabled)
+		irq_set_irq_wake(data->irq, 1);
+	
 
 out:
 	return 0;
@@ -3286,29 +3276,14 @@ static int mxt_suspend(struct device *dev)
 	struct input_dev *input_dev = data->input_dev;
 	int error;
 
-	if(wake_switch ==1)
-	{
-		data->dt2w.suspended = 1;
-		if (data->dt2w.enabled) {
-			/* Disable touchkeys */
-			mxt_write_object(data, MXT_TOUCH_KEYARRAY_T15,
-							MXT_TOUCH_CTRL, 0);
+	data->wake_common.suspended = 1;
+	data->s2w.started = false;
+	if (data->dt2w.enabled || data->s2w.enabled) {
+		/* Disable touchkeys */
+		mxt_write_object(data, MXT_TOUCH_KEYARRAY_T15,
+						MXT_TOUCH_CTRL, 0);
 
-			return 0;
-		}
-	}
-
-	if(wake_switch ==2)
-	{
-		data->s2w.suspended = 1;
-		data->s2w.started = false;
-		if (data->s2w.enabled) {
-			/* Disable touchkeys */
-			mxt_write_object(data, MXT_TOUCH_KEYARRAY_T15,
-							MXT_TOUCH_CTRL, 0);
-
-			return 0;
-		}
+		return 0;
 	}
 
 	disable_irq(data->irq);
@@ -3352,34 +3327,16 @@ static int mxt_resume(struct device *dev)
 	struct input_dev *input_dev = data->input_dev;
 	int error;
 
-	if(wake_switch ==1)
-	{
-		data->dt2w.suspended = 0;
-		if (data->dt2w.enabled) {
-			/* Enable touchkeys */
-			mxt_write_object(data, MXT_TOUCH_KEYARRAY_T15,
-					MXT_TOUCH_CTRL, data->dt2w.keyarray_ctrl);
+	data->wake_common.suspended = 0;
+	if (data->dt2w.enabled || data->s2w.enabled) {
+		/* Enable touchkeys */
+		mxt_write_object(data, MXT_TOUCH_KEYARRAY_T15,
+				MXT_TOUCH_CTRL, data->wake_common.keyarray_ctrl);
 
-			/* Even if the chip hasn't been in deep sleep,
-			 * a calibration could be required. */
-			mxt_do_force_calibration(data);
-			return 0;
-		}
-	}
-
-	if(wake_switch ==2)
-	{
-		data->s2w.suspended = 0;
-		if (data->s2w.enabled) {
-			/* Enable touchkeys */
-			mxt_write_object(data, MXT_TOUCH_KEYARRAY_T15,
-					MXT_TOUCH_CTRL, data->dt2w.keyarray_ctrl);
-
-			/* Even if the chip hasn't been in deep sleep,
-			 * a calibration could be required. */
-			mxt_do_force_calibration(data);
-			return 0;
-		}
+		/* Even if the chip hasn't been in deep sleep,
+		 * a calibration could be required. */
+		mxt_do_force_calibration(data);
+		return 0;
 	}
 
 	/* put regulators in high power mode */
