@@ -1269,7 +1269,9 @@ static int mxt_check_reg_init(struct mxt_data *data)
 		if (!mxt_object_writable(object->type))
 			continue;
 
-		for (j = 0; j < object->size + 1; j++) {
+		for (j = 0;
+		     j < (object->size + 1) * (object->instances + 1);
+		     j++) {
 			config_offset = index + j;
 			if (config_offset > config_info->config_length) {
 				dev_err(dev, "Not enough config data!\n");
@@ -1278,7 +1280,7 @@ static int mxt_check_reg_init(struct mxt_data *data)
 			mxt_write_object(data, object->type, j,
 					 config_info->config[config_offset]);
 		}
-		index += object->size + 1;
+		index += (object->size + 1) * (object->instances + 1);
 	}
 
 	return 0;
@@ -2879,7 +2881,6 @@ static int mxt_suspend(struct device *dev)
 	}
 
 	mutex_unlock(&input_dev->mutex);
-	mxt_release_all(data);
 
 	cancel_delayed_work_sync(&data->force_calibrate_delayed_work);
 	cancel_delayed_work_sync(&data->disable_antipalm_delayed_work);
@@ -2912,9 +2913,7 @@ static int mxt_resume(struct device *dev)
 		dev_err(dev, "failed to enter high power mode\n");
 		return error;
 	}
-	mxt_write_object(data, MXT_GEN_COMMAND_T6,
-			MXT_COMMAND_RESET, 1);
-	msleep(MXT_RESET_TIME);
+
 	mutex_lock(&input_dev->mutex);
 
 	if (input_dev->users) {
