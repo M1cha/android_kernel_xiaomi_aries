@@ -690,8 +690,8 @@ static int __init wakelocks_init(void)
 
 	return 0;
 
-err_suspend_sys_sync_work_queue:
 err_suspend_work_queue:
+err_suspend_sys_sync_work_queue:
 	platform_driver_unregister(&power_driver);
 err_platform_driver_register:
 	platform_device_unregister(&power_device);
