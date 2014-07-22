@@ -347,10 +347,11 @@ static void subsystem_powerup(struct subsys_device *dev, void *data)
 	const char *name = dev->desc->name;
 
 	pr_info("[%p]: Powering up %s\n", current, name);
-	if (dev->desc->powerup(dev->desc) < 0)
+	if (dev->desc->powerup(dev->desc) < 0) {
 		panic("[%p]: Failed to powerup %s!", current, name);
-}
+	}
 	subsys_set_state(dev, SUBSYS_ONLINE);
+}
 
 static void subsystem_restart_wq_func(struct work_struct *work)
 {
