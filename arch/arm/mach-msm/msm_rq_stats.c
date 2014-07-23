@@ -29,9 +29,9 @@
 #include <linux/cpufreq.h>
 #include <linux/kernel_stat.h>
 #include <linux/tick.h>
-#include <linux/suspend.h>
 #include <asm/smp_plat.h>
 #include "acpuclock.h"
+#include <linux/suspend.h>
 
 #define MAX_LONG_SIZE 24
 #define DEFAULT_RQ_POLL_JIFFIES 1
