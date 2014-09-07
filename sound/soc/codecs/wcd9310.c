@@ -5435,7 +5435,7 @@ static short __tabla_codec_sta_dce(struct snd_soc_codec *codec, int dce,
 	short bias_value;
 	struct tabla_priv *tabla = snd_soc_codec_get_drvdata(codec);
 
-    pr_debug("%s: enter", __func__);
+	pr_debug("%s: enter", __func__);
 
 	wcd9xxx_disable_irq(codec->control_data, TABLA_IRQ_MBHC_POTENTIAL);
 	if (noreldetection)
@@ -5474,7 +5474,7 @@ static short __tabla_codec_sta_dce(struct snd_soc_codec *codec, int dce,
 	if (noreldetection)
 		tabla_turn_onoff_rel_detection(codec, true);
 	wcd9xxx_enable_irq(codec->control_data, TABLA_IRQ_MBHC_POTENTIAL);
-    pr_debug("%s: leave", __func__);
+	pr_debug("%s: leave", __func__);
 
 	return bias_value;
 }
@@ -5891,7 +5891,7 @@ static s32 tabla_codec_sta_dce_v(struct snd_soc_codec *codec, s8 dce,
 		mv = (value - z) * (s32)tabla->mbhc_data.micb_mv / (mb - z);
 	}
 
-    return mv;
+	return mv;
 }
 
 static void btn_lpress_fn(struct work_struct *work)
@@ -5964,7 +5964,7 @@ void tabla_mbhc_cal(struct snd_soc_codec *codec)
 	void *calibration;
 	u16 bias2_ctl;
 
-    pr_debug("%s: enter", __func__);
+	pr_debug("%s: enter", __func__);
 
 	tabla = snd_soc_codec_get_drvdata(codec);
 	calibration = tabla->mbhc_cfg.calibration;
@@ -6082,7 +6082,7 @@ void tabla_mbhc_cal(struct snd_soc_codec *codec)
 	wcd9xxx_enable_irq(codec->control_data, TABLA_IRQ_MBHC_POTENTIAL);
 	tabla_turn_onoff_rel_detection(codec, true);
 
-    pr_debug("%s: leave", __func__);
+	pr_debug("%s: leave", __func__);
 }
 
 void *tabla_mbhc_cal_btn_det_mp(const struct tabla_mbhc_btn_detect_cfg* btn_det,
@@ -6160,21 +6160,21 @@ static s16 tabla_mbhc_highest_btn_mv(struct snd_soc_codec *codec)
 	struct tabla_priv *tabla;
 	struct tabla_mbhc_btn_detect_cfg *btn_det;
 	u16 *btn_high;
-    s16 result;
-    int i;
+	s16 result;
+	int i;
 
 	tabla = snd_soc_codec_get_drvdata(codec);
 	btn_det = TABLA_MBHC_CAL_BTN_DET_PTR(tabla->mbhc_cfg.calibration);
 	btn_high = tabla_mbhc_cal_btn_det_mp(btn_det, TABLA_BTN_DET_V_BTN_HIGH);
 
-    result = btn_high[0];
-    for (i = 1; i < btn_det->num_btn; i++) 
-    {
-        if (btn_high[i] > result)
-        {
-            result = btn_high[i];
-        }
-    }
+	result = btn_high[0];
+	for (i = 1; i < btn_det->num_btn; i++)
+	{
+		if (btn_high[i] > result)
+		{
+			result = btn_high[i];
+		}
+	}
 
 	return result;
 }
@@ -6355,7 +6355,7 @@ static int tabla_determine_button(const struct tabla_priv *priv,
 		pr_debug("%s: couldn't find button number for mic mv %d\n",
 			 __func__, micmv);
 
-    pr_debug("%s: micmv=%d, btn=%d", __func__, micmv, btn);
+	pr_debug("%s: micmv=%d, btn=%d", __func__, micmv, btn);
 	return btn;
 }
 
