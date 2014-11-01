@@ -113,6 +113,18 @@ force_gpt_fn(char *str)
 }
 __setup("gpt", force_gpt_fn);
 
+/* This allows a kernel command line option 'xiaomi_system_merge' to enable
+ * the system partition merge hack.
+ */
+static int xiaomi_system_merge;
+static int __init
+xiaomi_system_merge_fn(char *str)
+{
+	xiaomi_system_merge = 1;
+	return 1;
+}
+__setup("xiaomi_system_merge", xiaomi_system_merge_fn);
+
 
 /**
  * efi_crc32() - EFI version of crc32 function
@@ -595,6 +607,37 @@ static int find_valid_gpt(struct parsed_partitions *state, gpt_header **gpt,
         return 0;
 }
 
+static u64 next_is_system1(struct parsed_partitions *state, gpt_entry *ptes, u32 i) {
+	struct partition_meta_info *info;
+	unsigned label_count = 0;
+	unsigned label_max;
+	u64 size = le64_to_cpu(ptes[i].ending_lba) -
+		   le64_to_cpu(ptes[i].starting_lba) + 1ULL;
+	u8 volname[PARTITION_META_INFO_VOLNAMELTH];
+
+	if (!is_pte_valid(&ptes[i], last_lba(state->bdev)))
+		return 0;
+
+	info = &state->parts[i + 1].info;
+
+	/* Naively convert UTF16-LE to 7 bits. */
+	label_max = min(sizeof(volname) - 1,
+			sizeof(ptes[i].partition_name));
+	volname[label_max] = 0;
+	while (label_count < label_max) {
+		u8 c = ptes[i].partition_name[label_count] & 0xff;
+		if (c && !isprint(c))
+			c = '!';
+		volname[label_count] = c;
+		label_count++;
+	}
+
+	if(!strcmp(volname, "system1"))
+		return size;
+
+	return 0;
+}
+
 /**
  * efi_partition(struct parsed_partitions *state)
  * @state
@@ -637,9 +680,18 @@ int efi_partition(struct parsed_partitions *state)
 		u64 start = le64_to_cpu(ptes[i].starting_lba);
 		u64 size = le64_to_cpu(ptes[i].ending_lba) -
 			   le64_to_cpu(ptes[i].starting_lba) + 1ULL;
+		bool skip_next = false;
 
 		if (!is_pte_valid(&ptes[i], last_lba(state->bdev)))
 			continue;
+
+		if(xiaomi_system_merge && i+1<state->limit-1) {
+			u64 sys1sz = next_is_system1(state, ptes, i+1);
+			if(sys1sz>0) {
+				size+=sys1sz;
+				skip_next = true;
+			}
+		}
 
 		put_partition(state, i+1, start * ssz, size * ssz);
 
@@ -667,6 +719,8 @@ int efi_partition(struct parsed_partitions *state)
 			label_count++;
 		}
 		state->parts[i + 1].has_info = true;
+
+		if(skip_next) i++;
 	}
 	kfree(ptes);
 	kfree(gpt);
