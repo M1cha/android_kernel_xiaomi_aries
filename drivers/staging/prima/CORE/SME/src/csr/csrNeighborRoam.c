@@ -3615,7 +3615,8 @@ VOS_STATUS  csrNeighborRoamNeighborLookupUpEvent(tpAniSirGlobal pMac)
     csrNeighborRoamDeregAllRssiIndication(pMac);
 
     /* Recheck whether the below check is needed. */
-    if (pNeighborRoamInfo->neighborRoamState != eCSR_NEIGHBOR_ROAM_STATE_CONNECTED)
+    if ((pNeighborRoamInfo->neighborRoamState != eCSR_NEIGHBOR_ROAM_STATE_CONNECTED)
+        && (pNeighborRoamInfo->neighborRoamState != eCSR_NEIGHBOR_ROAM_STATE_REASSOCIATING))
         CSR_NEIGHBOR_ROAM_STATE_TRANSITION(eCSR_NEIGHBOR_ROAM_STATE_CONNECTED)
 #ifdef FEATURE_WLAN_LFR
     if (!csrRoamIsFastRoamEnabled(pMac,pMac->roam.neighborRoamInfo.csrSessionId))
@@ -4746,7 +4747,7 @@ eHalStatus csrNeighborRoamCandidateFoundIndHdlr(tpAniSirGlobal pMac, void* pMsg)
          * purge non-P2P results from the past */
         csrScanFlushSelectiveResult(pMac, VOS_FALSE);
         /* Once it gets the candidates found indication from PE, will issue a scan
-         - req to PE with ï¿½freshScanï¿½ in scanreq structure set as follows:
+         - req to PE with “freshScan” in scanreq structure set as follows:
          0x42 - Return & purge LFR scan results
         */
         status = csrScanRequestLfrResult(pMac, pNeighborRoamInfo->csrSessionId,
