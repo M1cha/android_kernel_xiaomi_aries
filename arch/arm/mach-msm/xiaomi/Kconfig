@@ -1,0 +1,11 @@
+config MACH_XIAOMI
+	bool
+
+menu "Xiaomi Board Selection"
+source "arch/arm/mach-msm/xiaomi/Kconfig.board"
+endmenu
+
+
+menu "Xiaomi Specific Patches"
+
+endmenu

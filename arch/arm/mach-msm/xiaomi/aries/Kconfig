@@ -1,0 +1,6 @@
+config MACH_APQ8064_ARIES
+	depends on ARCH_APQ8064
+	select MACH_XIAOMI
+	bool "APQ8064 ARIES"
+	help
+	  Support for the Xiaomi ARIES device.
