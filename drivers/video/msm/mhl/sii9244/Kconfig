@@ -1,0 +1,13 @@
+#
+# HDMI to MHL  device configuration
+#
+
+menu "MHL sii9244 support"
+
+config FB_MSM_HDMI_MHL_RCP
+	bool "FB_MSM_HDMI_MHL_RCP"
+	depends on FB_MSM_HDMI_MHL_9244
+	default n
+	help
+
+endmenu

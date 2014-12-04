@@ -79,6 +79,7 @@ obj-$(CONFIG_FB_MSM_MIPI_DSI_TOSHIBA) += mipi_toshiba.o
 obj-$(CONFIG_FB_MSM_MIPI_DSI_NOVATEK) += mipi_novatek.o
 obj-$(CONFIG_FB_MSM_MIPI_DSI_ORISE) += mipi_orise.o
 obj-$(CONFIG_FB_MSM_MIPI_DSI_RENESAS) += mipi_renesas.o
+obj-$(CONFIG_FB_MSM_MIPI_DSI_RENESAS_ARIES) += mipi_renesas_aries.o
 obj-$(CONFIG_FB_MSM_MIPI_DSI_TRULY) += mipi_truly.o
 obj-$(CONFIG_FB_MSM_MIPI_DSI_NT35510) += mipi_NT35510.o
 obj-$(CONFIG_FB_MSM_MIPI_DSI_NT35516) += mipi_truly_tft540960_1_e.o
@@ -130,6 +131,9 @@ obj-y += mipi_NT35590_cmd_720p_pt.o mipi_NT35590_video_720p_pt.o
 obj-y += mipi_chimei_wxga_pt.o
 obj-y += mipi_chimei_wuxga.o
 obj-y += mipi_truly_video_wvga_pt.o
+obj-y += mipi_hitachi_cmd_720p_pt.o
+obj-y += mipi_sharp_video_720p_pt.o
+obj-y += mipi_lgd_renesas_video_720phd_pt.o mipi_lgd_renesas_cmd_720phd_pt.o
 else
 obj-$(CONFIG_FB_MSM_MIPI_TOSHIBA_VIDEO_WVGA_PT) += mipi_toshiba_video_wvga_pt.o
 obj-$(CONFIG_FB_MSM_MIPI_TOSHIBA_VIDEO_WSVGA_PT) += mipi_toshiba_video_wsvga_pt.o
@@ -141,6 +145,8 @@ obj-$(CONFIG_FB_MSM_MIPI_NOVATEK_CMD_QHD_PT) += mipi_novatek_cmd_qhd_pt.o
 obj-$(CONFIG_FB_MSM_MIPI_RENESAS_VIDEO_FWVGA_PT) += mipi_renesas_video_fwvga_pt.o
 obj-$(CONFIG_FB_MSM_MIPI_RENESAS_CMD_FWVGA_PT) += mipi_renesas_cmd_fwvga_pt.o
 obj-$(CONFIG_FB_MSM_MIPI_RENESAS_VIDEO_FWVGA_PT) += mipi_renesas_video_fwvga_pt.o
+obj-$(CONFIG_FB_MSM_MIPI_LGD_RENESAS_VIDEO_720PHD_PT) += mipi_lgd_renesas_video_720phd_pt.o
+obj-$(CONFIG_FB_MSM_MIPI_LGD_RENESAS_CMD_720PHD_PT) += mipi_lgd_renesas_cmd_720phd_pt.o
 obj-$(CONFIG_FB_MSM_MIPI_TRULY_VIDEO_WVGA_PT) += mipi_truly_video_wvga_pt.o
 obj-$(CONFIG_FB_MSM_MIPI_NT35510_CMD_WVGA_PT) += mipi_NT35510_cmd_wvga_pt.o
 obj-$(CONFIG_FB_MSM_MIPI_NT35510_VIDEO_WVGA_PT) += mipi_NT35510_video_wvga_pt.o
@@ -151,6 +157,8 @@ obj-$(CONFIG_FB_MSM_MIPI_NT35590_VIDEO_720P_PT) += mipi_NT35590_video_720p_pt.o
 obj-$(CONFIG_FB_MSM_MIPI_SIMULATOR_VIDEO) += mipi_simulator_video.o
 obj-$(CONFIG_FB_MSM_MIPI_CHIMEI_WXGA) += mipi_chimei_wxga_pt.o
 obj-$(CONFIG_FB_MSM_MIPI_CHIMEI_WUXGA) += mipi_chimei_wuxga.o
+obj-$(CONFIG_FB_MSM_MIPI_HITACHI_CMD_720P_PT) += mipi_hitachi_cmd_720p_pt.o
+obj-$(CONFIG_FB_MSM_MIPI_SHARP_VIDEO_720P_PT) += mipi_sharp_video_720p_pt.o
 endif
 
 obj-$(CONFIG_FB_MSM_LCDC_PANEL) += lcdc_panel.o
@@ -181,6 +189,7 @@ ccflags-y := -I$(src)/mhl
 obj-$(CONFIG_FB_MSM_HDMI_MHL_8334) += mhl-8334.o
 mhl-8334-objs  += mhl/mhl_8334.o
 mhl-8334-objs  += mhl/mhl_i2c_utils.o
+obj-$(CONFIG_FB_MSM_HDMI_MHL_9244) += mhl/sii9244/
 
 obj-$(CONFIG_FB_MSM_EXTMDDI_SVGA) += mddi_ext_lcd.o
 

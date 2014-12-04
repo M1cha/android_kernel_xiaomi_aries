@@ -80,6 +80,10 @@
 #include <mach/msm_iomap.h>
 #include <mach/msm_serial_hs.h>
 
+#ifdef CONFIG_MACH_APQ8064_ARIES
+#include "xiaomi/aries/board-aries.h"
+#endif
+
 #include "msm_watchdog.h"
 #include "board-8064.h"
 #include "clock.h"
@@ -3135,22 +3139,6 @@ static void __init apq8064_init_dsps(void)
 	platform_device_register(&msm_dsps_device_8064);
 }
 
-#define I2C_SURF 1
-#define I2C_FFA  (1 << 1)
-#define I2C_RUMI (1 << 2)
-#define I2C_SIM  (1 << 3)
-#define I2C_LIQUID (1 << 4)
-#define I2C_MPQ_CDP	BIT(5)
-#define I2C_MPQ_HRD	BIT(6)
-#define I2C_MPQ_DTV	BIT(7)
-
-struct i2c_registry {
-	u8                     machs;
-	int                    bus;
-	struct i2c_board_info *info;
-	int                    len;
-};
-
 static struct i2c_registry apq8064_i2c_devices[] __initdata = {
 	{
 		I2C_LIQUID,
@@ -3506,6 +3494,7 @@ static void __init apq8064_cdp_init(void)
 			cyttsp_pdata.sleep_gpio = CYTTSP_TS_GPIO_SLEEP_ALT;
 #endif
 	apq8064_common_init();
+	apq8064_aries_init();
 	if (machine_is_mpq8064_cdp() || machine_is_mpq8064_hrd() ||
 		machine_is_mpq8064_dtv()) {
 		enable_avc_i2c_bus();

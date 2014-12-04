@@ -3710,6 +3710,9 @@ static void hdmi_msm_avi_info_frame(void)
 	int i;
 	int mode = 0;
 	boolean use_ce_scan_info = TRUE;
+#ifdef CONFIG_FB_MSM_HDMI_MHL_9244
+	extern uint8_t video_cap_d_block_found;
+#endif
 
 	switch (external_common_state->video_resolution) {
 	case HDMI_VFRMT_720x480p60_4_3:
@@ -3823,7 +3826,22 @@ static void hdmi_msm_avi_info_frame(void)
 	/* Data Byte 02: C1 C0 M1 M0 R3 R2 R1 R0 */
 	aviInfoFrame[4]  = hdmi_msm_avi_iframe_lut[1][mode];
 	/* Data Byte 03: ITC EC2 EC1 EC0 Q1 Q0 SC1 SC0 */
+#ifdef CONFIG_FB_MSM_HDMI_MHL_9244
+	if(video_cap_d_block_found)
+	{
+		aviInfoFrame[5]  = (hdmi_msm_avi_iframe_lut[2][mode]&0xF3)|0x04;
+		DEV_DBG("video_cap_d_block_found = true, limited range, aviInfoFrame[5]=0x%02x\n",aviInfoFrame[5]);
+		//you should set the AVI info  Quantization Ranges to limited range here(16-235).
+	}
+	else
+	{
+		aviInfoFrame[5]  = hdmi_msm_avi_iframe_lut[2][mode]&0xF3;
+		DEV_DBG("video_cap_d_block_found= false. defult range, aviInfoFrame[5]=0x%02x\n",aviInfoFrame[5]);
+		//you should set the AVI info  Quantization Ranges to defult range here(0-255).
+	}
+#else
 	aviInfoFrame[5]  = hdmi_msm_avi_iframe_lut[2][mode];
+#endif
 	/* Data Byte 04: 0 VIC6 VIC5 VIC4 VIC3 VIC2 VIC1 VIC0 */
 	aviInfoFrame[6]  = hdmi_msm_avi_iframe_lut[3][mode];
 	/* Data Byte 05: 0 0 0 0 PR3 PR2 PR1 PR0 */
