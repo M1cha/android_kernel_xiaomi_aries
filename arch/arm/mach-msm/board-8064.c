@@ -33,7 +33,9 @@
 #include <linux/memblock.h>
 #include <linux/msm_thermal.h>
 #include <linux/i2c/atmel_mxt_ts.h>
+#ifdef CONFIG_TOUCHSCREEN_CYTTSP_I2C_QC
 #include <linux/cyttsp-qc.h>
+#endif
 #include <linux/i2c/isa1200.h>
 #include <linux/gpio_keys.h>
 #include <linux/epm_adc.h>
@@ -1404,6 +1406,7 @@ static struct i2c_board_info mxt_device_info[] __initdata = {
 		.irq = MSM_GPIO_TO_INT(MXT_TS_GPIO_IRQ),
 	},
 };
+#ifdef CONFIG_TOUCHSCREEN_CYTTSP_I2C_QC
 #define CYTTSP_TS_GPIO_IRQ		6
 #define CYTTSP_TS_GPIO_SLEEP		33
 #define CYTTSP_TS_GPIO_SLEEP_ALT	12
@@ -1514,6 +1517,7 @@ static struct i2c_board_info cyttsp_info[] __initdata = {
 		.irq = MSM_GPIO_TO_INT(CYTTSP_TS_GPIO_IRQ),
 	},
 };
+#endif
 
 #define MSM_WCNSS_PHYS	0x03000000
 #define MSM_WCNSS_SIZE	0x280000
@@ -3052,12 +3056,14 @@ static struct i2c_registry apq8064_i2c_devices[] __initdata = {
 		mxt_device_info,
 		ARRAY_SIZE(mxt_device_info),
 	},
+#ifdef CONFIG_TOUCHSCREEN_CYTTSP_I2C_QC
 	{
 		I2C_FFA,
 		APQ_8064_GSBI3_QUP_I2C_BUS_ID,
 		cyttsp_info,
 		ARRAY_SIZE(cyttsp_info),
 	},
+#endif
 	{
 		I2C_FFA | I2C_LIQUID,
 		APQ_8064_GSBI1_QUP_I2C_BUS_ID,
@@ -3383,9 +3389,11 @@ static void __init apq8064_cdp_init(void)
 {
 	if (meminfo_init(SYS_MEMORY, SZ_256M) < 0)
 		pr_err("meminfo_init() failed!\n");
+#ifdef CONFIG_TOUCHSCREEN_CYTTSP_I2C_QC
 	if (machine_is_apq8064_mtp() &&
 		SOCINFO_VERSION_MINOR(socinfo_get_platform_version()) == 1)
 			cyttsp_pdata.sleep_gpio = CYTTSP_TS_GPIO_SLEEP_ALT;
+#endif
 	apq8064_common_init();
 	if (machine_is_mpq8064_cdp() || machine_is_mpq8064_hrd() ||
 		machine_is_mpq8064_dtv()) {
