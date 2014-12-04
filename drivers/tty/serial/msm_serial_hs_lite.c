@@ -813,7 +813,11 @@ static void msm_hsl_set_termios(struct uart_port *port,
 	spin_lock_irqsave(&port->lock, flags);
 
 	/* calculate and set baud rate */
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	baud = uart_get_baud_rate(port, termios, old, 300, 921600);
+#else
 	baud = uart_get_baud_rate(port, termios, old, 300, 460800);
+#endif
 
 	msm_hsl_set_baud_rate(port, baud);
 

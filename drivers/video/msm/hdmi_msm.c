@@ -2305,7 +2305,9 @@ static int hdcp_authentication_part1(void)
 {
 	int ret = 0;
 	boolean is_match;
+#ifndef CONFIG_MACH_APQ8064_ARIES
 	bool stale_an = false;
+#endif
 	boolean is_part1_done = FALSE;
 	uint32 timeout_count;
 	uint8 bcaps;
@@ -2362,12 +2364,14 @@ static int hdcp_authentication_part1(void)
 		HDMI_OUTP(0x0288, qfprom_aksv_0);
 		HDMI_OUTP(0x0284, qfprom_aksv_1);
 
+#ifndef CONFIG_MACH_APQ8064_ARIES
 		/* Check for link0_Status stale values for An ready bit */
 		if (HDMI_INP_ND(0x011C) & (BIT(8) | BIT(9))) {
 			DEV_WARN("%s: An ready even before enabling HDCP\n",
 				__func__);
 			stale_an = true;
 		}
+#endif
 
 		msm_hdmi_init_ddc();
 
@@ -2436,6 +2440,7 @@ static int hdcp_authentication_part1(void)
 		/* enable all HDCP ints */
 		HDMI_OUTP(0x0118, (1 << 2) | (1 << 6) | (1 << 7));
 
+#ifndef CONFIG_MACH_APQ8064_ARIES
 		/* Wait for HDCP keys to be checked and validated */
 		timeout_count = 100;
 		while ((((HDMI_INP(0x011C) >> 28) & 0x7) != 0x3) &&
@@ -2466,16 +2471,24 @@ static int hdcp_authentication_part1(void)
 				__func__);
 			stale_an = false;
 		}
+#endif
 
 		/* 0x011C HDCP_LINK0_STATUS
 		[8] AN_0_READY
 		[9] AN_1_READY */
 		/* wait for an0 and an1 ready bits to be set in LINK0_STATUS */
+
+#ifdef CONFIG_MACH_APQ8064_ARIES
+		mutex_lock(&hdcp_auth_state_mutex);
+#endif
 		timeout_count = 100;
 		while (((HDMI_INP_ND(0x011C) & (0x3 << 8)) != (0x3 << 8))
 			&& timeout_count) {
 			msleep(20);
+
+#ifndef CONFIG_MACH_APQ8064_ARIES
 			timeout_count--;
+#endif
 		}
 
 		if (!timeout_count) {
@@ -2488,6 +2501,12 @@ static int hdcp_authentication_part1(void)
 			goto error;
 		}
 
+#ifdef CONFIG_MACH_APQ8064_ARIES
+		/* 0x0168 HDCP_RCVPORT_DATA12
+		   [23:8] BSTATUS
+		   [7:0] BCAPS */
+		HDMI_OUTP(0x0168, bcaps);
+#else
 		/*
 		 * In cases where An_ready bits had stale values, it would be
 		 * better to delay reading of An to avoid any potential of this
@@ -2497,6 +2516,7 @@ static int hdcp_authentication_part1(void)
 			msleep(200);
 			stale_an = false;
 		}
+#endif
 
 		/* 0x014C HDCP_RCVPORT_DATA5
 		   [31:0] LINK0_AN_0 */
@@ -2508,6 +2528,11 @@ static int hdcp_authentication_part1(void)
 		/* read an1 calculation */
 		link0_an_1 = HDMI_INP(0x0150);
 		mutex_unlock(&hdcp_auth_state_mutex);
+
+#ifdef CONFIG_MACH_APQ8064_ARIES
+		/* three bits 28..30 */
+		hdcp_key_state((HDMI_INP(0x011C) >> 28) & 0x7);
+#endif
 
 		/* 0x0144 HDCP_RCVPORT_DATA3
 		[31:0] LINK0_AKSV_0 public key
@@ -3710,6 +3735,9 @@ static void hdmi_msm_avi_info_frame(void)
 	int i;
 	int mode = 0;
 	boolean use_ce_scan_info = TRUE;
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	extern uint8_t video_cap_d_block_found;
+#endif
 
 	switch (external_common_state->video_resolution) {
 	case HDMI_VFRMT_720x480p60_4_3:
@@ -3823,7 +3851,23 @@ static void hdmi_msm_avi_info_frame(void)
 	/* Data Byte 02: C1 C0 M1 M0 R3 R2 R1 R0 */
 	aviInfoFrame[4]  = hdmi_msm_avi_iframe_lut[1][mode];
 	/* Data Byte 03: ITC EC2 EC1 EC0 Q1 Q0 SC1 SC0 */
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	if(video_cap_d_block_found)
+	{
+		aviInfoFrame[5]  = (hdmi_msm_avi_iframe_lut[2][mode]&0xF3)|0x04;
+		DEV_DBG("video_cap_d_block_found = true, limited range, aviInfoFrame[5]=0x%02x\n",aviInfoFrame[5]);
+		//you should set the AVI info  Quantization Ranges to limited range here(16-235).
+	}
+	else
+	{
+		aviInfoFrame[5]  = hdmi_msm_avi_iframe_lut[2][mode]&0xF3;
+		DEV_DBG("video_cap_d_block_found= false. defult range, aviInfoFrame[5]=0x%02x\n",aviInfoFrame[5]);
+		//you should set the AVI info  Quantization Ranges to defult range here(0-255).
+	}
+#else
 	aviInfoFrame[5]  = hdmi_msm_avi_iframe_lut[2][mode];
+#endif
+
 	/* Data Byte 04: 0 VIC6 VIC5 VIC4 VIC3 VIC2 VIC1 VIC0 */
 	aviInfoFrame[6]  = hdmi_msm_avi_iframe_lut[3][mode];
 	/* Data Byte 05: 0 0 0 0 PR3 PR2 PR1 PR0 */
@@ -4505,6 +4549,12 @@ static int hdmi_msm_power_off(struct platform_device *pdev)
 {
 	int ret = 0;
 
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	if (!hdmi_ready()) {
+		DEV_ERR("%s: HDMI/HPD not initialized\n", __func__);
+		return ret;
+	}
+#else
 	/*
 	don't check for hpd_initialized here since user space may
 	turn off HPD via hdmi_msm_hpd_feature() before power off is
@@ -4515,6 +4565,7 @@ static int hdmi_msm_power_off(struct platform_device *pdev)
 		DEV_ERR("%s: HDMI not initialized\n", __func__);
 		return ret;
 	}
+#endif
 
 	if (!hdmi_msm_state->panel_power_on) {
 		DEV_DBG("%s: panel not ON\n", __func__);

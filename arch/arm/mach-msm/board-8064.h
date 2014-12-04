@@ -21,6 +21,7 @@
 #include <mach/rpm-regulator.h>
 #include <mach/msm_rtb.h>
 #include <mach/msm_cache_dump.h>
+#include <linux/i2c.h>
 
 /* Macros assume PMIC GPIOs and MPPs start at 1 */
 #define PM8921_GPIO_BASE		NR_GPIO_IRQS
@@ -49,6 +50,9 @@ extern int msm8064_pm8917_regulator_pdata_len __devinitdata;
 #define GPIO_VREG_ID_EXT_3P3V		1
 #define GPIO_VREG_ID_EXT_TS_SW		2
 #define GPIO_VREG_ID_EXT_MPP8		3
+#ifdef CONFIG_MACH_APQ8064_ARIES
+#define GPIO_VREG_ID_EXT_5P4V		4
+#endif
 
 #define GPIO_VREG_ID_AVC_1P2V		0
 #define GPIO_VREG_ID_AVC_1P8V		1
@@ -156,4 +160,21 @@ enum {
 
 extern struct msm_rtb_platform_data apq8064_rtb_pdata;
 extern struct msm_cache_dump_platform_data apq8064_cache_dump_pdata;
+
+#define I2C_SURF 1
+#define I2C_FFA  (1 << 1)
+#define I2C_RUMI (1 << 2)
+#define I2C_SIM  (1 << 3)
+#define I2C_LIQUID (1 << 4)
+#define I2C_MPQ_CDP	BIT(5)
+#define I2C_MPQ_HRD	BIT(6)
+#define I2C_MPQ_DTV	BIT(7)
+
+struct i2c_registry {
+	u8                     machs;
+	int                    bus;
+	struct i2c_board_info *info;
+	int                    len;
+};
+
 #endif

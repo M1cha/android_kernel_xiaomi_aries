@@ -33,6 +33,7 @@
 #include <linux/msm_charm.h>
 #include <asm/mach-types.h>
 #include <asm/uaccess.h>
+#include <asm/atomic.h>
 #include <mach/mdm2.h>
 #include <mach/restart.h>
 #include <mach/subsystem_notif.h>
@@ -56,6 +57,9 @@
 #define SUBSYS_NAME_LENGTH \
 	(sizeof(EXTERNAL_MODEM) + MAX_DEVICE_DIGITS)
 
+#ifdef CONFIG_MACH_APQ8064_ARIES
+static atomic_t ssr_in_progress;
+#endif
 #define DEVICE_BASE_NAME "mdm"
 #define DEVICE_NAME_LENGTH \
 	(sizeof(DEVICE_BASE_NAME) + MAX_DEVICE_DIGITS)
@@ -389,6 +393,13 @@ static void mdm_restart_reason_fn(struct work_struct *work)
 
 	pdata = mdev->mdm_data.pdata;
 	do {
+#ifdef CONFIG_MACH_APQ8064_ARIES
+		/* Calling sysmon during an SSR may cause unclocked
+		 * accesses.
+		 */
+		if (atomic_read(&ssr_in_progress) > 0)
+			break;
+#endif
 		if (pdata->sysmon_subsys_id_valid)
 		{
 			msleep(SFR_RETRY_INTERVAL);
@@ -732,6 +743,7 @@ static irqreturn_t mdm_status_change(int irq, void *dev_id)
 	return IRQ_HANDLED;
 }
 
+#ifndef CONFIG_MACH_APQ8064_ARIES
 static irqreturn_t mdm_pblrdy_change(int irq, void *dev_id)
 {
 	struct mdm_modem_drv *mdm_drv;
@@ -745,12 +757,17 @@ static irqreturn_t mdm_pblrdy_change(int irq, void *dev_id)
 			gpio_get_value(mdm_drv->mdm2ap_pblrdy));
 	return IRQ_HANDLED;
 }
+#endif
 
 static int mdm_subsys_shutdown(const struct subsys_desc *crashed_subsys)
 {
 	struct mdm_device *mdev =
 	 container_of(crashed_subsys, struct mdm_device, mdm_subsys);
 	struct mdm_modem_drv *mdm_drv = &mdev->mdm_data;
+
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	atomic_inc(&ssr_in_progress);
+#endif
 
 	pr_debug("%s: ssr on modem id %d\n", __func__,
 			 mdev->mdm_data.device_id);
@@ -809,6 +826,9 @@ static int mdm_subsys_powerup(const struct subsys_desc *crashed_subsys)
 			queue_work(mdev->mdm_sfr_queue, &mdev->sfr_reason_work);
 	}
 	init_completion(&mdev->mdm_boot);
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	atomic_dec(&ssr_in_progress);
+#endif
 	return mdm_drv->mdm_boot_status;
 }
 
@@ -1146,6 +1166,7 @@ errfatal_err:
 	mdev->mdm_status_irq = irq;
 
 status_err:
+#ifndef CONFIG_MACH_APQ8064_ARIES
 	if (GPIO_IS_VALID(mdm_drv->mdm2ap_pblrdy)) {
 		irq = MSM_GPIO_TO_INT(mdm_drv->mdm2ap_pblrdy);
 		if (irq < 0) {
@@ -1168,6 +1189,7 @@ status_err:
 	}
 
 pblrdy_err:
+#endif
 	/*
 	 * If AP2MDM_PMIC_PWR_EN gpio is used, pull it high. It remains
 	 * high until the whole phone is shut down.

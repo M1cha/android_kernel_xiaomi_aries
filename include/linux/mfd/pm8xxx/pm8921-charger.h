@@ -10,6 +10,9 @@
  * GNU General Public License for more details.
  */
 
+#ifdef CONFIG_PM8921_CHARGER_XIAOMI
+#include "pm8921-charger-xiaomi.h"
+#else
 #ifndef __PM8XXX_CHARGER_H
 #define __PM8XXX_CHARGER_H
 
@@ -392,3 +395,4 @@ static inline int pm8921_is_batfet_closed(void)
 #endif
 
 #endif
+#endif /* CONFIG_PM8921_CHARGER_XIAOMI */

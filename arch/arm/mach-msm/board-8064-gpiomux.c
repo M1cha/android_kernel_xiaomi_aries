@@ -57,6 +57,8 @@ struct msm_gpiomux_config apq8064_ethernet_configs[] = {
 	},
 };
 #endif
+
+#ifndef CONFIG_MACH_APQ8064_ARIES
 /* Chip selects for SPI clients */
 static struct gpiomux_setting gpio_spi_cs_config = {
 	.func = GPIOMUX_FUNC_GPIO,
@@ -70,6 +72,7 @@ static struct gpiomux_setting gpio_epm_spi_cs_config = {
 	.drv = GPIOMUX_DRV_12MA,
 	.pull = GPIOMUX_PULL_UP,
 };
+#endif
 
 #ifdef CONFIG_MSM_VCAP
 static struct gpiomux_setting gpio_vcap_config[] = {
@@ -342,11 +345,25 @@ static struct gpiomux_setting gpio_i2c_config_sus = {
 	.pull = GPIOMUX_PULL_KEEPER,
 };
 
+#ifdef CONFIG_MACH_APQ8064_ARIES
+static struct gpiomux_setting mbhc_hs_detect_active = {
+	.func = GPIOMUX_FUNC_GPIO,
+	.drv = GPIOMUX_DRV_8MA,
+	.pull = GPIOMUX_PULL_DOWN,
+};
+
+static struct gpiomux_setting mbhc_hs_detect = {
+	.func = GPIOMUX_FUNC_GPIO,
+	.drv = GPIOMUX_DRV_8MA,
+	.pull = GPIOMUX_PULL_UP,
+};
+#else
 static struct gpiomux_setting mbhc_hs_detect = {
 	.func = GPIOMUX_FUNC_1,
 	.drv = GPIOMUX_DRV_2MA,
 	.pull = GPIOMUX_PULL_NONE,
 };
+#endif
 
 static struct gpiomux_setting cdc_mclk = {
 	.func = GPIOMUX_FUNC_1,
@@ -386,6 +403,7 @@ static struct gpiomux_setting ext_regulator_config = {
 	.dir = GPIOMUX_OUT_LOW,
 };
 
+#ifdef CONFIG_XIAOMI_EARJACK_UART
 static struct gpiomux_setting gsbi7_func1_cfg = {
 	.func = GPIOMUX_FUNC_1,
 	.drv = GPIOMUX_DRV_8MA,
@@ -397,6 +415,13 @@ static struct gpiomux_setting gsbi7_func2_cfg = {
 	.drv = GPIOMUX_DRV_8MA,
 	.pull = GPIOMUX_PULL_NONE,
 };
+#else
+static struct gpiomux_setting gsbi7_gpio_cfg = {
+	.func = GPIOMUX_FUNC_GPIO,
+	.drv = GPIOMUX_DRV_2MA,
+	.pull = GPIOMUX_PULL_DOWN,
+};
+#endif
 
 static struct gpiomux_setting gsbi3_suspended_cfg = {
 	.func = GPIOMUX_FUNC_1,
@@ -676,6 +701,7 @@ static struct msm_gpiomux_config apq8064_gsbi_configs[] __initdata = {
 		},
 	},
 #endif
+#ifndef CONFIG_MACH_APQ8064_ARIES
 	{
 		.gpio      = 30,		/* FP CS */
 		.settings = {
@@ -694,6 +720,8 @@ static struct msm_gpiomux_config apq8064_gsbi_configs[] __initdata = {
 			[GPIOMUX_SUSPENDED] = &gpio_spi_cs_config,
 		},
 	},
+#endif
+#ifdef CONFIG_XIAOMI_EARJACK_UART
 	{
 		.gpio      = 82,	/* GSBI7 UART2 TX */
 		.settings = {
@@ -706,6 +734,20 @@ static struct msm_gpiomux_config apq8064_gsbi_configs[] __initdata = {
 			[GPIOMUX_SUSPENDED] = &gsbi7_func1_cfg,
 		},
 	},
+#else
+	{
+		.gpio      = 82,
+		.settings = {
+			[GPIOMUX_SUSPENDED] = &gsbi7_gpio_cfg,
+		},
+	},
+	{
+		.gpio      = 83,
+		.settings = {
+			[GPIOMUX_SUSPENDED] = &gsbi7_gpio_cfg,
+		},
+	},
+#endif
 	{
 		.gpio      = 21,		/* GSBI1 QUP I2C_CLK */
 		.settings = {
@@ -774,6 +816,10 @@ static struct msm_gpiomux_config apq8064_audio_codec_configs[] __initdata = {
 	{
 		.gpio = 38,
 		.settings = {
+#ifdef CONFIG_MACH_APQ8064_ARIES
+			/* HS_MIC_SWITCH_EN: HIGH - AUX MIC, LOW - HS MIC */
+			[GPIOMUX_ACTIVE] = &mbhc_hs_detect_active,
+#endif
 			[GPIOMUX_SUSPENDED] = &mbhc_hs_detect,
 		},
 	},
@@ -797,38 +843,62 @@ static struct msm_gpiomux_config apq8064_ext_regulator_configs[] __initdata = {
 
 static struct gpiomux_setting ap2mdm_cfg = {
 	.func = GPIOMUX_FUNC_GPIO,
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	.drv = GPIOMUX_DRV_8MA,
+#else
 	.drv = GPIOMUX_DRV_4MA,
+#endif
 	.pull = GPIOMUX_PULL_DOWN,
 };
 
 static struct gpiomux_setting mdm2ap_status_cfg = {
 	.func = GPIOMUX_FUNC_GPIO,
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	.drv = GPIOMUX_DRV_8MA,
+#else
 	.drv = GPIOMUX_DRV_2MA,
+#endif
 	.pull = GPIOMUX_PULL_DOWN,
 };
 
 static struct gpiomux_setting mdm2ap_errfatal_cfg = {
 	.func = GPIOMUX_FUNC_GPIO,
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	.drv = GPIOMUX_DRV_16MA,
+#else
 	.drv = GPIOMUX_DRV_2MA,
+#endif
 	.pull = GPIOMUX_PULL_DOWN,
 };
 
 static struct gpiomux_setting mdm2ap_pblrdy = {
 	.func = GPIOMUX_FUNC_GPIO,
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	.drv = GPIOMUX_DRV_16MA,
+#else
 	.drv = GPIOMUX_DRV_2MA,
+#endif
 	.pull = GPIOMUX_PULL_DOWN,
 };
 
 
 static struct gpiomux_setting ap2mdm_soft_reset_cfg = {
 	.func = GPIOMUX_FUNC_GPIO,
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	.drv = GPIOMUX_DRV_8MA,
+#else
 	.drv = GPIOMUX_DRV_4MA,
+#endif
 	.pull = GPIOMUX_PULL_DOWN,
 };
 
 static struct gpiomux_setting ap2mdm_wakeup = {
 	.func = GPIOMUX_FUNC_GPIO,
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	.drv = GPIOMUX_DRV_8MA,
+#else
 	.drv = GPIOMUX_DRV_4MA,
+#endif
 	.pull = GPIOMUX_PULL_DOWN,
 };
 
@@ -1350,6 +1420,7 @@ static struct msm_gpiomux_config apq8064_sdc4_configs[] __initdata = {
 };
 #endif
 
+#ifdef CONFIG_MMC_MSM_SDC3_SUPPORT
 static struct gpiomux_setting apq8064_sdc3_card_det_cfg = {
 	.func = GPIOMUX_FUNC_GPIO,
 	.drv = GPIOMUX_DRV_2MA,
@@ -1365,6 +1436,7 @@ static struct msm_gpiomux_config apq8064_sdc3_configs[] __initdata = {
 		},
 	},
 };
+#endif
 
 static struct msm_gpiomux_config sglte2_qsc_configs[] __initdata = {
 	/* MDM2AP_STATUS */
@@ -1469,6 +1541,123 @@ static struct msm_gpiomux_config mpq8064_uartdm_configs[] __initdata = {
 	},
 };
 
+#ifdef CONFIG_MACH_APQ8064_ARIES
+static struct gpiomux_setting fte_suspended_cfg = {
+	.func = GPIOMUX_FUNC_1,
+	.drv = GPIOMUX_DRV_2MA,
+	.pull = GPIOMUX_PULL_DOWN,
+};
+static struct gpiomux_setting fte_active_cfg = {
+	.func = GPIOMUX_FUNC_1,
+	.drv = GPIOMUX_DRV_8MA,
+	.pull = GPIOMUX_PULL_NONE,
+};
+static struct gpiomux_setting mhl_int_sus_cfg = {
+	.func = GPIOMUX_FUNC_GPIO,
+	.drv = GPIOMUX_DRV_2MA,
+	.pull = GPIOMUX_PULL_UP,
+};
+static struct gpiomux_setting mhl_int_act_cfg = {
+	.func = GPIOMUX_FUNC_GPIO,
+	.drv = GPIOMUX_DRV_2MA,
+	.pull = GPIOMUX_PULL_UP,
+};
+#ifdef CONFIG_AUDIENCE_ES310
+static struct gpiomux_setting anc_mclk_cfg = {
+	.func = GPIOMUX_FUNC_2,
+	.drv = GPIOMUX_DRV_4MA,
+	.pull = GPIOMUX_PULL_NONE,
+};
+#endif
+static struct gpiomux_setting us_eu_hs_sw_active_cfg = {
+	.func = GPIOMUX_FUNC_GPIO,
+	.drv = GPIOMUX_DRV_8MA,
+	.pull = GPIOMUX_PULL_UP,
+};
+static struct gpiomux_setting us_eu_hs_sw_suspend_cfg = {
+	.func = GPIOMUX_FUNC_GPIO,
+	.drv = GPIOMUX_DRV_8MA,
+	.pull = GPIOMUX_PULL_DOWN,
+};
+static struct gpiomux_setting gsbi5_func2_cfg = {
+	.func = GPIOMUX_FUNC_2,
+	.drv = GPIOMUX_DRV_8MA,
+	.pull = GPIOMUX_PULL_NONE,
+};
+static struct gpiomux_setting audience_wakeup_active_cfg = {
+	.func = GPIOMUX_FUNC_GPIO,
+	.drv = GPIOMUX_DRV_8MA,
+	.pull = GPIOMUX_PULL_UP,
+};
+static struct gpiomux_setting hs_uart_sw_active_cfg = {
+	.func = GPIOMUX_FUNC_GPIO,
+	.drv = GPIOMUX_DRV_8MA,
+	.pull = GPIOMUX_PULL_DOWN,
+};
+static struct gpiomux_setting hs_uart_sw_suspend_cfg = {
+	.func = GPIOMUX_FUNC_GPIO,
+	.drv = GPIOMUX_DRV_8MA,
+#ifdef CONFIG_XIAOMI_EARJACK_UART
+	.pull = GPIOMUX_PULL_UP,
+#else
+	.pull = GPIOMUX_PULL_DOWN,
+#endif
+};
+
+static struct msm_gpiomux_config apq8064_xiaomi_configs[] __initdata = {
+	{ /* LCD FTE */
+		.gpio = 0,
+		.settings = {
+			[GPIOMUX_ACTIVE] = &fte_active_cfg,
+			[GPIOMUX_SUSPENDED] = &fte_suspended_cfg,
+		},
+	},
+	{ /* MHL interrupt */
+		.gpio = 23,
+		.settings = {
+			[GPIOMUX_ACTIVE] = &mhl_int_act_cfg,
+			[GPIOMUX_SUSPENDED] = &mhl_int_sus_cfg,
+		},
+	},
+#ifdef CONFIG_AUDIENCE_ES310
+	{ /* anc_mclk */
+		.gpio = 34,
+		.settings = {
+			[GPIOMUX_ACTIVE] = &anc_mclk_cfg,
+			[GPIOMUX_SUSPENDED] = &anc_mclk_cfg,
+		},
+	},
+#endif
+	{ /* MIC_SWITCH_EN: NO HS -> SET TO LOW, HS - >SET TO HIGH */
+		.gpio = 36,
+		.settings = {
+			[GPIOMUX_ACTIVE] = &us_eu_hs_sw_active_cfg,
+			[GPIOMUX_SUSPENDED] = &us_eu_hs_sw_suspend_cfg,
+		},
+	},
+	{ /* GSBI5 UART2 TX */
+		.gpio = 51,
+		.settings = {
+			[GPIOMUX_ACTIVE] = &audience_wakeup_active_cfg,
+			[GPIOMUX_SUSPENDED] = &gsbi5_func2_cfg,
+		},
+	},
+	{ /* GSBI5 UART2 RX */
+		.gpio = 52,
+		.settings = {
+			[GPIOMUX_SUSPENDED] = &gsbi5_func2_cfg,
+		},
+	},
+	{ /* Switch between HS and UART: HIGH->UART, LOW->HS */
+		.gpio = 62,
+		.settings = {
+			[GPIOMUX_ACTIVE] = &hs_uart_sw_active_cfg,
+			[GPIOMUX_SUSPENDED] = &hs_uart_sw_suspend_cfg,
+		},
+	},
+};
+#endif
+//void msm_gpiomux_dump(void);
 void __init apq8064_init_gpiomux(void)
 {
 	int rc;
@@ -1482,6 +1671,14 @@ void __init apq8064_init_gpiomux(void)
 
 	msm_gpiomux_install(wcnss_5wire_interface,
 			ARRAY_SIZE(wcnss_5wire_interface));
+
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	msm_gpiomux_install(mpq8064_gsbi5_i2c_configs,
+			ARRAY_SIZE(mpq8064_gsbi5_i2c_configs));
+
+	msm_gpiomux_install(apq8064_xiaomi_configs,
+			ARRAY_SIZE(apq8064_xiaomi_configs));
+#endif
 
 	if (machine_is_mpq8064_cdp() || machine_is_mpq8064_hrd() ||
 		 machine_is_mpq8064_dtv()) {
@@ -1589,8 +1786,11 @@ void __init apq8064_init_gpiomux(void)
 			     ARRAY_SIZE(apq8064_sdc4_configs));
 #endif
 
+#ifdef CONFIG_MMC_MSM_SDC3_SUPPORT
 	msm_gpiomux_install(apq8064_sdc3_configs,
 			ARRAY_SIZE(apq8064_sdc3_configs));
+#endif
+
 	 if (machine_is_mpq8064_hrd() || machine_is_mpq8064_dtv())
 		msm_gpiomux_install(mpq8064_uartdm_configs,
 				ARRAY_SIZE(mpq8064_uartdm_configs));

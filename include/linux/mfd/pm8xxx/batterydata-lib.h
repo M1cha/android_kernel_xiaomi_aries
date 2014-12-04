@@ -22,7 +22,7 @@
 #define PC_CC_COLS             13
 
 #define PC_TEMP_ROWS		29
-#define PC_TEMP_COLS		8
+#define PC_TEMP_COLS		12
 
 #define MAX_SINGLE_LUT_COLS	20
 
@@ -104,8 +104,9 @@ struct bms_battery_data {
 	int			rbatt_capacitive_mohm;
 };
 
-#if defined(CONFIG_PM8921_BMS) || \
-	defined(CONFIG_PM8921_BMS_MODULE)
+#if defined(CONFIG_PM8921_BMS) || defined(CONFIG_PM8921_BMS_XIAOMI) || \
+	defined(CONFIG_PM8921_BMS_MODULE) || \
+	defined(CONFIG_PM8921_BMS_XIAOMI_MODULE)
 extern struct bms_battery_data  palladium_1500_data;
 extern struct bms_battery_data  desay_5200_data;
 

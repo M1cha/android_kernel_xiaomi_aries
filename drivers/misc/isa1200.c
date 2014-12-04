@@ -112,6 +112,9 @@ static void isa1200_vib_set(struct isa1200_chip *haptic, int enable)
 				pr_err("%s: pwm_enable fail\n", __func__);
 				goto chip_dwn;
 			}
+#ifdef CONFIG_MACH_APQ8064_ARIES
+			gpio_set_value_cansleep(haptic->pdata->hap_en_gpio, 1);
+#endif
 		} else if (haptic->pdata->mode_ctrl == PWM_GEN_MODE) {
 			/* check for board specific clk callback */
 			if (haptic->pdata->clk_enable) {
@@ -281,6 +284,7 @@ static int isa1200_setup(struct i2c_client *client)
 	int temp, rc;
 	u8 value;
 
+#ifndef CONFIG_MACH_APQ8064_ARIES
 	gpio_set_value_cansleep(haptic->pdata->hap_en_gpio, 0);
 	if (haptic->is_len_gpio_valid == true)
 		gpio_set_value_cansleep(haptic->pdata->hap_len_gpio, 0);
@@ -288,8 +292,13 @@ static int isa1200_setup(struct i2c_client *client)
 	udelay(250);
 
 	gpio_set_value_cansleep(haptic->pdata->hap_en_gpio, 1);
-	if (haptic->is_len_gpio_valid == true)
+#endif
+	if (haptic->is_len_gpio_valid == true) {
 		gpio_set_value_cansleep(haptic->pdata->hap_len_gpio, 1);
+#ifdef CONFIG_MACH_APQ8064_ARIES
+		udelay(250);
+#endif
+	}
 
 	value =	(haptic->pdata->smart_en << 3) |
 		(haptic->pdata->is_erm << 5) |
@@ -350,7 +359,9 @@ reset_hctrl1:
 	i2c_smbus_write_byte_data(client, ISA1200_HCTRL1,
 				ISA1200_HCTRL1_RESET);
 reset_gpios:
+#ifndef CONFIG_MACH_APQ8064_ARIES
 	gpio_set_value_cansleep(haptic->pdata->hap_en_gpio, 0);
+#endif
 	if (haptic->is_len_gpio_valid == true)
 		gpio_set_value_cansleep(haptic->pdata->hap_len_gpio, 0);
 	return rc;
@@ -864,7 +875,9 @@ static int isa1200_suspend(struct i2c_client *client, pm_message_t mesg)
 	/* turn-off current vibration */
 	isa1200_vib_set(haptic, 0);
 
+#ifndef CONFIG_MACH_APQ8064_ARIES
 	gpio_set_value_cansleep(haptic->pdata->hap_en_gpio, 0);
+#endif
 	if (haptic->is_len_gpio_valid == true)
 		gpio_set_value_cansleep(haptic->pdata->hap_len_gpio, 0);
 

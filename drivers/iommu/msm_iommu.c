@@ -1203,7 +1203,11 @@ irqreturn_t msm_iommu_fault_handler(int irq, void *dev_id)
 						&ctx_drvdata->pdev->dev,
 						GET_FAR(base, num), 0);
 
+#ifdef CONFIG_MACH_APQ8064_ARIES
+		if (ret == -ENOSYS && strcmp(drvdata->name,"vfe")) {
+#else
 		if (ret == -ENOSYS) {
+#endif
 			pr_err("Unexpected IOMMU page fault!\n");
 			pr_err("name    = %s\n", drvdata->name);
 			pr_err("context = %s (%d)\n", ctx_drvdata->name, num);

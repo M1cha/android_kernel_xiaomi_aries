@@ -890,6 +890,9 @@ static void send_event(struct v4l2_fh *fh, struct v4l2_ctrl *ctrl, u32 changes)
 
 	if (list_empty(&ctrl->ev_subs))
 		return;
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	memset(&ev, 0, sizeof(struct v4l2_event));
+#endif
 	fill_event(&ev, ctrl, changes);
 
 	list_for_each_entry(sev, &ctrl->ev_subs, node)
@@ -2415,6 +2418,9 @@ void v4l2_ctrl_add_event(struct v4l2_ctrl *ctrl,
 		struct v4l2_event ev;
 		u32 changes = V4L2_EVENT_CTRL_CH_FLAGS;
 
+#ifdef CONFIG_MACH_APQ8064_ARIES
+		memset(&ev, 0, sizeof(struct v4l2_event));
+#endif
 		if (!(ctrl->flags & V4L2_CTRL_FLAG_WRITE_ONLY))
 			changes |= V4L2_EVENT_CTRL_CH_VALUE;
 		fill_event(&ev, ctrl, changes);

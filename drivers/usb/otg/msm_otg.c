@@ -40,7 +40,9 @@
 #include <linux/mfd/pm8xxx/pm8921-charger.h>
 #include <linux/mfd/pm8xxx/misc.h>
 #include <linux/power_supply.h>
+#ifdef CONFIG_FB_MSM_HDMI_MHL_8334
 #include <linux/mhl_8334.h>
+#endif
 #include <linux/slimport.h>
 
 #include <asm/mach-types.h>
@@ -74,7 +76,9 @@ static DECLARE_COMPLETION(pmic_vbus_init);
 static struct msm_otg *the_msm_otg;
 static bool debug_aca_enabled;
 static bool debug_bus_voting_enabled;
+#ifdef CONFIG_FB_MSM_HDMI_MHL_8334
 static bool mhl_det_in_progress;
+#endif
 
 static struct regulator *hsusb_3p3;
 static struct regulator *hsusb_1p8;
@@ -771,8 +775,12 @@ static int msm_otg_suspend(struct msm_otg *motg)
 		return 0;
 
 	disable_irq(motg->irq);
-	host_bus_suspend = !test_bit(MHL, &motg->inputs) && phy->otg->host &&
-		!test_bit(ID, &motg->inputs);
+	host_bus_suspend = phy->otg->host &&
+		!test_bit(ID, &motg->inputs)
+#ifdef CONFIG_FB_MSM_HDMI_MHL_8334
+		&& !test_bit(MHL, &motg->inputs)
+#endif
+;
 	device_bus_suspend = phy->otg->gadget && test_bit(ID, &motg->inputs) &&
 		test_bit(A_BUS_SUSPEND, &motg->inputs) &&
 		motg->caps & ALLOW_LPM_ON_DEV_SUSPEND;
@@ -1072,6 +1080,7 @@ psy_not_supported:
 	return -ENXIO;
 }
 
+#ifdef CONFIG_FB_MSM_HDMI_MHL_8334
 static int msm_otg_notify_chg_type(struct msm_otg *motg)
 {
 	int charger_type;
@@ -1097,6 +1106,7 @@ static int msm_otg_notify_chg_type(struct msm_otg *motg)
 
 	return pm8921_set_usb_power_supply_type(charger_type);
 }
+#endif
 
 static int msm_otg_notify_power_supply(struct msm_otg *motg, unsigned mA)
 {
@@ -1139,10 +1149,12 @@ static void msm_otg_notify_charger(struct msm_otg *motg, unsigned mA)
 			mA > IDEV_ACA_CHG_LIMIT)
 		mA = IDEV_ACA_CHG_LIMIT;
 
+#ifdef CONFIG_FB_MSM_HDMI_MHL_8334
 	if (msm_otg_notify_chg_type(motg))
 		dev_err(motg->phy.dev,
 			"Failed notifying %d charger type to PMIC\n",
 							motg->chg_type);
+#endif
 
 	if (motg->cur_power == mA)
 		return;
@@ -1354,6 +1366,41 @@ static void msm_hsusb_vbus_power(struct msm_otg *motg, bool on)
 	}
 }
 
+#ifdef CONFIG_FB_MSM_HDMI_MHL_9244
+static bool vbus_is_on = 0;
+int mhl_vbus_status(void)
+{
+	pr_info("%s %d\n", __func__, vbus_is_on);
+	return vbus_is_on;
+}
+
+void mhl_vbus_power(bool on)
+{
+	int ret;
+
+	if (vbus_is_on == on)
+		return;
+
+	pr_info("%s: on %d\n", __func__, on);
+	if (on) {
+		ret = regulator_enable(vbus_otg);
+		if (ret) {
+			pr_err("unable to enable vbus_otg\n");
+			return;
+		}
+		vbus_is_on = true;
+
+	} else {
+		ret = regulator_disable(vbus_otg);
+		if (ret) {
+			pr_err("unable to disable vbus_otg\n");
+			return;
+		}
+		vbus_is_on = false;
+	}
+}
+#endif
+
 static int msm_otg_set_host(struct usb_otg *otg, struct usb_bus *host)
 {
 	struct msm_otg *motg = container_of(otg->phy, struct msm_otg, phy);
@@ -1504,6 +1551,7 @@ static int msm_otg_set_peripheral(struct usb_otg *otg,
 	return 0;
 }
 
+#ifdef CONFIG_FB_MSM_HDMI_MHL_8334
 static bool msm_otg_read_pmic_id_state(struct msm_otg *motg)
 {
 	unsigned long flags;
@@ -1616,6 +1664,7 @@ static bool msm_chg_mhl_detect(struct msm_otg *motg)
 
 	return ret;
 }
+#endif
 
 static bool msm_chg_aca_detect(struct msm_otg *motg)
 {
@@ -2092,10 +2141,12 @@ static void msm_chg_detect_work(struct work_struct *w)
 
 	dev_dbg(phy->dev, "chg detection work\n");
 
+#ifdef CONFIG_FB_MSM_HDMI_MHL_8334
 	if (test_bit(MHL, &motg->inputs)) {
 		dev_dbg(phy->dev, "detected MHL, escape chg detection work\n");
 		return;
 	}
+#endif
 
 	switch (motg->chg_state) {
 	case USB_CHG_STATE_UNDEFINED:
@@ -2114,6 +2165,7 @@ static void msm_chg_detect_work(struct work_struct *w)
 			queue_work(system_nrt_wq, &motg->sm_work);
 			return;
 		}
+#ifdef CONFIG_FB_MSM_HDMI_MHL_8334
 		if (msm_chg_mhl_detect(motg)) {
 			msm_chg_block_off(motg);
 			motg->chg_state = USB_CHG_STATE_DETECTED;
@@ -2121,6 +2173,7 @@ static void msm_chg_detect_work(struct work_struct *w)
 			queue_work(system_nrt_wq, &motg->sm_work);
 			return;
 		}
+#endif
 		is_aca = msm_chg_aca_detect(motg);
 		if (is_aca) {
 			/*
@@ -2251,10 +2304,19 @@ static void msm_otg_init_sm(struct msm_otg *motg)
 				clear_bit(B_SESS_VLD, &motg->inputs);
 		} else if (pdata->otg_control == OTG_PMIC_CONTROL) {
 			if (pdata->pmic_id_irq) {
+				unsigned long flags;
+				local_irq_save(flags);
+#ifdef CONFIG_FB_MSM_HDMI_MHL_8334
 				if (msm_otg_read_pmic_id_state(motg))
+#elif defined(CONFIG_FB_MSM_HDMI_MHL_9244)
+				if (irq_read_line(pdata->pmic_id_irq))
+#else
+				if(0)
+#endif
 					set_bit(ID, &motg->inputs);
 				else
 					clear_bit(ID, &motg->inputs);
+				local_irq_restore(flags);
 			}
 			/*
 			 * VBUS initial state is reported after PMIC
@@ -2310,21 +2372,26 @@ static void msm_otg_sm_work(struct work_struct *w)
 		}
 		/* FALL THROUGH */
 	case OTG_STATE_B_IDLE:
+#ifdef CONFIG_FB_MSM_HDMI_MHL_8334
 		if (test_bit(MHL, &motg->inputs)) {
 			/* allow LPM */
 			pm_runtime_put_noidle(otg->phy->dev);
 			pm_runtime_suspend(otg->phy->dev);
-		} else if ((!test_bit(ID, &motg->inputs) ||
+		} else
+#endif
+		if ((!test_bit(ID, &motg->inputs) ||
 				test_bit(ID_A, &motg->inputs)) && otg->host) {
 			pr_debug("!id || id_A\n");
 			if (slimport_is_connected()) {
 				work = 1;
 				break;
 			}
+#ifdef CONFIG_FB_MSM_HDMI_MHL_8334
 			if (msm_chg_mhl_detect(motg)) {
 				work = 1;
 				break;
 			}
+#endif
 			clear_bit(B_BUS_REQ, &motg->inputs);
 			set_bit(A_BUS_REQ, &motg->inputs);
 			otg->phy->state = OTG_STATE_A_IDLE;
@@ -2404,6 +2471,7 @@ static void msm_otg_sm_work(struct work_struct *w)
 			motg->chg_type = USB_INVALID_CHARGER;
 			msm_otg_notify_charger(motg, 0);
 			msm_otg_reset(otg->phy);
+#ifdef CONFIG_FB_MSM_HDMI_MHL_8334
 			/*
 			 * There is a small window where ID interrupt
 			 * is not monitored during ID detection circuit
@@ -2416,6 +2484,7 @@ static void msm_otg_sm_work(struct work_struct *w)
 				work = 1;
 				break;
 			}
+#endif
 			pm_runtime_put_noidle(otg->phy->dev);
 			pm_runtime_suspend(otg->phy->dev);
 		}
@@ -3050,11 +3119,13 @@ static void msm_otg_set_vbus_state(int online)
 		return;
 	}
 
+#ifdef CONFIG_FB_MSM_HDMI_MHL_8334
 	if (test_bit(MHL, &motg->inputs) ||
 			mhl_det_in_progress) {
 		pr_debug("PMIC: BSV interrupt ignored in MHL\n");
 		return;
 	}
+#endif
 
 	if (atomic_read(&motg->pm_suspended))
 		motg->sm_work_pending = true;
@@ -3067,8 +3138,16 @@ static void msm_pmic_id_status_w(struct work_struct *w)
 	struct msm_otg *motg = container_of(w, struct msm_otg,
 						pmic_id_status_work.work);
 	int work = 0;
+	unsigned long flags;
 
+	local_irq_save(flags);
+#ifdef CONFIG_FB_MSM_HDMI_MHL_8334
 	if (msm_otg_read_pmic_id_state(motg)) {
+#elif defined(CONFIG_FB_MSM_HDMI_MHL_9244)
+	if (irq_read_line(motg->pdata->pmic_id_irq)) {
+#else
+	if (0) {
+#endif
 		if (!test_and_set_bit(ID, &motg->inputs)) {
 			pr_debug("PMIC: ID set\n");
 			work = 1;
@@ -3087,6 +3166,7 @@ static void msm_pmic_id_status_w(struct work_struct *w)
 		else
 			queue_work(system_nrt_wq, &motg->sm_work);
 	}
+	local_irq_restore(flags);
 
 }
 
@@ -3095,11 +3175,13 @@ static irqreturn_t msm_pmic_id_irq(int irq, void *data)
 {
 	struct msm_otg *motg = data;
 
+#ifdef CONFIG_FB_MSM_HDMI_MHL_8334
 	if (test_bit(MHL, &motg->inputs) ||
 			mhl_det_in_progress) {
 		pr_debug("PMIC: Id interrupt ignored in MHL\n");
 		return IRQ_HANDLED;
 	}
+#endif
 
 	if (!aca_id_turned_on)
 		/*schedule delayed work for 5msec for ID line state to settle*/
@@ -3726,9 +3808,11 @@ static int __init msm_otg_probe(struct platform_device *pdev)
 	/* Ensure that above STOREs are completed before enabling interrupts */
 	mb();
 
+#ifdef CONFIG_FB_MSM_HDMI_MHL_8334
 	ret = msm_otg_mhl_register_callback(motg, msm_otg_mhl_notify_online);
 	if (ret)
 		dev_dbg(&pdev->dev, "MHL can not be supported\n");
+#endif
 	wake_lock_init(&motg->wlock, WAKE_LOCK_SUSPEND, "msm_otg");
 	msm_otg_init_timer(motg);
 	INIT_WORK(&motg->sm_work, msm_otg_sm_work);
@@ -3893,7 +3977,9 @@ static int __devexit msm_otg_remove(struct platform_device *pdev)
 		msm_otg_setup_devices(pdev, motg->pdata->mode, false);
 	if (motg->pdata->otg_control == OTG_PMIC_CONTROL)
 		pm8921_charger_unregister_vbus_sn(0);
+#ifdef CONFIG_FB_MSM_HDMI_MHL_8334
 	msm_otg_mhl_register_callback(motg, NULL);
+#endif
 	msm_otg_debugfs_cleanup();
 	cancel_delayed_work_sync(&motg->chg_work);
 	cancel_delayed_work_sync(&motg->pmic_id_status_work);

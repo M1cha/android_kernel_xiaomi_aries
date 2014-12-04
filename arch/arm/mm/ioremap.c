@@ -245,11 +245,13 @@ void __iomem * __arm_ioremap_pfn_caller(unsigned long pfn,
 	}
 	read_unlock(&vmlist_lock);
 
+#ifndef CONFIG_MACH_APQ8064_ARIES
 	/*
 	 * Don't allow RAM to be mapped - this causes problems with ARMv6+
 	 */
 	if (WARN_ON(pfn_valid(pfn)))
 		return NULL;
+#endif
 
 	area = get_vm_area_caller(size, VM_IOREMAP, caller);
  	if (!area)

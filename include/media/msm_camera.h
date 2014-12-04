@@ -10,6 +10,9 @@
  * GNU General Public License for more details.
  *
  */
+#ifdef CONFIG_MACH_APQ8064_ARIES
+#include "msm_camera_aries.h"
+#else
 #ifndef __LINUX_MSM_CAMERA_H
 #define __LINUX_MSM_CAMERA_H
 
@@ -2300,3 +2303,4 @@ struct intf_mctl_mapping_cfg {
 	(handle |= (0x1 << 7) | (data & 0x7F))
 
 #endif /* __LINUX_MSM_CAMERA_H */
+#endif /* CONFIG_MACH_APQ8064_ARIES */

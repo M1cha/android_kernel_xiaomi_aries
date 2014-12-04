@@ -107,6 +107,14 @@ static void mdm_power_down_common(struct mdm_modem_drv *mdm_drv)
 
 	mdm_peripheral_disconnect(mdm_drv);
 
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	gpio_direction_output(mdm_drv->ap2mdm_soft_reset_gpio,
+				soft_reset_direction);
+	msleep(500);
+
+	return;
+#endif
+
 	/* Wait for the modem to complete its power down actions. */
 	for (i = 20; i > 0; i--) {
 		if (gpio_get_value(mdm_drv->mdm2ap_status_gpio) == 0) {

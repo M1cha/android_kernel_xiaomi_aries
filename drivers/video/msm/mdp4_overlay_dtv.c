@@ -355,7 +355,11 @@ void mdp4_dtv_wait4vsync(int cndx)
 {
 	struct vsycn_ctrl *vctrl;
 	struct mdp4_overlay_pipe *pipe;
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	ktime_t timestamp;
+#else
 	int ret;
+#endif
 
 	if (cndx >= MAX_CONTROLLER) {
 		pr_err("%s: out or range: cndx=%d\n", __func__, cndx);
@@ -370,10 +374,18 @@ void mdp4_dtv_wait4vsync(int cndx)
 
 	mdp4_dtv_vsync_irq_ctrl(cndx, 1);
 
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	timestamp = vctrl->vsync_time;
+	wait_event_interruptible_timeout(vctrl->wait_queue,
+			!ktime_equal(timestamp, vctrl->vsync_time) &&
+			vctrl->vsync_irq_enabled,
+			msecs_to_jiffies(VSYNC_PERIOD * 8));
+#else
 	ret = wait_event_interruptible_timeout(vctrl->wait_queue, 1,
 			msecs_to_jiffies(VSYNC_PERIOD * 8));
 	if (ret <= 0)
 		pr_err("%s timeout ret=%d", __func__, ret);
+#endif
 
 	mdp4_dtv_vsync_irq_ctrl(cndx, 0);
 	mdp4_stat.wait4vsync1++;
@@ -654,7 +666,11 @@ static void mdp4_dtv_tg_off(struct vsycn_ctrl *vctrl)
 	spin_lock_irqsave(&vctrl->spin_lock, flags);
 	MDP_OUTP(MDP_BASE + DTV_BASE, 0); /* turn off timing generator */
 	spin_unlock_irqrestore(&vctrl->spin_lock, flags);
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	mdp4_dtv_wait4vsync(0);
+#else
 	msleep(20);
+#endif
 }
 
 int mdp4_dtv_off(struct platform_device *pdev)

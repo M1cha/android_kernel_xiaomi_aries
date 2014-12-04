@@ -198,6 +198,11 @@ static int suspend_enter(suspend_state_t state, bool *wakeup)
 	return error;
 }
 
+#ifdef CONFIG_MACH_APQ8064_ARIES
+extern void disable_hlt(void);
+extern void enable_hlt(void);
+#endif
+
 /**
  * suspend_devices_and_enter - Suspend devices and enter system sleep state.
  * @state: System sleep state to enter.
@@ -229,7 +234,13 @@ int suspend_devices_and_enter(suspend_state_t state)
 		goto Recover_platform;
 
 	do {
+#ifdef CONFIG_MACH_APQ8064_ARIES
+		disable_hlt();
+#endif
 		error = suspend_enter(state, &wakeup);
+#ifdef CONFIG_MACH_APQ8064_ARIES
+		enable_hlt();
+#endif
 	} while (!error && !wakeup
 		&& suspend_ops->suspend_again && suspend_ops->suspend_again());
 

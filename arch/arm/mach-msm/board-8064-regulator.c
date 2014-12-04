@@ -66,6 +66,9 @@ VREG_CONSUMERS(L8) = {
 	REGULATOR_SUPPLY("cam_vana",		"4-006c"),
 	REGULATOR_SUPPLY("cam_vana",		"4-0034"),
 	REGULATOR_SUPPLY("cam_vana",		"4-0020"),
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	REGULATOR_SUPPLY("cam_vana",		"4-006e"),
+#endif
 };
 VREG_CONSUMERS(L9) = {
 	REGULATOR_SUPPLY("8921_l9",		NULL),
@@ -86,6 +89,9 @@ VREG_CONSUMERS(L12) = {
 	REGULATOR_SUPPLY("cam_vdig",		"4-006c"),
 	REGULATOR_SUPPLY("cam_vdig",		"4-0034"),
 	REGULATOR_SUPPLY("cam_vdig",		"4-0020"),
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	REGULATOR_SUPPLY("cam_vdig",		"4-006e"),
+#endif
 	REGULATOR_SUPPLY("8921_l12",		NULL),
 };
 VREG_CONSUMERS(L13) = {
@@ -97,6 +103,9 @@ VREG_CONSUMERS(L14) = {
 };
 VREG_CONSUMERS(L15) = {
 	REGULATOR_SUPPLY("8921_l15",		NULL),
+#ifdef CONFIG_AUDIENCE_ES310
+	REGULATOR_SUPPLY("es310_vdd",		"audience_es310"),
+#endif
 };
 VREG_CONSUMERS(L16) = {
 	REGULATOR_SUPPLY("8921_l16",		NULL),
@@ -106,6 +115,9 @@ VREG_CONSUMERS(L16) = {
 	REGULATOR_SUPPLY("cam_vaf",		"4-006c"),
 	REGULATOR_SUPPLY("cam_vaf",		"4-0034"),
 	REGULATOR_SUPPLY("cam_vaf",		"4-0020"),
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	REGULATOR_SUPPLY("cam_vaf",		"4-006e"),
+#endif
 };
 VREG_CONSUMERS(L17) = {
 	REGULATOR_SUPPLY("8921_l17",		NULL),
@@ -125,6 +137,9 @@ VREG_CONSUMERS(L23) = {
 	REGULATOR_SUPPLY("pll_vdd",		"pil_qdsp6v4.2"),
 	REGULATOR_SUPPLY("HSUSB_1p8",		"msm_ehci_host.0"),
 	REGULATOR_SUPPLY("HSUSB_1p8",		"msm_ehci_host.1"),
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	REGULATOR_SUPPLY("dsi_mi_vddio",	"mipi_dsi.1"),
+#endif
 };
 VREG_CONSUMERS(L24) = {
 	REGULATOR_SUPPLY("8921_l24",		NULL),
@@ -216,6 +231,9 @@ VREG_CONSUMERS(LVS5) = {
 	REGULATOR_SUPPLY("cam_vio",		"4-006c"),
 	REGULATOR_SUPPLY("cam_vio",		"4-0034"),
 	REGULATOR_SUPPLY("cam_vio",		"4-0020"),
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	REGULATOR_SUPPLY("cam_vio",		"4-006e"),
+#endif
 };
 VREG_CONSUMERS(LVS6) = {
 	REGULATOR_SUPPLY("8921_lvs6",		NULL),
@@ -247,7 +265,11 @@ VREG_CONSUMERS(EXT_MPP8) = {
 };
 VREG_CONSUMERS(EXT_3P3V) = {
 	REGULATOR_SUPPLY("ext_3p3v",		NULL),
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	REGULATOR_SUPPLY("vdd_io",		"spi0.2"),
+#else
 	REGULATOR_SUPPLY("vdd-phy",		"spi0.2"),
+#endif
 	REGULATOR_SUPPLY("mhl_usb_hs_switch",	"msm_otg"),
 	REGULATOR_SUPPLY("lvds_vccs_3p3v",      "lvds.0"),
 	REGULATOR_SUPPLY("dsi1_vccs_3p3v",      "mipi_dsi.1"),
@@ -258,6 +280,12 @@ VREG_CONSUMERS(EXT_TS_SW) = {
 	REGULATOR_SUPPLY("ext_ts_sw",		NULL),
 	REGULATOR_SUPPLY("vdd_ana",		"3-005b"),
 };
+#ifdef CONFIG_MACH_APQ8064_ARIES
+VREG_CONSUMERS(EXT_5P4V) = {
+	REGULATOR_SUPPLY("ext_5p4v",	NULL),
+	REGULATOR_SUPPLY("dsi_mi_vsp",	"mipi_dsi.1"),
+};
+#endif
 VREG_CONSUMERS(AVC_1P2V) = {
 	REGULATOR_SUPPLY("avc_1p2v",	NULL),
 };
@@ -291,6 +319,9 @@ VREG_CONSUMERS(NCP) = {
 };
 VREG_CONSUMERS(EXT_5V) = {
 	REGULATOR_SUPPLY("ext_5v",		NULL),
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	REGULATOR_SUPPLY("ext_ddr3",		NULL),
+#endif
 	REGULATOR_SUPPLY("vbus",		"msm_ehci_host.0"),
 };
 
@@ -563,6 +594,10 @@ apq8064_gpio_regulator_pdata[] __devinitdata = {
 		  PM8921_GPIO_PM_TO_SYS(23), "ext_3p3v"),
 	GPIO_VREG(EXT_MPP8, "ext_mpp8", "ext_mpp8_en",
 			PM8921_MPP_PM_TO_SYS(8), NULL),
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	GPIO_VREG(EXT_5P4V, "ext_5p4v", "ext_5p4v_en",
+			PM8921_GPIO_PM_TO_SYS(11), NULL),
+#endif
 };
 
 struct gpio_regulator_platform_data
@@ -650,16 +685,28 @@ apq8064_rpm_regulator_init_data[] __devinitdata = {
 	/*	ID a_on pd ss min_uV   max_uV   supply    sys_uA init_ip */
 	RPM_LDO(L1,  1, 1, 0, 1100000, 1100000, "8921_s4",     0,  1000),
 	RPM_LDO(L2,  0, 1, 0, 1200000, 1200000, "8921_s4",     0,     0),
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	RPM_LDO(L3,  0, 1, 0, 3075000, 3075000, NULL,          0,     0),
+#else
 	RPM_LDO(L3,  0, 1, 0, 3075000, 3300000, NULL,          0,     0),
+#endif
 	RPM_LDO(L4,  1, 1, 0, 1800000, 1800000, NULL,          0, 10000),
 	RPM_LDO(L5,  0, 1, 0, 2950000, 2950000, NULL,          0,     0),
 	RPM_LDO(L6,  0, 1, 0, 2950000, 2950000, NULL,          0,     0),
 	RPM_LDO(L7,  0, 1, 0, 1850000, 2950000, NULL,          0,     0),
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	RPM_LDO(L8,  0, 1, 0, 2700000, 2800000, NULL,          0,     0),
+#else
 	RPM_LDO(L8,  0, 1, 0, 2800000, 2800000, NULL,          0,     0),
+#endif
 	RPM_LDO(L9,  0, 1, 0, 3000000, 3000000, NULL,          0,     0),
 	RPM_LDO(L10, 0, 1, 0, 2900000, 2900000, NULL,          0,     0),
 	RPM_LDO(L11, 0, 1, 0, 3000000, 3000000, NULL,          0,     0),
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	RPM_LDO(L12, 0, 1, 0, 1050000, 1200000, "8921_s4",     0,     0),
+#else
 	RPM_LDO(L12, 0, 1, 0, 1200000, 1200000, "8921_s4",     0,     0),
+#endif
 	RPM_LDO(L13, 0, 0, 0, 2220000, 2220000, NULL,          0,     0),
 	RPM_LDO(L14, 0, 1, 0, 1800000, 1800000, NULL,          0,     0),
 	RPM_LDO(L15, 0, 1, 0, 1800000, 2950000, NULL,          0,     0),

@@ -503,7 +503,11 @@ static int pm8xxx_led_pwm_pattern_update(struct pm8xxx_led_data * led)
 	flags = PM8XXX_LED_PWM_FLAGS;
 	switch (led->max_current) {
 	case PM8XXX_PWM_CURRENT_4MA:
+#ifdef CONFIG_MACH_APQ8064_ARIES
+		flags |= PM_PWM_BANK_HI;
+#else
 		flags |= PM_PWM_BANK_LO;
+#endif
 		break;
 	case PM8XXX_PWM_CURRENT_8MA:
 		flags |= PM_PWM_BANK_HI;

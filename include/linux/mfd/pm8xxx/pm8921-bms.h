@@ -10,6 +10,9 @@
  * GNU General Public License for more details.
  */
 
+#ifdef CONFIG_PM8921_BMS_XIAOMI
+#include "pm8921-bms-xiaomi.h"
+#else
 #ifndef __PM8XXX_BMS_H
 #define __PM8XXX_BMS_H
 
@@ -240,3 +243,4 @@ static inline void pm8921_bms_battery_inserted(void) {}
 #endif
 
 #endif
+#endif /* CONFIG_PM8921_BMS_XIAOMI */

@@ -50,6 +50,24 @@ config LEDS_LM3530
 	  controlled manually or using PWM input or using ambient
 	  light automatically.
 
+config LEDS_LM3530_ARIES
+	tristate "LCD Backlight driver for LM3530 (Xiaomi variant)"
+	depends on LEDS_CLASS
+	depends on I2C
+	help
+	  This option enables support for the LCD backlight using
+	  LM3530 ambient light sensor chip. This ALS chip can be
+	  controlled manually or using PWM input or using ambient
+	  light automatically.
+	  This is the Xiaomi variant of the driver
+
+config LEDS_LM3554
+        tristate "Flashlight driver for LM3530"
+        depends on LEDS_CLASS
+        depends on I2C
+        help
+          This option enables support for the Flash light LM3554.
+
 config LEDS_LOCOMO
 	tristate "LED Support for Locomo device"
 	depends on LEDS_CLASS

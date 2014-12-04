@@ -61,6 +61,10 @@ static struct resource msm_fb_resources[] = {
 #define LVDS_FRC_PANEL_NAME "lvds_frc_fhd"
 #define MIPI_VIDEO_TOSHIBA_WSVGA_PANEL_NAME "mipi_video_toshiba_wsvga"
 #define MIPI_VIDEO_CHIMEI_WXGA_PANEL_NAME "mipi_video_chimei_wxga"
+#ifdef CONFIG_MACH_APQ8064_ARIES
+#define MIPI_CMD_HITACHI_720P_PANEL_NAME "mipi_cmd_hitachi_720p"
+#define MIPI_VIDEO_SHARP_720P_PANEL_NAME "mipi_video_sharp_720p"
+#endif
 #define HDMI_PANEL_NAME "hdmi_msm"
 #define MHL_PANEL_NAME "hdmi_msm,mhl_8334"
 #define TVOUT_PANEL_NAME "tvout_msm"
@@ -106,8 +110,13 @@ static int msm_fb_detect_panel(const char *name)
 				return 0;
 		}
 	} else if (machine_is_apq8064_mtp()) {
+#ifdef CONFIG_MACH_APQ8064_ARIES
+		if (!strncmp(name, MIPI_CMD_HITACHI_720P_PANEL_NAME,
+					strnlen(MIPI_CMD_HITACHI_720P_PANEL_NAME,
+#else
 		if (!strncmp(name, MIPI_VIDEO_TOSHIBA_WSVGA_PANEL_NAME,
 			strnlen(MIPI_VIDEO_TOSHIBA_WSVGA_PANEL_NAME,
+#endif
 				PANEL_NAME_MAX_LEN)))
 			return 0;
 	} else if (machine_is_apq8064_cdp()) {
@@ -247,9 +256,17 @@ static struct msm_bus_scale_pdata mdp_bus_scale_pdata = {
 static struct msm_panel_common_pdata mdp_pdata = {
 	.gpio = MDP_VSYNC_GPIO,
 	.mdp_max_clk = 266667000,
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	.mdp_max_bw = 4290000000u,
+#else
 	.mdp_max_bw = 2000000000,
+#endif
 	.mdp_bw_ab_factor = 115,
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	.mdp_bw_ib_factor = 200,
+#else
 	.mdp_bw_ib_factor = 150,
+#endif
 	.mdp_bus_scale_table = &mdp_bus_scale_pdata,
 	.mdp_rev = MDP_REV_44,
 #ifdef CONFIG_MSM_MULTIMEDIA_USE_ION
@@ -309,6 +326,9 @@ static struct msm_hdmi_platform_data hdmi_msm_data = {
 	.cec_power = hdmi_cec_power,
 	.panel_power = hdmi_panel_power,
 	.gpio_config = hdmi_gpio_config,
+#ifdef CONFIG_FB_MSM_HDMI_MHL_9244
+	.is_mhl_enabled = true,
+#endif
 };
 
 static struct platform_device hdmi_msm_device = {
@@ -348,6 +368,7 @@ static struct platform_device wfd_device = {
 #define HDMI_DDC_DATA_GPIO	71
 #define HDMI_HPD_GPIO		72
 
+#ifndef CONFIG_MACH_APQ8064_ARIES
 static bool dsi_power_on;
 static int mipi_dsi_panel_power(int on)
 {
@@ -518,6 +539,7 @@ static int mipi_dsi_panel_power(int on)
 static struct mipi_dsi_platform_data mipi_dsi_pdata = {
 	.dsi_power_save = mipi_dsi_panel_power,
 };
+#endif
 
 static bool lvds_power_on;
 static int lvds_panel_power(int on)
@@ -660,6 +682,7 @@ static struct lcdc_platform_data lvds_pdata = {
 };
 
 #define LPM_CHANNEL 2
+#ifndef CONFIG_MACH_APQ8064_ARIES
 static int lvds_chimei_gpio[] = {LPM_CHANNEL};
 
 static struct lvds_panel_platform_data lvds_chimei_pdata = {
@@ -673,6 +696,7 @@ static struct platform_device lvds_chimei_panel_device = {
 		.platform_data = &lvds_chimei_pdata,
 	}
 };
+#endif
 
 #define FRC_GPIO_UPDATE	(SX150X_EXP4_GPIO_BASE + 8)
 #define FRC_GPIO_RESET	(SX150X_EXP4_GPIO_BASE + 9)
@@ -707,6 +731,7 @@ static struct platform_device mipi_dsi2lvds_bridge_device = {
 	.dev.platform_data = &mipi_dsi2lvds_pdata,
 };
 
+#ifndef CONFIG_MACH_APQ8064_ARIES
 static int toshiba_gpio[] = {LPM_CHANNEL};
 static struct mipi_dsi_panel_platform_data toshiba_pdata = {
 	.gpio = toshiba_gpio,
@@ -719,6 +744,7 @@ static struct platform_device mipi_dsi_toshiba_panel_device = {
 			.platform_data = &toshiba_pdata,
 	}
 };
+#endif
 
 static struct msm_bus_vectors dtv_bus_init_vectors[] = {
 	{
@@ -781,6 +807,11 @@ static int hdmi_enable_5v(int on)
 
 	if (on == prev_on)
 		return 0;
+
+#ifdef CONFIG_FB_MSM_HDMI_MHL_9244
+	/* On boards with MHL: only control 5v when mhl is connected */
+	return 0;
+#endif
 
 	if (!reg_8921_hdmi_mvs) {
 		reg_8921_hdmi_mvs = regulator_get(&hdmi_msm_device.dev,
@@ -1014,7 +1045,9 @@ error:
 void __init apq8064_init_fb(void)
 {
 	platform_device_register(&msm_fb_device);
+#ifndef CONFIG_MACH_APQ8064_ARIES
 	platform_device_register(&lvds_chimei_panel_device);
+#endif
 
 #ifdef CONFIG_FB_MSM_WRITEBACK_MSM_PANEL
 	platform_device_register(&wfd_panel_device);
@@ -1023,14 +1056,18 @@ void __init apq8064_init_fb(void)
 
 	if (machine_is_apq8064_liquid())
 		platform_device_register(&mipi_dsi2lvds_bridge_device);
+#ifndef CONFIG_MACH_APQ8064_ARIES
 	if (machine_is_apq8064_mtp())
 		platform_device_register(&mipi_dsi_toshiba_panel_device);
+#endif
 	if (machine_is_mpq8064_dtv())
 		platform_device_register(&lvds_frc_panel_device);
 
 	msm_fb_register_device("mdp", &mdp_pdata);
 	msm_fb_register_device("lvds", &lvds_pdata);
+#ifndef CONFIG_MACH_APQ8064_ARIES
 	msm_fb_register_device("mipi_dsi", &mipi_dsi_pdata);
+#endif
 	platform_device_register(&hdmi_msm_device);
 	msm_fb_register_device("dtv", &dtv_pdata);
 }

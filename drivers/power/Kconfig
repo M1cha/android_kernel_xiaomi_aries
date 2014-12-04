@@ -395,6 +395,13 @@ config PM8921_CHARGER
 	help
 	  Say Y here to enable support for pm8921 chip charger subdevice
 
+config PM8921_CHARGER_XIAOMI
+	tristate "PM8921 Charger driver (Xiaomi variant)"
+	depends on MFD_PM8921_CORE
+	help
+	  Say Y here to enable support for pm8921 chip charger subdevice
+	  This is the Xiaomi variant of the driver
+
 config PM8XXX_CCADC
 	tristate "PM8XXX battery current adc driver"
 	depends on MFD_PM8921_CORE
@@ -414,6 +421,14 @@ config PM8921_BMS
 	depends on MFD_PM8921_CORE
 	help
 	  Say Y here to enable support for pm8921 chip bms subdevice
+
+config PM8921_BMS_XIAOMI
+	select PM8XXX_CCADC
+	tristate "PM8921 Battery Monitoring System driver (Xiaomi variant)"
+	depends on MFD_PM8921_CORE
+	help
+	  Say Y here to enable support for pm8921 chip bms subdevice
+	  This is the Xiaomi variant of the driver
 
 config BATTERY_BCL
 	tristate "Battery Current Limit driver"

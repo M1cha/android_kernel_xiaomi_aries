@@ -46,6 +46,7 @@ allowed_warnings = set([
    "dynamic_debug.h:75",
    "swab.h:34",
    "hid-wiimote-debug.c:69",
+   "keystore.c:1168",
  ])
 
 # Capture the name of the object file, can find it.

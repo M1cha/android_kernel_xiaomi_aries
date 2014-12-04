@@ -1,0 +1,18 @@
+config MACH_XIAOMI
+	bool
+
+menu "Xiaomi Board Selection"
+source "arch/arm/mach-msm/xiaomi/Kconfig.board"
+endmenu
+
+
+menu "Xiaomi Specific Patches"
+
+config XIAOMI_EARJACK_UART
+	bool "Earjack UART"
+	default n
+	depends on MACH_XIAOMI
+	help
+	  Enable Earjack UART debugger. This disables headphone support
+
+endmenu

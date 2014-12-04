@@ -216,7 +216,9 @@ struct msm_otg_platform_data {
 	bool enable_lpm_on_dev_suspend;
 	bool core_clk_always_on_workaround;
 	struct msm_bus_scale_pdata *bus_scale_table;
+#ifdef CONFIG_FB_MSM_HDMI_MHL_8334
 	const char *mhl_dev_name;
+#endif
 };
 
 /* Timeout (in msec) values (min - max) associated with OTG timers */
@@ -339,7 +341,9 @@ struct msm_otg {
 	unsigned long caps;
 	struct msm_xo_voter *xo_handle;
 	uint32_t bus_perf_client;
+#ifdef CONFIG_FB_MSM_HDMI_MHL_8334
 	bool mhl_enabled;
+#endif
 	/*
 	 * Allowing PHY power collpase turns off the HSUSB 3.3v and 1.8v
 	 * analog regulators while going to low power mode.
