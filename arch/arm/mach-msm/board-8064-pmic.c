@@ -114,6 +114,25 @@ struct pm8xxx_mpp_init {
 
 /* Initial PM8921 GPIO configurations */
 static struct pm8xxx_gpio_init pm8921_gpios[] __initdata = {
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	PM8921_GPIO_OUTPUT(5, 0, HIGH),			/* touchscreen power pin */
+	PM8921_GPIO_OUTPUT(8, 0, HIGH),			/* touchscreen reset pin */
+	PM8921_GPIO_INPUT(12, PM_GPIO_PULL_NO),		/* LCD DET ID */
+	PM8921_GPIO_INPUT(16, PM_GPIO_PULL_NO),		/* MHL WAKEUP */
+	PM8921_GPIO_OUTPUT(14, 0, HIGH),		/* MHL 1V8 */
+	PM8921_GPIO_OUTPUT(19, 0, HIGH),		/* MHL 3V3 */
+	PM8921_GPIO_OUTPUT(22, 0, HIGH),		/* MHL Reset */
+	PM8921_GPIO_OUTPUT(21, 0, HIGH),		/* HDMI MHL level shift */
+	PM8921_GPIO_OUTPUT(20, 0, HIGH),
+	PM8921_GPIO_OUTPUT(28, 0, HIGH),
+	PM8921_GPIO_OUTPUT(11, 1, HIGH),		/* LCD_DCDC_EN */
+	PM8921_GPIO_OUTPUT(13, 1, HIGH),		/* BL_LED_EN */
+	PM8921_GPIO_OUTPUT_FUNC(24, 0, PM_GPIO_FUNC_2),
+	PM8921_GPIO_OUTPUT_BUFCONF(25, 1, LOW, CMOS),	/* DISP_RESET_N */
+	PM8921_GPIO_OUTPUT(33, 0, HIGH),
+	PM8921_GPIO_OUTPUT(34, 1, MED),
+	PM8921_GPIO_INPUT(37, PM_GPIO_PULL_UP_30),	/* Tabla Detection Pin */
+#else
 	PM8921_GPIO_OUTPUT(14, 1, HIGH),	/* HDMI Mux Selector */
 	PM8921_GPIO_OUTPUT_BUFCONF(25, 0, LOW, CMOS), /* DISP_RESET_N */
 	PM8921_GPIO_OUTPUT_FUNC(26, 0, PM_GPIO_FUNC_2), /* Bl: Off, PWM mode */
@@ -128,11 +147,19 @@ static struct pm8xxx_gpio_init pm8921_gpios[] __initdata = {
 	PM8921_GPIO_OUTPUT(34, 0, MED),
 	PM8921_GPIO_OUTPUT(13, 0, HIGH),               /* PCIE_CLK_PWR_EN */
 	PM8921_GPIO_INPUT(12, PM_GPIO_PULL_UP_30),     /* PCIE_WAKE_N */
+#endif
 };
 
 static struct pm8xxx_gpio_init pm8921_mtp_kp_gpios[] __initdata = {
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	PM8921_GPIO_INPUT(1, PM_GPIO_PULL_DN),
+	PM8921_GPIO_INPUT(2, PM_GPIO_PULL_DN),
+	PM8921_GPIO_OUTPUT(9, 1, HIGH),
+	PM8921_GPIO_OUTPUT(10, 1, HIGH),
+#else
 	PM8921_GPIO_INPUT(3, PM_GPIO_PULL_UP_30),
 	PM8921_GPIO_INPUT(4, PM_GPIO_PULL_UP_30),
+#endif
 };
 
 static struct pm8xxx_gpio_init pm8921_cdp_kp_gpios[] __initdata = {
@@ -181,6 +208,9 @@ static struct pm8xxx_gpio_init pm8921_mpq_gpios[] __initdata = {
 
 /* Initial PM8XXX MPP configurations */
 static struct pm8xxx_mpp_init pm8xxx_mpps[] __initdata = {
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	PM8921_MPP_INIT(7, D_OUTPUT, PM8921_MPP_DIG_LEVEL_S4, DOUT_CTRL_LOW),
+#else
 	PM8921_MPP_INIT(3, D_OUTPUT, PM8921_MPP_DIG_LEVEL_VPH, DOUT_CTRL_LOW),
 	/* External 5V regulator enable; shared by HDMI and USB_OTG switches. */
 	PM8921_MPP_INIT(7, D_OUTPUT, PM8921_MPP_DIG_LEVEL_VPH, DOUT_CTRL_LOW),
@@ -189,6 +219,7 @@ static struct pm8xxx_mpp_init pm8xxx_mpps[] __initdata = {
 	PM8921_MPP_INIT(9, D_INPUT, PM8921_MPP_DIG_LEVEL_S4, DIN_TO_INT),
 	/* PCIE_RESET_N */
 	PM8921_MPP_INIT(1, D_OUTPUT, PM8921_MPP_DIG_LEVEL_VPH, DOUT_CTRL_HIGH),
+#endif
 };
 
 static struct pm8xxx_gpio_init pm8921_sglte2_gpios[] __initdata = {
@@ -369,6 +400,10 @@ static struct pm8xxx_adc_amux apq8064_pm8921_adc_channels_data[] = {
 		ADC_DECIMATION_TYPE2, ADC_SCALE_DEFAULT},
 	{"xo_therm", CHANNEL_MUXOFF, CHAN_PATH_SCALING1, AMUX_RSV0,
 		ADC_DECIMATION_TYPE2, ADC_SCALE_XOTHERM},
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	{"amux_in", ADC_MPP_1_AMUX4, CHAN_PATH_SCALING1, AMUX_RSV1,
+		ADC_DECIMATION_TYPE2, ADC_SCALE_DEFAULT},
+#endif
 };
 
 static struct pm8xxx_adc_properties apq8064_pm8921_adc_data = {
@@ -404,8 +439,13 @@ apq8064_pm8921_irq_pdata __devinitdata = {
 
 static struct pm8xxx_rtc_platform_data
 apq8064_pm8921_rtc_pdata = {
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	.rtc_write_enable       = true,
+	.rtc_alarm_powerup      = true,
+#else
 	.rtc_write_enable       = false,
 	.rtc_alarm_powerup      = false,
+#endif
 };
 
 static int apq8064_pm8921_therm_mitigation[] = {
@@ -425,21 +465,43 @@ apq8064_pm8921_chg_pdata __devinitdata = {
 	.uvd_thresh_voltage	= 4050,
 	.alarm_low_mv		= 3400,
 	.alarm_high_mv		= 4000,
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	.resume_voltage_delta	= 20,
+#else
 	.resume_voltage_delta	= 60,
+#endif
 	.resume_charge_percent	= 99,
 	.term_current		= CHG_TERM_MA,
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	.cool_temp		= 0,
+#else
 	.cool_temp		= 10,
+#endif
 	.warm_temp		= 45,
 	.temp_check_period	= 1,
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	.max_bat_chg_current	= 1000,
+#else
 	.max_bat_chg_current	= 1100,
+#endif
 	.cool_bat_chg_current	= 350,
 	.warm_bat_chg_current	= 350,
 	.cool_bat_voltage	= 4100,
 	.warm_bat_voltage	= 4100,
 	.thermal_mitigation	= apq8064_pm8921_therm_mitigation,
 	.thermal_levels		= ARRAY_SIZE(apq8064_pm8921_therm_mitigation),
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	.rconn_mohm		= 50,
+#else
 	.rconn_mohm		= 18,
+#endif
 	.enable_tcxo_warmup_delay = true,
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	.cold_thr		= PM_SMBC_BATT_TEMP_COLD_THR__HIGH,
+	.keep_btm_on_suspend	= 1,
+	.batt_id_min		= 0x6000,
+	.batt_id_max		= 0x9500,
+#endif
 };
 
 static struct pm8xxx_ccadc_platform_data
@@ -454,7 +516,11 @@ apq8064_pm8921_bms_pdata __devinitdata = {
 	.r_sense_uohm			= 10000,
 	.v_cutoff			= 3400,
 	.max_voltage_uv			= MAX_VOLTAGE_MV * 1000,
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	.rconn_mohm			= 50, /* 25 mohm for each pin*/
+#else
 	.rconn_mohm			= 18,
+#endif
 	.shutdown_soc_valid_limit	= 20,
 	.adjust_soc_low_threshold	= 25,
 	.chg_term_ua			= CHG_TERM_MA * 1000,
@@ -542,7 +608,11 @@ void __init apq8064_init_pmic(void)
 	}
 
 	if (machine_is_apq8064_mtp()) {
+#ifdef CONFIG_MACH_APQ8064_ARIES
+		apq8064_pm8921_bms_pdata.battery_type = BATT_UNKNOWN;
+#else
 		apq8064_pm8921_bms_pdata.battery_type = BATT_PALLADIUM;
+#endif
 	} else if (machine_is_apq8064_liquid()) {
 		apq8064_pm8921_bms_pdata.battery_type = BATT_DESAY;
 	} else if (machine_is_apq8064_cdp()) {

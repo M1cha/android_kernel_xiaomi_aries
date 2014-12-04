@@ -1271,6 +1271,9 @@ static struct branch_clk vcap_p_clk = {
 static struct clk_freq_tbl clk_tbl_gp[] = {
 	F_GP(        0, gnd,  1, 0, 0),
 	F_GP(  9600000, cxo,  2, 0, 0),
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	F_GP( 12000000, pll8, 4, 1, 8),
+#endif
 	F_GP( 13500000, pxo,  2, 0, 0),
 	F_GP( 19200000, cxo,  1, 0, 0),
 	F_GP( 27000000, pxo,  1, 0, 0),
@@ -1323,6 +1326,9 @@ static struct clk_freq_tbl clk_tbl_gsbi_uart[] = {
 	F_GSBI_UART( 1843200, pll8, 2,  6, 625),
 	F_GSBI_UART( 3686400, pll8, 2, 12, 625),
 	F_GSBI_UART( 7372800, pll8, 2, 24, 625),
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	F_GSBI_UART( 8000000, pll8, 4,  1,  12),
+#endif
 	F_GSBI_UART(14745600, pll8, 2, 48, 625),
 	F_GSBI_UART(16000000, pll8, 4,  1,   6),
 	F_GSBI_UART(24000000, pll8, 4,  1,   4),
@@ -5310,7 +5316,11 @@ static struct clk_lookup msm_clocks_8064[] = {
 #else
 	CLK_LOOKUP("core_clk",		gsbi4_uart_clk.c, "msm_serial_hs.1"),
 #endif
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	CLK_LOOKUP("core_clk",		gsbi5_uart_clk.c, "msm_serial_hs.2"),
+#else
 	CLK_LOOKUP("core_clk",		gsbi5_uart_clk.c,	""),
+#endif
 	CLK_LOOKUP("core_clk",		gsbi6_uart_clk.c, "msm_serial_hs.0"),
 #ifdef CONFIG_MACH_LGE
 	CLK_LOOKUP("core_clk",		gsbi7_uart_clk.c,	""),
@@ -5373,6 +5383,9 @@ static struct clk_lookup msm_clocks_8064[] = {
 	CLK_LOOKUP("iface_clk",		gsbi4_p_clk.c,	"msm_serial_hs.1"),
 	CLK_LOOKUP("iface_clk",		gsbi5_p_clk.c,		"spi_qsd.0"),
 	CLK_LOOKUP("iface_clk",		gsbi5_p_clk.c,		"qup_i2c.5"),
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	CLK_LOOKUP("iface_clk",		gsbi5_p_clk.c,	"msm_serial_hs.2"),
+#endif
 	CLK_LOOKUP("iface_clk",		gsbi6_p_clk.c,	"msm_serial_hs.0"),
 #ifdef CONFIG_MACH_LGE
 	CLK_LOOKUP("iface_clk",		gsbi7_p_clk.c,		""),
@@ -5404,8 +5417,15 @@ static struct clk_lookup msm_clocks_8064[] = {
 	CLK_LOOKUP("cam_clk",		cam0_clk.c,	"4-0010"),
 	CLK_LOOKUP("cam_clk",		cam0_clk.c,	"4-0034"),
 	CLK_LOOKUP("cam_clk",		cam0_clk.c,	"4-0020"),
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	CLK_LOOKUP("cam_clk",		cam0_clk.c,	"4-006e"),
+	CLK_LOOKUP("cam_clk",		cam0_clk.c,	"4-001a"),
+	CLK_LOOKUP("cam_clk",		cam2_clk.c,	"4-006c"),
+	CLK_LOOKUP("cam_clk",		cam2_clk.c,	"4-0048"),
+#else
 	CLK_LOOKUP("cam_clk",		cam1_clk.c,	"4-0048"),
 	CLK_LOOKUP("cam_clk",		cam1_clk.c,	"4-006c"),
+#endif
 	CLK_LOOKUP("csi_src_clk",	csi0_src_clk.c,		"msm_csid.0"),
 	CLK_LOOKUP("csi_src_clk",	csi1_src_clk.c,		"msm_csid.1"),
 	CLK_LOOKUP("csi_src_clk",	csi2_src_clk.c,		"msm_csid.2"),
@@ -5599,6 +5619,9 @@ static struct clk_lookup msm_clocks_8064[] = {
 	CLK_LOOKUP("krait1_mclk",	krait1_m_clk, ""),
 	CLK_LOOKUP("krait2_mclk",	krait2_m_clk, ""),
 	CLK_LOOKUP("krait3_mclk",	krait3_m_clk, ""),
+#ifdef CONFIG_AUDIENCE_ES310
+	CLK_LOOKUP("gp0_clk",		gp0_clk.c,	NULL),
+#endif
 	CLK_LOOKUP("rot_iommu_clk",	rot_axi_clk.c,	"msm_rotator.0"),
 	CLK_LOOKUP("mdp_iommu_clk", mdp_axi_clk.c,	"msm_rotator.0"),
 	CLK_LOOKUP("vcodec_iommu0_clk", vcodec_axi_a_clk.c, "msm_rotator.0"),
@@ -5769,6 +5792,9 @@ static struct clk_lookup msm_clocks_8960_common[] __initdata = {
 	CLK_LOOKUP("cam_clk",		cam2_clk.c,		NULL),
 	CLK_LOOKUP("cam_clk",		cam0_clk.c,	"4-0020"),
 	CLK_LOOKUP("cam_clk",		cam0_clk.c,	"4-0034"),
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	CLK_LOOKUP("cam_clk",		cam0_clk.c,	"4-006e"),
+#endif
 	CLK_LOOKUP("csi_src_clk",	csi0_src_clk.c,		"msm_csid.0"),
 	CLK_LOOKUP("csi_src_clk",	csi1_src_clk.c,		"msm_csid.1"),
 	CLK_LOOKUP("csi_src_clk",	csi2_src_clk.c,		"msm_csid.2"),
@@ -6123,7 +6149,12 @@ static struct clk_lookup msm_clocks_8930[] = {
 	CLK_LOOKUP("cam_clk",		cam0_clk.c,	"4-001a"),
 	CLK_LOOKUP("cam_clk",		cam1_clk.c,	"4-006c"),
 	CLK_LOOKUP("cam_clk",		cam1_clk.c,	"4-0048"),
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	CLK_LOOKUP("cam_clk",		cam2_clk.c,	"4-006c"),
+	CLK_LOOKUP("cam_clk",		cam0_clk.c,	"4-006e"),
+#else
 	CLK_LOOKUP("cam_clk",		cam2_clk.c,		NULL),
+#endif
 	CLK_LOOKUP("cam_clk",		cam0_clk.c,	"4-0020"),
 	CLK_LOOKUP("cam_clk",		cam0_clk.c,	"8-001a"),
 	CLK_LOOKUP("cam_clk",		cam0_clk.c,	"8-0036"),

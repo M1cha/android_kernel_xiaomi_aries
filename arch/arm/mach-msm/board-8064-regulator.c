@@ -66,6 +66,9 @@ VREG_CONSUMERS(L8) = {
 	REGULATOR_SUPPLY("cam_vana",		"4-006c"),
 	REGULATOR_SUPPLY("cam_vana",		"4-0034"),
 	REGULATOR_SUPPLY("cam_vana",		"4-0020"),
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	REGULATOR_SUPPLY("cam_vana",		"4-006e"),
+#endif
 };
 VREG_CONSUMERS(L9) = {
 	REGULATOR_SUPPLY("8921_l9",		NULL),
@@ -86,6 +89,9 @@ VREG_CONSUMERS(L12) = {
 	REGULATOR_SUPPLY("cam_vdig",		"4-006c"),
 	REGULATOR_SUPPLY("cam_vdig",		"4-0034"),
 	REGULATOR_SUPPLY("cam_vdig",		"4-0020"),
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	REGULATOR_SUPPLY("cam_vdig",		"4-006e"),
+#endif
 	REGULATOR_SUPPLY("8921_l12",		NULL),
 };
 VREG_CONSUMERS(L13) = {
@@ -97,6 +103,9 @@ VREG_CONSUMERS(L14) = {
 };
 VREG_CONSUMERS(L15) = {
 	REGULATOR_SUPPLY("8921_l15",		NULL),
+#ifdef CONFIG_AUDIENCE_ES310
+	REGULATOR_SUPPLY("es310_vdd",		"audience_es310"),
+#endif
 };
 VREG_CONSUMERS(L16) = {
 	REGULATOR_SUPPLY("8921_l16",		NULL),
@@ -106,6 +115,9 @@ VREG_CONSUMERS(L16) = {
 	REGULATOR_SUPPLY("cam_vaf",		"4-006c"),
 	REGULATOR_SUPPLY("cam_vaf",		"4-0034"),
 	REGULATOR_SUPPLY("cam_vaf",		"4-0020"),
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	REGULATOR_SUPPLY("cam_vaf",		"4-006e"),
+#endif
 };
 VREG_CONSUMERS(L17) = {
 	REGULATOR_SUPPLY("8921_l17",		NULL),
@@ -125,6 +137,9 @@ VREG_CONSUMERS(L23) = {
 	REGULATOR_SUPPLY("pll_vdd",		"pil_qdsp6v4.2"),
 	REGULATOR_SUPPLY("HSUSB_1p8",		"msm_ehci_host.0"),
 	REGULATOR_SUPPLY("HSUSB_1p8",		"msm_ehci_host.1"),
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	REGULATOR_SUPPLY("dsi_mi_vddio",	"mipi_dsi.1"),
+#endif
 };
 VREG_CONSUMERS(L24) = {
 	REGULATOR_SUPPLY("8921_l24",		NULL),
@@ -216,6 +231,9 @@ VREG_CONSUMERS(LVS5) = {
 	REGULATOR_SUPPLY("cam_vio",		"4-006c"),
 	REGULATOR_SUPPLY("cam_vio",		"4-0034"),
 	REGULATOR_SUPPLY("cam_vio",		"4-0020"),
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	REGULATOR_SUPPLY("cam_vio",		"4-006e"),
+#endif
 };
 VREG_CONSUMERS(LVS6) = {
 	REGULATOR_SUPPLY("8921_lvs6",		NULL),
@@ -258,6 +276,12 @@ VREG_CONSUMERS(EXT_TS_SW) = {
 	REGULATOR_SUPPLY("ext_ts_sw",		NULL),
 	REGULATOR_SUPPLY("vdd_ana",		"3-005b"),
 };
+#ifdef CONFIG_MACH_APQ8064_ARIES
+VREG_CONSUMERS(EXT_5P4V) = {
+	REGULATOR_SUPPLY("ext_5p4v",	NULL),
+	REGULATOR_SUPPLY("dsi_mi_vsp",	"mipi_dsi.1"),
+};
+#endif
 VREG_CONSUMERS(AVC_1P2V) = {
 	REGULATOR_SUPPLY("avc_1p2v",	NULL),
 };
@@ -563,6 +587,10 @@ apq8064_gpio_regulator_pdata[] __devinitdata = {
 		  PM8921_GPIO_PM_TO_SYS(23), "ext_3p3v"),
 	GPIO_VREG(EXT_MPP8, "ext_mpp8", "ext_mpp8_en",
 			PM8921_MPP_PM_TO_SYS(8), NULL),
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	GPIO_VREG(EXT_5P4V, "ext_5p4v", "ext_5p4v_en",
+			PM8921_GPIO_PM_TO_SYS(11), NULL),
+#endif
 };
 
 struct gpio_regulator_platform_data

@@ -1103,7 +1103,11 @@ static struct wcd9xxx_pdata apq8064_tabla20_platform_data = {
 	.reset_gpio = PM8921_GPIO_PM_TO_SYS(34),
 	.micbias = {
 		.ldoh_v = TABLA_LDOH_2P85_V,
+#ifdef CONFIG_MACH_APQ8064_ARIES
+		.cfilt1_mv = 2700,
+#else
 		.cfilt1_mv = 1800,
+#endif
 		.cfilt2_mv = 2700,
 		.cfilt3_mv = 1800,
 		.bias1_cfilt_sel = TABLA_CFILT1_SEL,
@@ -1201,6 +1205,9 @@ static struct i2c_board_info cs8427_device_info[] __initdata = {
 #define ISA1200_HAP_CLK_PM8921		PM8921_GPIO_PM_TO_SYS(44)
 #define ISA1200_HAP_CLK_PM8917		PM8921_GPIO_PM_TO_SYS(38)
 
+#ifdef CONFIG_MACH_APQ8064_ARIES
+#define ISA1200_HAP_PWM			PM8921_GPIO_PM_TO_SYS(24)
+#else
 static int isa1200_clk_enable(bool on)
 {
 	unsigned int gpio = ISA1200_HAP_CLK_PM8921;
@@ -1262,6 +1269,7 @@ free_gpio:
 	gpio_free(gpio);
 	return rc;
 }
+#endif
 
 static struct isa1200_regulator isa1200_reg_data[] = {
 	{
@@ -1274,12 +1282,25 @@ static struct isa1200_regulator isa1200_reg_data[] = {
 
 static struct isa1200_platform_data isa1200_1_pdata = {
 	.name = "vibrator",
+#ifndef CONFIG_MACH_APQ8064_ARIES
 	.dev_setup = isa1200_dev_setup,
 	.clk_enable = isa1200_clk_enable,
 	.need_pwm_clk = true,
+#endif
 	.hap_en_gpio = ISA1200_HAP_EN_GPIO,
 	.hap_len_gpio = ISA1200_HAP_LEN_GPIO,
 	.max_timeout = 15000,
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	.mode_ctrl = PWM_INPUT_MODE,
+	.pwm_ch_id = 0,
+	.pwm_fd = {
+		.pwm_freq = 44800,
+	},
+	.duty = 90,
+	.is_erm = true,
+	.smart_en = false,
+	.ext_clk_en = false,
+#else
 	.mode_ctrl = PWM_GEN_MODE,
 	.pwm_fd = {
 		.pwm_div = 256,
@@ -1287,6 +1308,9 @@ static struct isa1200_platform_data isa1200_1_pdata = {
 	.is_erm = false,
 	.smart_en = true,
 	.ext_clk_en = true,
+	.max_timeout = 15000,
+#endif
+
 	.chip_en = 1,
 	.regulator_info = isa1200_reg_data,
 	.num_regulators = ARRAY_SIZE(isa1200_reg_data),
@@ -1995,14 +2019,22 @@ static struct msm_rpmrs_level msm_rpmrs_levels[] = {
 
 	{
 		MSM_PM_SLEEP_MODE_POWER_COLLAPSE,
+#ifdef CONFIG_MACH_APQ8064_ARIES
+		MSM_RPMRS_LIMITS(ON, ACTIVE, MAX, ACTIVE),
+#else
 		MSM_RPMRS_LIMITS(ON, GDHS, MAX, ACTIVE),
+#endif
 		false,
 		2000, 138, 1208400, 3200,
 	},
 
 	{
 		MSM_PM_SLEEP_MODE_POWER_COLLAPSE,
+#ifdef CONFIG_MACH_APQ8064_ARIES
+		MSM_RPMRS_LIMITS(ON, ACTIVE, ACTIVE, RET_HIGH),
+#else
 		MSM_RPMRS_LIMITS(ON, HSFS_OPEN, ACTIVE, RET_HIGH),
+#endif
 		false,
 		6000, 119, 1850300, 9000,
 	},
@@ -2058,7 +2090,11 @@ static struct msm_rpmrs_platform_data msm_rpmrs_data __initdata = {
 	.vdd_mask = 0x7FFFFF,
 	.rpmrs_target_id = {
 		[MSM_RPMRS_ID_PXO_CLK]		= MSM_RPM_ID_PXO_CLK,
+#ifdef CONFIG_MACH_APQ8064_ARIES
+		[MSM_RPMRS_ID_L2_CACHE_CTL]	= MSM_RPM_ID_APPS_L2_CACHE_CTL,
+#else
 		[MSM_RPMRS_ID_L2_CACHE_CTL]	= MSM_RPM_ID_LAST,
+#endif
 		[MSM_RPMRS_ID_VDD_DIG_0]	= MSM_RPM_ID_PM8921_S3_0,
 		[MSM_RPMRS_ID_VDD_DIG_1]	= MSM_RPM_ID_PM8921_S3_1,
 		[MSM_RPMRS_ID_VDD_MEM_0]	= MSM_RPM_ID_PM8921_L24_0,
@@ -2377,6 +2413,17 @@ static struct platform_device apq8064_device_rpm_regulator __devinitdata = {
 	},
 };
 
+#ifdef CONFIG_MACH_APQ8064_ARIES
+static struct platform_device apq8064_device_ext_5p4v_vreg __devinitdata = {
+	.name	= GPIO_REGULATOR_DEV_NAME,
+	.id	= PM8921_GPIO_PM_TO_SYS(11),
+	.dev	= {
+		.platform_data =
+			&apq8064_gpio_regulator_pdata[GPIO_VREG_ID_EXT_5P4V],
+	},
+};
+#endif
+
 static struct platform_device
 apq8064_pm8921_device_rpm_regulator __devinitdata = {
 	.name	= "rpm-regulator",
@@ -2401,12 +2448,17 @@ static struct platform_device gpio_ir_recv_pdev = {
 static struct platform_device *common_not_mpq_devices[] __initdata = {
 	&apq8064_device_qup_i2c_gsbi1,
 	&apq8064_device_qup_i2c_gsbi3,
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	&mpq8064_device_qup_i2c_gsbi5,
+#endif
 };
 
 static struct platform_device *early_common_devices[] __initdata = {
 	&apq8064_device_acpuclk,
 	&apq8064_device_dmov,
+#ifndef CONFIG_MACH_APQ8064_ARIES
 	&apq8064_device_qup_spi_gsbi5,
+#endif
 };
 
 static struct platform_device *pm8921_common_devices[] __initdata = {
@@ -2415,6 +2467,9 @@ static struct platform_device *pm8921_common_devices[] __initdata = {
 	&apq8064_device_ext_3p3v_vreg,
 	&apq8064_device_ssbi_pmic1,
 	&apq8064_device_ssbi_pmic2,
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	&apq8064_device_ext_5p4v_vreg,
+#endif
 };
 
 static struct platform_device *pm8917_common_devices[] __initdata = {
@@ -2548,6 +2603,9 @@ static struct platform_device *common_devices[] __initdata = {
 
 static struct platform_device *cdp_devices[] __initdata = {
 	&apq8064_device_uart_gsbi1,
+#ifdef CONFIG_AUDIENCE_ES310_US
+	&apq8064_device_uart_gsbi5,
+#endif
 	&apq8064_device_uart_gsbi7,
 	&msm_device_sps_apq8064,
 #ifdef CONFIG_MSM_ROTATOR
@@ -2673,9 +2731,11 @@ static struct platform_device *mpq_devices[] __initdata = {
 	&rc_input_loopback_pdev,
 };
 
+#ifndef CONFIG_MACH_APQ8064_ARIES
 static struct msm_spi_platform_data apq8064_qup_spi_gsbi5_pdata = {
 	.max_clock_speed = 1100000,
 };
+#endif
 
 #define KS8851_IRQ_GPIO		43
 
@@ -2710,17 +2770,29 @@ static struct slim_boardinfo apq8064_slim_devices[] = {
 };
 
 static struct msm_i2c_platform_data apq8064_i2c_qup_gsbi1_pdata = {
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	.clk_freq = 400000,
+#else
 	.clk_freq = 100000,
+#endif
 	.src_clk_rate = 24000000,
 };
 
 static struct msm_i2c_platform_data apq8064_i2c_qup_gsbi3_pdata = {
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	.clk_freq = 400000,
+#else
 	.clk_freq = 384000,
+#endif
 	.src_clk_rate = 24000000,
 };
 
 static struct msm_i2c_platform_data apq8064_i2c_qup_gsbi4_pdata = {
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	.clk_freq = 400000,
+#else
 	.clk_freq = 100000,
+#endif
 	.src_clk_rate = 24000000,
 };
 
@@ -2731,12 +2803,17 @@ static struct msm_i2c_platform_data mpq8064_i2c_qup_gsbi5_pdata = {
 
 #define GSBI_DUAL_MODE_CODE 0x60
 #define MSM_GSBI1_PHYS		0x12440000
+#define MSM_GSBI5_PHYS		0x1A200000
 static void __init apq8064_i2c_init(void)
 {
 	void __iomem *gsbi_mem;
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	struct clk *ifclk;
+#else
 
 	apq8064_device_qup_i2c_gsbi1.dev.platform_data =
 					&apq8064_i2c_qup_gsbi1_pdata;
+#endif
 	gsbi_mem = ioremap_nocache(MSM_GSBI1_PHYS, 4);
 	writel_relaxed(GSBI_DUAL_MODE_CODE, gsbi_mem);
 	/* Ensure protocol code is written before proceeding */
@@ -2754,6 +2831,24 @@ static void __init apq8064_i2c_init(void)
 		apq8064_device_qup_i2c_gsbi4.dev.platform_data =
 					&apq8064_i2c_qup_gsbi4_pdata;
 	}
+
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	ifclk = clk_get_sys("msm_serial_hs.2", "iface_clk");
+	if (IS_ERR(ifclk))
+		printk("%s: get clk for msm_serial_hs.2 failed\n", __func__);
+	else {
+		clk_set_rate(ifclk, 1843200);
+		clk_prepare_enable(ifclk);
+		gsbi_mem = ioremap_nocache(MSM_GSBI5_PHYS, 4);
+		writel_relaxed(GSBI_DUAL_MODE_CODE, gsbi_mem);
+		/* Ensure protocol code is written before proceeding */
+		wmb();
+		iounmap(gsbi_mem);
+		clk_disable_unprepare(ifclk);
+	}
+	mpq8064_i2c_qup_gsbi5_pdata.use_gsbi_shared_mode = 1;
+#endif
+
 	mpq8064_device_qup_i2c_gsbi5.dev.platform_data =
 					&mpq8064_i2c_qup_gsbi5_pdata;
 }
@@ -2780,8 +2875,13 @@ static int ethernet_init(void)
 #endif
 
 #define GPIO_KEY_HOME			PM8921_GPIO_PM_TO_SYS(27)
+#ifdef CONFIG_MACH_APQ8064_ARIES
+#define GPIO_KEY_VOLUME_UP		PM8921_GPIO_PM_TO_SYS(1)
+#define GPIO_KEY_VOLUME_DOWN_PM8921	PM8921_GPIO_PM_TO_SYS(2)
+#else
 #define GPIO_KEY_VOLUME_UP		PM8921_GPIO_PM_TO_SYS(35)
 #define GPIO_KEY_VOLUME_DOWN_PM8921	PM8921_GPIO_PM_TO_SYS(38)
+#endif
 #define GPIO_KEY_VOLUME_DOWN_PM8917	PM8921_GPIO_PM_TO_SYS(30)
 #define GPIO_KEY_CAM_FOCUS		PM8921_GPIO_PM_TO_SYS(3)
 #define GPIO_KEY_CAM_SNAP		PM8921_GPIO_PM_TO_SYS(4)
@@ -2891,7 +2991,11 @@ static struct gpio_keys_button mtp_keys[] = {
 		.code           = KEY_VOLUMEUP,
 		.gpio           = GPIO_KEY_VOLUME_UP,
 		.desc           = "volume_up_key",
+#ifdef CONFIG_MACH_APQ8064_ARIES
+		.active_low     = 0,
+#else
 		.active_low     = 1,
+#endif
 		.type		= EV_KEY,
 		.wakeup		= 1,
 		.debounce_interval = 15,
@@ -2900,7 +3004,11 @@ static struct gpio_keys_button mtp_keys[] = {
 		.code           = KEY_VOLUMEDOWN,
 		.gpio           = GPIO_KEY_VOLUME_DOWN_PM8921,
 		.desc           = "volume_down_key",
+#ifdef CONFIG_MACH_APQ8064_ARIES
+		.active_low     = 0,
+#else
 		.active_low     = 1,
+#endif
 		.type		= EV_KEY,
 		.wakeup		= 1,
 		.debounce_interval = 15,
@@ -3285,8 +3393,11 @@ static void __init apq8064_common_init(void)
 	apq8064_i2c_init();
 	register_i2c_devices();
 
+#ifndef CONFIG_MACH_APQ8064_ARIES
 	apq8064_device_qup_spi_gsbi5.dev.platform_data =
 						&apq8064_qup_spi_gsbi5_pdata;
+#endif
+
 	apq8064_init_pmic();
 	if (machine_is_apq8064_liquid())
 		msm_otg_pdata.mhl_enable = true;
@@ -3449,7 +3560,11 @@ MACHINE_START(APQ8064_CDP, "QCT APQ8064 CDP")
 	.restart = msm_restart,
 MACHINE_END
 
+#ifdef CONFIG_MACH_APQ8064_ARIES
+MACHINE_START(APQ8064_MTP, "MI 2")
+#else
 MACHINE_START(APQ8064_MTP, "QCT APQ8064 MTP")
+#endif
 	.map_io = apq8064_map_io,
 	.reserve = apq8064_reserve,
 	.init_irq = apq8064_init_irq,
