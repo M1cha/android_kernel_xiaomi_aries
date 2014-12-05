@@ -2260,8 +2260,8 @@ static void rmi_f11_remove(struct rmi_function_container *fc)
 {
 	int attr_count = 0;
 	struct f11_data *f11 = fc->data;
-	struct rmi_device *rmi_dev = fc->rmi_dev;
 #ifdef	CONFIG_RMI4_DEBUG
+	struct rmi_device *rmi_dev = fc->rmi_dev;
 	teardown_debugfs(rmi_dev);
 #endif
 	for (attr_count = 0; attr_count < ARRAY_SIZE(attrs); attr_count++)
