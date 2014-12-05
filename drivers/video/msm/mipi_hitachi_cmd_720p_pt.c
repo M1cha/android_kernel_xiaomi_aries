@@ -71,7 +71,7 @@ static int __init mipi_cmd_hitachi_720p_pt_init(void)
 	pinfo.fb_num = 2;
 
 	pinfo.clk_rate = 450000000;
-	pinfo.lcd.refx100 = 6000; /* adjust refx100 to prevent tearing */
+	pinfo.lcd.refx100 = 6400; /* adjust refx100 to prevent tearing */
 
 	pinfo.lcd.v_back_porch = 7;
 	pinfo.lcd.v_front_porch = 7;
