@@ -17,6 +17,7 @@
 
 void __init apq8064_aries_init(void) {
 	apq8064_aries_init_fb();
+	apq8064_init_input();
 
 	xiaomi_add_backlight_devices();
 	xiaomi_add_mhl_devices();
