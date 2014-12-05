@@ -310,6 +310,16 @@ int pm8921_usb_ovp_set_hystersis(enum pm8921_usb_debounce_time ms);
  *
  */
 int pm8921_usb_ovp_disable(int disable);
+
+#ifdef CONFIG_MACH_APQ8064_ARIES
+/**
+ * pm8921_update_heartbeat -
+ *
+ * Used by BMS module to force heartbeat update right now.
+ */
+void pm8921_update_heartbeat(void);
+#endif
+
 /**
  * pm8921_is_batfet_closed - battery fet status
  *

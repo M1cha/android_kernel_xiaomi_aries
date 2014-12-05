@@ -91,6 +91,11 @@
 #define UNPLUG_CHECK_WAIT_PERIOD_MS 200
 #define UNPLUG_CHECK_RAMP_MS 25
 #define USB_TRIM_ENTRIES 16
+#ifdef CONFIG_MACH_APQ8064_ARIES
+/* check invalid charger after plugin */
+#define INVALID_CHG_IN_CHECK_WAIT_PERIOD_MS 3000
+#define INVALID_CHG_OUT_CHECK_WAIT_PERIOD_MS 1000
+#endif
 
 enum chg_fsm_state {
 	FSM_STATE_OFF_0 = 0,
@@ -276,6 +281,9 @@ struct pm8921_chg_chip {
 	struct delayed_work		update_heartbeat_work;
 	struct delayed_work		eoc_work;
 	struct delayed_work		unplug_check_work;
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	struct delayed_work		invalid_chg_check_work;
+#endif
 	struct delayed_work		vin_collapse_check_work;
 	struct delayed_work		btc_override_work;
 	struct wake_lock		eoc_wake_lock;
@@ -287,6 +295,9 @@ struct pm8921_chg_chip {
 	bool				has_dc_supply;
 	u8				active_path;
 	int				recent_reported_soc;
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	int 				battery_id_invalid;
+#endif
 	int				battery_less_hardware;
 	int				ibatmax_max_adj_ma;
 	int				btc_override;
@@ -315,6 +326,9 @@ static int thermal_mitigation;
 
 static struct pm8921_chg_chip *the_chip;
 static void check_temp_thresholds(struct pm8921_chg_chip *chip);
+#ifdef CONFIG_MACH_APQ8064_ARIES
+static int get_prop_batt_present(struct pm8921_chg_chip *chip);
+#endif
 
 #define LPM_ENABLE_BIT	BIT(2)
 static int pm8921_chg_set_lpm(struct pm8921_chg_chip *chip, int enable)
@@ -1258,7 +1272,11 @@ static int64_t read_battery_id(struct pm8921_chg_chip *chip)
 	}
 	pr_debug("batt_id phy = %lld meas = 0x%llx\n", result.physical,
 						result.measurement);
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	return result.adc_code;
+#else
 	return result.physical;
+#endif
 }
 
 static int is_battery_valid(struct pm8921_chg_chip *chip)
@@ -1270,22 +1288,40 @@ static int is_battery_valid(struct pm8921_chg_chip *chip)
 
 	rc = read_battery_id(chip);
 	if (rc < 0) {
+#ifdef CONFIG_MACH_APQ8064_ARIES
+		chip->battery_id_invalid = 1;
+#endif
 		pr_err("error reading batt id channel = %d, rc = %lld\n",
 					chip->vbat_channel, rc);
 		/* assume battery id is valid when adc error happens */
+#ifdef CONFIG_MACH_APQ8064_ARIES
+		return 0;
+#else
 		return 1;
+#endif
 	}
 
 	if (rc < chip->batt_id_min || rc > chip->batt_id_max) {
+#ifdef CONFIG_MACH_APQ8064_ARIES
+		chip->battery_id_invalid = 1;
+#endif
 		pr_err("batt_id phy =%lld is not valid\n", rc);
 		return 0;
 	}
+
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	chip->battery_id_invalid = 0;
+#endif
 	return 1;
 }
 
 static void check_battery_valid(struct pm8921_chg_chip *chip)
 {
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	if (chip->battery_id_invalid || !get_prop_batt_present(chip)) {
+#else
 	if (is_battery_valid(chip) == 0) {
+#endif
 		pr_err("batt_id not valid, disbling charging\n");
 		pm_chg_auto_enable(chip, 0);
 	} else {
@@ -1566,13 +1602,34 @@ static int pm_power_get_property_usb(struct power_supply *psy,
 		}
 		break;
 	case POWER_SUPPLY_PROP_PRESENT:
+#ifndef CONFIG_MACH_APQ8064_ARIES
 	case POWER_SUPPLY_PROP_ONLINE:
+#endif
 		val->intval = 0;
 
 		if (the_chip->usb_type == POWER_SUPPLY_TYPE_USB)
 			val->intval = is_usb_chg_plugged_in(the_chip);
 
 		break;
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	case POWER_SUPPLY_PROP_ONLINE:
+		val->intval = 0;
+		if (charging_disabled)
+			return 0;
+
+		if (pm_is_chg_charge_dis(the_chip))
+			return 0;
+
+		if (!is_usb_chg_plugged_in(the_chip))
+			return 0;
+
+		pm_chg_iusbmax_get(the_chip, &current_max);
+		if (usb_target_ma == 0 && current_max > 100)
+			val->intval = 1;
+		else
+			val->intval = 0;
+		break;
+#endif
 
 	case POWER_SUPPLY_PROP_SCOPE:
 		if (the_chip->host_mode)
@@ -1862,7 +1919,11 @@ static int pm_batt_power_get_property(struct power_supply *psy,
 		}
 		break;
 	case POWER_SUPPLY_PROP_TECHNOLOGY:
+#ifdef CONFIG_MACH_APQ8064_ARIES
+		val->intval = POWER_SUPPLY_TECHNOLOGY_LIPO;
+#else
 		val->intval = POWER_SUPPLY_TECHNOLOGY_LION;
+#endif
 		break;
 	case POWER_SUPPLY_PROP_VOLTAGE_MAX_DESIGN:
 		val->intval = chip->max_voltage_mv * 1000;
@@ -2016,7 +2077,11 @@ void pm8921_charger_vbus_draw(unsigned int mA)
 	 * This would also apply when the battery has been
 	 * removed from the running system.
 	 */
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	if ((!get_prop_batt_present(the_chip) || the_chip->battery_id_invalid)
+#else
 	if (mA == 0 && the_chip && !get_prop_batt_present(the_chip)
+#endif
 		&& !is_dc_chg_plugged_in(the_chip)) {
 		if (!the_chip->has_dc_supply) {
 			pr_err("rejected: no other power source mA = %d\n", mA);
@@ -2316,11 +2381,27 @@ static void handle_usb_insertion_removal(struct pm8921_chg_chip *chip)
 	if (usb_present) {
 		schedule_delayed_work(&chip->unplug_check_work,
 			msecs_to_jiffies(UNPLUG_CHECK_RAMP_MS));
+#ifdef CONFIG_MACH_APQ8064_ARIES
+		/* invalid charge work */
+		if (delayed_work_pending(&chip->invalid_chg_check_work))
+			__cancel_delayed_work(&chip->invalid_chg_check_work);
+		schedule_delayed_work(&chip->invalid_chg_check_work,
+			round_jiffies_relative(msecs_to_jiffies
+				(INVALID_CHG_IN_CHECK_WAIT_PERIOD_MS)));
+#endif
 		pm8921_chg_enable_irq(chip, CHG_GONE_IRQ);
 	} else {
 		/* USB unplugged reset target current */
 		usb_target_ma = 0;
 		pm8921_chg_disable_irq(chip, CHG_GONE_IRQ);
+#ifdef CONFIG_MACH_APQ8064_ARIES
+		/* invalid charge work */
+		if (delayed_work_pending(&chip->invalid_chg_check_work))
+			__cancel_delayed_work(&chip->invalid_chg_check_work);
+                schedule_delayed_work(&chip->invalid_chg_check_work,
+                        round_jiffies_relative(msecs_to_jiffies
+                                (INVALID_CHG_OUT_CHECK_WAIT_PERIOD_MS)));
+#endif
 	}
 	bms_notify_check(chip);
 }
@@ -2653,7 +2734,11 @@ static irqreturn_t vbatdet_low_irq_handler(int irq, void *data)
 
 	high_transition = pm_chg_get_rt_status(chip, VBATDET_LOW_IRQ);
 
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	if (high_transition && !chip->battery_id_invalid) {
+#else
 	if (high_transition) {
+#endif
 		/* enable auto charging */
 		pm_chg_auto_enable(chip, !charging_disabled);
 		pr_info("batt fell below resume voltage %s\n",
@@ -2789,6 +2874,58 @@ static void attempt_reverse_boost_fix(struct pm8921_chg_chip *chip)
 	set_min_pon_time(chip, PON_TIME_25NS);
 	pr_debug("End\n");
 }
+
+#ifdef CONFIG_MACH_APQ8064_ARIES
+extern int mhl_vbus_status(void);
+static void invalid_chg_check_worker(struct work_struct *work)
+{
+	struct delayed_work *dwork = to_delayed_work(work);
+	struct pm8921_chg_chip *chip = container_of(dwork,
+				struct pm8921_chg_chip,invalid_chg_check_work);
+	int usb_present, chg_gone;
+	int usb_ma;
+	int fsm_state;
+	static int invalid_chg_set = 0;
+	int vbus_is_on = mhl_vbus_status();
+
+	/* Below work arounds only for SDP port charging*/
+	if (usb_target_ma != 0 ||
+		!get_prop_batt_present(chip) ||
+		chip->battery_id_invalid)
+		return;
+
+	usb_present = is_usb_chg_plugged_in(chip);
+	chg_gone = pm_chg_get_rt_status(chip, CHG_GONE_IRQ);
+
+	/* chg_gone = 1 and usb_present = 1 */
+	if (chg_gone == 1 && usb_present  == 1) {
+		pr_info("active path %x\n", chip->active_path);
+		unplug_ovp_fet_open(chip);
+	}
+
+	usb_present = is_usb_chg_plugged_in(chip);
+	chg_gone = pm_chg_get_rt_status(chip, CHG_GONE_IRQ);
+
+	/* chg out check*/
+	if (usb_present == 0 && invalid_chg_set == 1) {
+		pr_info("set current to 0\n");
+		__pm8921_charger_vbus_draw(0);
+		invalid_chg_set = 0;
+	}
+
+	pm_chg_iusbmax_get(chip, &usb_ma);
+	fsm_state = pm_chg_get_fsm_state(chip);
+
+	/* chg in check */
+	if (usb_present == 1 &&
+		vbus_is_on == 0 &&
+		usb_ma <= 100 && !is_battery_charging(fsm_state)) {
+		pr_info("invalid charger, set curr 500mA\n");
+		__pm8921_charger_vbus_draw(500);
+		invalid_chg_set = 1;
+	}
+}
+#endif
 
 #define VIN_ACTIVE_BIT BIT(0)
 #define UNPLUG_WRKARND_RESTORE_WAIT_PERIOD_US	200
@@ -3041,6 +3178,22 @@ static irqreturn_t chg_gone_irq_handler(int irq, void *data)
 	usb_chg_plugged_in = is_usb_chg_plugged_in(chip);
 	chg_gone = pm_chg_get_rt_status(chip, CHG_GONE_IRQ);
 
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	/* FIXME
+	 * usb is still active while charger is gone.
+	 * Open OVP FET to work around it.
+	 */
+	if (usb_chg_plugged_in && chg_gone &&
+		!delayed_work_pending(&chip->invalid_chg_check_work)) {
+		if (delayed_work_pending(&chip->invalid_chg_check_work))
+			__cancel_delayed_work(&chip->invalid_chg_check_work);
+		schedule_delayed_work(&chip->invalid_chg_check_work,
+			round_jiffies_relative(msecs_to_jiffies
+				(INVALID_CHG_OUT_CHECK_WAIT_PERIOD_MS)));
+	}
+	pr_debug("active path %x\n", chip->active_path);
+#endif
+
 	pr_debug("chg_gone=%d, usb_valid = %d\n", chg_gone, usb_chg_plugged_in);
 	pr_debug("Chg gone fsm_state=%d\n", pm_chg_get_fsm_state(data));
 
@@ -3209,6 +3362,15 @@ static void update_heartbeat(struct work_struct *work)
 	struct pm8921_chg_chip *chip = container_of(dwork,
 				struct pm8921_chg_chip, update_heartbeat_work);
 	bool chg_present = chip->usb_present || chip->dc_present;
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	u8 val;
+
+	/* debug only */
+	pm8xxx_readb(the_chip->dev->parent, CHG_IBAT_MAX, &val);
+	pr_info("ibat_max %x\n", val);
+	pm8xxx_readb(the_chip->dev->parent, CHG_VDD_MAX, &val);
+	pr_info("vdd_max %x\n", val);
+#endif
 
 	/* for battery health when charger is not connected */
 	if (chip->btc_override && !chg_present)
@@ -3236,7 +3398,11 @@ static void update_heartbeat(struct work_struct *work)
 						     (chip->update_time)));
 }
 #define VDD_LOOP_ACTIVE_BIT	BIT(3)
+#ifdef CONFIG_MACH_APQ8064_ARIES
+#define VDD_MAX_INCREASE_MV	40 /* Based on the test */
+#else
 #define VDD_MAX_INCREASE_MV	400
+#endif
 static int vdd_max_increase_mv = VDD_MAX_INCREASE_MV;
 module_param(vdd_max_increase_mv, int, 0644);
 
@@ -3252,6 +3418,14 @@ static void adjust_vdd_max_for_fastchg(struct pm8921_chg_chip *chip,
 	int vbat_batt_terminal_mv;
 	int reg_loop;
 	int delta_mv = 0;
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	int rbatt;
+
+	/* Apply the real battery resistor */
+	rbatt = pm8921_bms_get_rbatt();
+	if (rbatt > 0)
+		chip->rconn_mohm = rbatt;
+#endif
 
 	if (chip->rconn_mohm == 0) {
 		pr_debug("Exiting as rconn_mohm is 0\n");
@@ -3863,6 +4037,14 @@ static void __devinit determine_initial_state(struct pm8921_chg_chip *chip)
 	if (chip->usb_present || chip->dc_present) {
 		schedule_delayed_work(&chip->unplug_check_work,
 			msecs_to_jiffies(UNPLUG_CHECK_WAIT_PERIOD_MS));
+
+#ifdef CONFIG_MACH_APQ8064_ARIES
+		/* invalid charge work */
+		schedule_delayed_work(&chip->invalid_chg_check_work,
+			round_jiffies_relative(msecs_to_jiffies
+				(INVALID_CHG_IN_CHECK_WAIT_PERIOD_MS)));
+#endif
+
 		pm8921_chg_enable_irq(chip, CHG_GONE_IRQ);
 
 		if (chip->btc_override)
@@ -3881,6 +4063,13 @@ static void __devinit determine_initial_state(struct pm8921_chg_chip *chip)
 	pm8921_chg_enable_irq(chip, FASTCHG_IRQ);
 	pm8921_chg_enable_irq(chip, VBATDET_LOW_IRQ);
 	pm8921_chg_enable_irq(chip, BAT_TEMP_OK_IRQ);
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	pm8921_chg_enable_irq(chip, VBATDET_IRQ);
+	pm8921_chg_enable_irq(chip, BATTTEMP_HOT_IRQ);
+	pm8921_chg_enable_irq(chip, BATTTEMP_COLD_IRQ);
+	pm8921_chg_enable_irq(chip, CHGSTATE_IRQ);
+	pm8921_chg_enable_irq(chip, CHGHOT_IRQ);
+#endif
 
 	if (get_prop_batt_present(the_chip) || is_dc_chg_plugged_in(the_chip))
 		if (usb_chg_current)
@@ -3904,8 +4093,13 @@ static void __devinit determine_initial_state(struct pm8921_chg_chip *chip)
 
 	fsm_state = pm_chg_get_fsm_state(chip);
 	if (is_battery_charging(fsm_state)) {
+#ifdef CONFIG_MACH_APQ8064_ARIES
+		/* It will keep charging status broung up by trickle charging */
+		fastchg_irq_handler(chip->pmic_chg_irq[FASTCHG_IRQ], chip);
+#else
 		chip->bms_notify.is_charging = 1;
 		pm8921_bms_charging_began();
+#endif
 	}
 
 	check_battery_valid(chip);
@@ -4809,6 +5003,14 @@ static int __devinit pm8921_charger_probe(struct platform_device *pdev)
 			= pdata->btc_panic_if_cant_stop_chg;
 	}
 
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	if (is_battery_valid(chip) == 0) {
+		/* Lower the max voltage for invalid battery*/
+		pr_info("invalid battery, set max voltage to 4200mV\n");
+		chip->max_voltage_mv = 4200;
+	}
+#endif
+
 	if (chip->battery_less_hardware)
 		charging_disabled = 1;
 
@@ -4878,6 +5080,10 @@ static int __devinit pm8921_charger_probe(struct platform_device *pdev)
 	INIT_DELAYED_WORK(&chip->vin_collapse_check_work,
 						vin_collapse_check_worker);
 	INIT_DELAYED_WORK(&chip->unplug_check_work, unplug_check_worker);
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	INIT_DELAYED_WORK(&chip->invalid_chg_check_work,
+			invalid_chg_check_worker);
+#endif
 
 	INIT_WORK(&chip->bms_notify.work, bms_notify);
 	INIT_WORK(&chip->battery_id_valid_work, battery_id_valid);

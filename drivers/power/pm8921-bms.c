@@ -114,6 +114,9 @@ struct pm8921_bms_chip {
 	unsigned long		last_calib_time;
 	int			last_calib_temp;
 	struct mutex		calib_mutex;
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	struct wake_lock	bms_wake_lock;
+#endif
 	unsigned int		revision;
 	unsigned int		xoadc_v0625_usb_present;
 	unsigned int		xoadc_v0625_usb_absent;
@@ -177,7 +180,9 @@ struct pm8921_bms_chip {
 	int			ibat_at_cv_ua;
 	int			soc_at_cv;
 	int			prev_chg_soc;
+#ifndef CONFIG_MACH_APQ8064_ARIES
 	struct power_supply	*batt_psy;
+#endif
 	struct wake_lock	low_voltage_wake_lock;
 	int			soc_calc_period;
 	int			normal_voltage_calc_ms;
@@ -229,6 +234,9 @@ module_param(last_charge_increase, int, 0644);
 module_param(last_fcc_update_count, int, 0644);
 
 static int calculated_soc = -EINVAL;
+#ifdef CONFIG_MACH_APQ8064_ARIES
+static int ocv_irq_wake_set = 0;
+#endif
 static int last_soc = -EINVAL;
 static int last_real_fcc_mah = -EINVAL;
 static int last_real_fcc_batt_temp = -EINVAL;
@@ -419,6 +427,11 @@ static int usb_chg_plugged_in(struct pm8921_bms_chip *chip)
 {
 	int val = pm8921_is_usb_chg_plugged_in();
 
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	/* treat as if usb is not present in case of error */
+	if (val == -EINVAL)
+		val = 0;
+#else
 	/* if the charger driver was not initialized, use the restart reason */
 	if (val == -EINVAL) {
 		if (pm8xxx_restart_reason(chip->dev->parent)
@@ -427,6 +440,7 @@ static int usb_chg_plugged_in(struct pm8921_bms_chip *chip)
 		else
 			val = 0;
 	}
+#endif
 
 	return val;
 }
@@ -1748,6 +1762,11 @@ static int charging_adjustments(struct pm8921_bms_chip *chip,
 	int vbat_batt_terminal_uv = vbat_uv
 					+ (ibat_ua * chip->rconn_mohm) / 1000;
 
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	/* Disable it as it will cause soc error in some cases*/
+	return soc;
+#endif
+
 	if (chip->soc_at_cv == -EINVAL) {
 		/* In constant current charging return the calc soc */
 		if (vbat_batt_terminal_uv <= chip->max_voltage_uv)
@@ -2124,6 +2143,12 @@ static int scale_soc_while_chg(struct pm8921_bms_chip *chip,
 	if (the_chip->start_percent == -EINVAL)
 		return prev_soc;
 
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	/* if soc is called in quick succession return the last soc */
+	if (delta_time_us < USEC_PER_SEC)
+		return prev_soc;
+#endif
+
 	/* do not scale at 100 */
 	if (new_soc == 100)
 		return new_soc;
@@ -2169,6 +2194,7 @@ static bool is_shutdown_soc_within_limits(struct pm8921_bms_chip *chip, int soc)
 	return 1;
 }
 
+#ifndef CONFIG_MACH_APQ8064_ARIES
 static void update_power_supply(struct pm8921_bms_chip *chip)
 {
 	if (chip->batt_psy == NULL || chip->batt_psy < 0)
@@ -2177,6 +2203,7 @@ static void update_power_supply(struct pm8921_bms_chip *chip)
 	if (chip->batt_psy > 0)
 		power_supply_changed(chip->batt_psy);
 }
+#endif
 
 #define MIN_DELTA_625_UV	1000
 static void calib_hkadc(struct pm8921_bms_chip *chip)
@@ -2281,7 +2308,9 @@ static int calculate_state_of_charge(struct pm8921_bms_chip *chip,
 	int new_ucc_uah;
 	int new_rbatt;
 	int shutdown_soc;
+#ifndef CONFIG_MACH_APQ8064_ARIES
 	int new_calculated_soc;
+#endif
 	static int firsttime = 1;
 
 	calculate_soc_params(chip, raw, batt_temp, chargecycles,
@@ -2338,8 +2367,10 @@ static int calculate_state_of_charge(struct pm8921_bms_chip *chip,
 				soc, chip->last_ocv_uv);
 	}
 
+#ifndef CONFIG_MACH_APQ8064_ARIES
 	if (soc > 100)
 		soc = 100;
+#endif
 
 	if (soc < 0) {
 		pr_debug("bad rem_usb_chg = %d rem_chg %d,"
@@ -2398,17 +2429,46 @@ static int calculate_state_of_charge(struct pm8921_bms_chip *chip,
 	mutex_unlock(&soc_invalidation_mutex);
 
 	pr_debug("SOC before adjustment = %d\n", soc);
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	calculated_soc = adjust_soc(chip, soc, batt_temp, chargecycles,
+#else
 	new_calculated_soc = adjust_soc(chip, soc, batt_temp, chargecycles,
+#endif
 			rbatt, fcc_uah, unusable_charge_uah, cc_uah);
 
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	printk("QBMS cSOC%d temp%d rbatt%d fcc%d uuc%d rc%d cc%d ocv%d\n",
+			calculated_soc, batt_temp, rbatt,
+			fcc_uah, unusable_charge_uah,
+			remaining_charge_uah, cc_uah, chip->last_ocv_uv);
+#else
 	pr_debug("calculated SOC = %d\n", new_calculated_soc);
 	if (new_calculated_soc != calculated_soc) {
 		calculated_soc = new_calculated_soc;
 		update_power_supply(chip);
 	}
+#endif
 
 	firsttime = 0;
 	get_current_time(&chip->last_recalc_time);
+
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	if (calculated_soc > 100)
+		calculated_soc = 100;
+	if (calculated_soc < 0)
+		calculated_soc = 0;
+
+	if (calculated_soc > 5 && ocv_irq_wake_set) {
+		disable_irq_wake(chip->pmic_bms_irq[PM8921_BMS_GOOD_OCV]);
+		ocv_irq_wake_set = 0;
+	} else if (calculated_soc <= 5 && !ocv_irq_wake_set) {
+		enable_irq_wake(chip->pmic_bms_irq[PM8921_BMS_GOOD_OCV]);
+		ocv_irq_wake_set = 1;
+	}
+
+	if (calculated_soc == 0)
+		wake_lock_timeout(&chip->bms_wake_lock , 30 * HZ);
+#endif
 
 	if (chip->disable_flat_portion_ocv) {
 		if (is_between(chip->ocv_dis_high_soc, chip->ocv_dis_low_soc,
@@ -2483,7 +2543,11 @@ static int report_state_of_charge(struct pm8921_bms_chip *chip)
 	 * avoid overflows when charging continues for extended periods
 	 */
 	if (the_chip->start_percent != -EINVAL) {
+#ifdef CONFIG_MACH_APQ8064_ARIES
+		if (the_chip->charge_time_us == 0 && soc > last_soc) {
+#else
 		if (the_chip->charge_time_us == 0) {
+#endif
 			/*
 			 * calculating soc for the first time
 			 * after start of chg. Initialize catchup time
@@ -2506,8 +2570,13 @@ static int report_state_of_charge(struct pm8921_bms_chip *chip)
 			chip->charge_time_us += delta_time_us;
 
 		/* end catchup if calculated soc and last soc are same */
-		if (last_soc == soc)
+		if (last_soc == soc) {
+#ifdef CONFIG_MACH_APQ8064_ARIES
+			/* Prepare for the next round catchup */
+			the_chip->charge_time_us = 0;
+#endif
 			the_chip->catch_up_time_us = 0;
+		}
 	}
 
 	/* last_soc < soc  ... scale and catch up */
@@ -2594,8 +2663,10 @@ void pm8921_bms_battery_removed(void)
 		sysfs_notify(&the_chip->dev->kobj, NULL, "fcc_data");
 	}
 
+#ifndef CONFIG_MACH_APQ8064_ARIES
 	/* UUC related data is left as is - use the same historical load avg */
 	update_power_supply(the_chip);
+#endif
 }
 EXPORT_SYMBOL(pm8921_bms_battery_removed);
 
@@ -2722,6 +2793,52 @@ int pm8921_bms_get_percent_charge(void)
 	return report_state_of_charge(the_chip);
 }
 EXPORT_SYMBOL_GPL(pm8921_bms_get_percent_charge);
+
+#ifdef CONFIG_MACH_APQ8064_ARIES
+int pm8921_bms_get_rbatt(void)
+{
+	int batt_temp, rc;
+	struct pm8xxx_adc_chan_result result;
+	struct pm8921_soc_params raw;
+	int fcc_uah;
+	int unusable_charge_uah;
+	int remaining_charge_uah;
+	int cc_uah;
+	int rbatt;
+	int iavg_ua;
+
+	if (!the_chip) {
+		pr_err("called before initialization\n");
+		return -EINVAL;
+	}
+
+	rc = pm8xxx_adc_read(the_chip->batt_temp_channel, &result);
+	if (rc) {
+		pr_err("error reading adc channel = %d, rc = %d\n",
+					the_chip->batt_temp_channel, rc);
+		return rc;
+	}
+	pr_debug("batt_temp phy = %lld meas = 0x%llx\n", result.physical,
+						result.measurement);
+	batt_temp = (int)result.physical;
+
+	mutex_lock(&the_chip->last_ocv_uv_mutex);
+
+	read_soc_params_raw(the_chip, &raw, 300);
+
+	calculate_soc_params(the_chip, &raw, batt_temp, last_chargecycles,
+						&fcc_uah,
+						&unusable_charge_uah,
+						&remaining_charge_uah,
+						&cc_uah,
+						&rbatt,
+						&iavg_ua);
+	mutex_unlock(&the_chip->last_ocv_uv_mutex);
+
+	return rbatt;
+}
+EXPORT_SYMBOL_GPL(pm8921_bms_get_rbatt);
+#endif
 
 int pm8921_bms_get_current_max(void)
 {
@@ -3031,6 +3148,14 @@ static irqreturn_t pm8921_bms_good_ocv_handler(int irq, void *data)
 
 	pr_debug("irq = %d triggered", irq);
 	schedule_work(&chip->calib_hkadc_work);
+
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	if (delayed_work_pending(&chip->calculate_soc_delayed_work)) {
+		__cancel_delayed_work(&chip->calculate_soc_delayed_work);
+		schedule_delayed_work(&chip->calculate_soc_delayed_work, 0);
+	}
+#endif
+
 	return IRQ_HANDLED;
 }
 
@@ -3174,6 +3299,28 @@ static int64_t read_battery_id(struct pm8921_bms_chip *chip)
 #define PALLADIUM_ID_MAX	0x7F5A
 #define DESAY_5200_ID_MIN	0x7F7F
 #define DESAY_5200_ID_MAX	0x802F
+#ifdef CONFIG_MACH_APQ8064_ARIES
+/* For 8064 MTP platform */
+#define SONY_1900_ID_MIN	0x6100
+#define SONY_1900_ID_MAX	0x6A00
+#define SAMSUNG_1900_ID_MIN	0x7000
+#define SAMSUNG_1900_ID_MAX	0x7500
+#define LG_1900_ID_MIN		0x7600
+#define LG_1900_ID_MAX		0x7A00
+#define SONY_3000_ID_MIN	0x8100
+#define SONY_3000_ID_MAX	0x8400
+#define SAMSUNG_3000_ID_MIN	0x8A00
+#define SAMSUNG_3000_ID_MAX	0x8D00
+#define LG_3000_ID_MIN		0x9100
+#define LG_3000_ID_MAX		0x9400
+/* For 8960 CDP platform */
+#define SAMSUNG_2000_ID_MIN	0x1000
+#define SAMSUNG_2000_ID_MAX	0x1000
+#define SONY_2000_ID_MIN	0x1500
+#define SONY_2000_ID_MAX	0x1500
+#define LG_2000_ID_MIN		0x2000
+#define LG_2000_ID_MAX		0x2000
+#endif
 static int set_battery_data(struct pm8921_bms_chip *chip)
 {
 	int64_t battery_id;
@@ -3186,7 +3333,12 @@ static int set_battery_data(struct pm8921_bms_chip *chip)
 	battery_id = read_battery_id(chip);
 	if (battery_id < 0) {
 		pr_err("cannot read battery id err = %lld\n", battery_id);
+#ifdef CONFIG_MACH_APQ8064_ARIES
+		/* Ignore the error temporarily */
+		goto samsung;
+#else
 		return battery_id;
+#endif
 	}
 
 	if (is_between(PALLADIUM_ID_MIN, PALLADIUM_ID_MAX, battery_id)) {
@@ -3194,10 +3346,46 @@ static int set_battery_data(struct pm8921_bms_chip *chip)
 	} else if (is_between(DESAY_5200_ID_MIN, DESAY_5200_ID_MAX,
 				battery_id)) {
 		goto desay;
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	} else if (is_between(SONY_1900_ID_MIN, SONY_1900_ID_MAX,
+				battery_id)) {
+		goto sony;
+	} else if (is_between(SAMSUNG_1900_ID_MIN, SAMSUNG_1900_ID_MAX,
+				battery_id)) {
+		goto samsung;
+	} else if (is_between(LG_1900_ID_MIN, LG_1900_ID_MAX,
+				battery_id)) {
+		goto lg;
+	} else if (is_between(SONY_3000_ID_MIN, SONY_3000_ID_MAX,
+				battery_id)) {
+		goto sony_3000;
+	} else if (is_between(LG_3000_ID_MIN, LG_3000_ID_MAX,
+				battery_id)) {
+		goto lg_3000;
+	} else if (is_between(SAMSUNG_3000_ID_MIN, SAMSUNG_3000_ID_MAX,
+				battery_id)) {
+		goto samsung_3000;
+	} else if (is_between(SAMSUNG_2000_ID_MIN,
+			SAMSUNG_2000_ID_MAX, battery_id)) {
+		goto samsung_2000;
+	} else if (is_between(SONY_2000_ID_MIN,
+			SONY_2000_ID_MAX, battery_id)) {
+		/* test only */
+		goto samsung_2000;
+	} else if (is_between(LG_2000_ID_MIN,
+			LG_2000_ID_MAX, battery_id)) {
+		goto lg_2000;
+#endif
 	} else {
+#ifdef CONFIG_MACH_APQ8064_ARIES
+		pr_warn("invalid battid, Samsung 1900 assumed batt_id %llx\n",
+				battery_id);
+		goto samsung;
+#else
 		pr_warn("invalid battid, palladium 1500 assumed batt_id %llx\n",
 				battery_id);
 		goto palladium;
+#endif
 	}
 
 palladium:
@@ -3224,6 +3412,104 @@ desay:
 		chip->rbatt_capacitive_mohm
 			= desay_5200_data.rbatt_capacitive_mohm;
 		return 0;
+#ifdef CONFIG_MACH_APQ8064_ARIES
+sony:
+		printk("%s sony battery IC used\n", __func__);
+		chip->fcc = sony_1900_data.fcc;
+		chip->fcc_temp_lut = sony_1900_data.fcc_temp_lut;
+		chip->pc_temp_ocv_lut = sony_1900_data.pc_temp_ocv_lut;
+		chip->pc_sf_lut = sony_1900_data.pc_sf_lut;
+		chip->rbatt_sf_lut = sony_1900_data.rbatt_sf_lut;
+		chip->default_rbatt_mohm = sony_1900_data.default_rbatt_mohm;
+		chip->delta_rbatt_mohm = sony_1900_data.delta_rbatt_mohm;
+		chip->rbatt_capacitive_mohm
+			= sony_1900_data.rbatt_capacitive_mohm;
+		return 0;
+lg:
+		printk("%s lg battery IC used\n", __func__);
+		chip->fcc = lg_1900_data.fcc;
+		chip->fcc_temp_lut = lg_1900_data.fcc_temp_lut;
+		chip->pc_temp_ocv_lut = lg_1900_data.pc_temp_ocv_lut;
+		chip->pc_sf_lut = lg_1900_data.pc_sf_lut;
+		chip->rbatt_sf_lut = lg_1900_data.rbatt_sf_lut;
+		chip->default_rbatt_mohm = lg_1900_data.default_rbatt_mohm;
+		chip->delta_rbatt_mohm = lg_1900_data.delta_rbatt_mohm;
+		chip->rbatt_capacitive_mohm
+			= lg_1900_data.rbatt_capacitive_mohm;
+		return 0;
+samsung:
+		printk("%s samsung battery IC used\n", __func__);
+		chip->fcc = samsung_1900_data.fcc;
+		chip->fcc_temp_lut = samsung_1900_data.fcc_temp_lut;
+		chip->pc_temp_ocv_lut = samsung_1900_data.pc_temp_ocv_lut;
+		chip->pc_sf_lut = samsung_1900_data.pc_sf_lut;
+		chip->rbatt_sf_lut = samsung_1900_data.rbatt_sf_lut;
+		chip->default_rbatt_mohm = samsung_1900_data.default_rbatt_mohm;
+		chip->delta_rbatt_mohm = samsung_1900_data.delta_rbatt_mohm;
+		chip->rbatt_capacitive_mohm
+			= samsung_1900_data.rbatt_capacitive_mohm;
+		return 0;
+samsung_2000:
+		printk("%s samsung battery 2000 IC used\n", __func__);
+		chip->fcc = samsung_2000_data.fcc;
+		chip->fcc_temp_lut = samsung_2000_data.fcc_temp_lut;
+		chip->pc_temp_ocv_lut = samsung_2000_data.pc_temp_ocv_lut;
+		chip->pc_sf_lut = samsung_2000_data.pc_sf_lut;
+		chip->rbatt_sf_lut = samsung_2000_data.rbatt_sf_lut;
+		chip->default_rbatt_mohm = samsung_2000_data.default_rbatt_mohm;
+		chip->delta_rbatt_mohm = samsung_2000_data.delta_rbatt_mohm;
+		chip->rbatt_capacitive_mohm
+			= samsung_2000_data.rbatt_capacitive_mohm;
+		return 0;
+lg_2000:
+		printk("%s LG battery 2000 IC used\n", __func__);
+		chip->fcc = lg_2000_data.fcc;
+		chip->fcc_temp_lut = lg_2000_data.fcc_temp_lut;
+		chip->pc_temp_ocv_lut = lg_2000_data.pc_temp_ocv_lut;
+		chip->pc_sf_lut = lg_2000_data.pc_sf_lut;
+		chip->rbatt_sf_lut = lg_2000_data.rbatt_sf_lut;
+		chip->default_rbatt_mohm = lg_2000_data.default_rbatt_mohm;
+		chip->delta_rbatt_mohm = lg_2000_data.delta_rbatt_mohm;
+		chip->rbatt_capacitive_mohm
+			= lg_2000_data.rbatt_capacitive_mohm;
+		return 0;
+sony_3000:
+		printk("%s sony 3000 battery IC used\n", __func__);
+		chip->fcc = sony_3000_data.fcc;
+		chip->fcc_temp_lut = sony_3000_data.fcc_temp_lut;
+		chip->pc_temp_ocv_lut = sony_3000_data.pc_temp_ocv_lut;
+		chip->pc_sf_lut = sony_3000_data.pc_sf_lut;
+		chip->rbatt_sf_lut = sony_3000_data.rbatt_sf_lut;
+		chip->default_rbatt_mohm = sony_3000_data.default_rbatt_mohm;
+		chip->delta_rbatt_mohm = sony_3000_data.delta_rbatt_mohm;
+		chip->rbatt_capacitive_mohm
+			= sony_3000_data.rbatt_capacitive_mohm;
+		return 0;
+lg_3000:
+		printk("%s lg 3000 battery IC used\n", __func__);
+		chip->fcc = lg_3000_data.fcc;
+		chip->fcc_temp_lut = lg_3000_data.fcc_temp_lut;
+		chip->pc_temp_ocv_lut = lg_3000_data.pc_temp_ocv_lut;
+		chip->pc_sf_lut = lg_3000_data.pc_sf_lut;
+		chip->rbatt_sf_lut = lg_3000_data.rbatt_sf_lut;
+		chip->default_rbatt_mohm = lg_3000_data.default_rbatt_mohm;
+		chip->delta_rbatt_mohm = lg_3000_data.delta_rbatt_mohm;
+		chip->rbatt_capacitive_mohm
+			= lg_3000_data.rbatt_capacitive_mohm;
+		return 0;
+samsung_3000:
+		printk("%s samsung 3000 battery IC used\n", __func__);
+		chip->fcc = samsung_3000_data.fcc;
+		chip->fcc_temp_lut = samsung_3000_data.fcc_temp_lut;
+		chip->pc_temp_ocv_lut = samsung_3000_data.pc_temp_ocv_lut;
+		chip->pc_sf_lut = samsung_3000_data.pc_sf_lut;
+		chip->rbatt_sf_lut = samsung_3000_data.rbatt_sf_lut;
+		chip->default_rbatt_mohm = samsung_3000_data.default_rbatt_mohm;
+		chip->delta_rbatt_mohm = samsung_3000_data.delta_rbatt_mohm;
+		chip->rbatt_capacitive_mohm
+			= samsung_3000_data.rbatt_capacitive_mohm;
+		return 0;
+#endif
 }
 
 enum bms_request_operation {
@@ -3720,6 +4006,17 @@ static int __devinit pm8921_bms_probe(struct platform_device *pdev)
 	chip->imax_ua = -EINVAL;
 
 	chip->ignore_shutdown_soc = pdata->ignore_shutdown_soc;
+
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	chip->batt_temp_channel = pdata->bms_cdata.batt_temp_channel;
+	chip->vbat_channel = pdata->bms_cdata.vbat_channel;
+	chip->ref625mv_channel = pdata->bms_cdata.ref625mv_channel;
+	chip->ref1p25v_channel = pdata->bms_cdata.ref1p25v_channel;
+	chip->batt_id_channel = pdata->bms_cdata.batt_id_channel;
+	chip->revision = pm8xxx_get_revision(chip->dev->parent);
+	chip->enable_fcc_learning = pdata->enable_fcc_learning;
+#endif
+
 	rc = set_battery_data(chip);
 	if (rc) {
 		pr_err("%s bad battery data %d\n", __func__, rc);
@@ -3736,6 +4033,7 @@ static int __devinit pm8921_bms_probe(struct platform_device *pdev)
 	if (chip->default_rbatt_mohm <= 0)
 		chip->default_rbatt_mohm = DEFAULT_RBATT_MOHMS;
 
+#ifndef CONFIG_MACH_APQ8064_ARIES
 	chip->batt_temp_channel = pdata->bms_cdata.batt_temp_channel;
 	chip->vbat_channel = pdata->bms_cdata.vbat_channel;
 	chip->ref625mv_channel = pdata->bms_cdata.ref625mv_channel;
@@ -3743,6 +4041,7 @@ static int __devinit pm8921_bms_probe(struct platform_device *pdev)
 	chip->batt_id_channel = pdata->bms_cdata.batt_id_channel;
 	chip->revision = pm8xxx_get_revision(chip->dev->parent);
 	chip->enable_fcc_learning = pdata->enable_fcc_learning;
+#endif
 	chip->min_fcc_learning_soc = pdata->min_fcc_learning_soc;
 	chip->min_fcc_ocv_pc = pdata->min_fcc_ocv_pc;
 	chip->min_fcc_learning_samples = pdata->min_fcc_learning_samples;
@@ -3821,6 +4120,10 @@ static int __devinit pm8921_bms_probe(struct platform_device *pdev)
 		goto free_irqs;
 	}
 	check_initial_ocv(chip);
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	wake_lock_init(&chip->bms_wake_lock, WAKE_LOCK_SUSPEND,
+		"pm8921_bms_wake_lock");
+#endif
 
 	/* enable the vbatt reading interrupts for scheduling hkadc calib */
 	pm8921_bms_enable_irq(chip, PM8921_BMS_GOOD_OCV);
@@ -3909,7 +4212,9 @@ static int pm8921_bms_resume(struct device *dev)
 		}
 	}
 	chip->first_report_after_suspend = true;
+#ifndef CONFIG_MACH_APQ8064_ARIES
 	update_power_supply(chip);
+#endif
 	schedule_delayed_work(&chip->calculate_soc_delayed_work,
 				msecs_to_jiffies(chip->soc_calc_period));
 

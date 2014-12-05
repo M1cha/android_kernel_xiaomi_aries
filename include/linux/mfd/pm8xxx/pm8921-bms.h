@@ -154,6 +154,14 @@ void pm8921_bms_calibrate_hkadc(void);
  */
 int pm8921_bms_get_simultaneous_battery_voltage_and_current(int *ibat_ua,
 								int *vbat_uv);
+
+#ifdef CONFIG_MACH_APQ8064_ARIES
+/**
+ * pm8921_bms_get_rbatt - function to get the battery resistance in mOhm.
+ */
+int pm8921_bms_get_rbatt(void);
+#endif
+
 /**
  * pm8921_bms_get_current_max
  *	- function to get the max current that can be drawn from
