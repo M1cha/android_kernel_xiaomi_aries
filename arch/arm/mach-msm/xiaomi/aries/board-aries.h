@@ -20,5 +20,6 @@ void apq8064_init_input(void);
 void xiaomi_add_backlight_devices(void);
 void xiaomi_add_mhl_devices(void);
 void xiaomi_add_sound_devices(void);
+void xiaomi_add_camera_devices(void);
 
 #endif

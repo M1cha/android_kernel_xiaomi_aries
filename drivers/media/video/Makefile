@@ -212,7 +212,11 @@ obj-$(CONFIG_VIDEO_IR_I2C)  += ir-kbd-i2c.o
 
 obj-y	+= davinci/
 
+ifeq ($(CONFIG_MACH_APQ8064_ARIES),y)
+obj-$(CONFIG_MSM_CAMERA) += msm_aries/
+else
 obj-$(CONFIG_MSM_CAMERA) += msm/
+endif
 obj-$(CONFIG_ARCH_OMAP)	+= omap/
 obj-$(CONFIG_MSM_VIDC_V4L2) += msm_vidc/
 obj-$(CONFIG_MSM_WFD) += msm_wfd/

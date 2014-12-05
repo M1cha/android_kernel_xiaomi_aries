@@ -91,11 +91,18 @@ enum vfe_resp_msg {
 	VFE_MSG_JPEG_CAPTURE,
 	VFE_MSG_OUTPUT_IRQ,
 	VFE_MSG_PREVIEW,
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	VFE_MSG_V2X_CAPTURE,
+#endif
 	VFE_MSG_OUTPUT_PRIMARY,
 	VFE_MSG_OUTPUT_SECONDARY,
 	VFE_MSG_OUTPUT_TERTIARY1,
 	VFE_MSG_OUTPUT_TERTIARY2,
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	VFE_MSG_V2X_LIVESHOT_PRIMARY,
+#else
 	VFE_MSG_OUTPUT_TERTIARY3,
+#endif
 };
 
 enum vpe_resp_msg {
@@ -127,6 +134,30 @@ struct msm_vpe_phy_info {
 	uint8_t  output_id; /* VFE31_OUTPUT_MODE_PT/S/V */
 	uint32_t frame_id;
 };
+
+#ifdef CONFIG_MACH_APQ8064_ARIES
+struct msm_camera_csid_lut_params {
+	uint8_t num_cid;
+	struct msm_camera_csid_vc_cfg *vc_cfg;
+};
+
+struct msm_camera_csid_params {
+	uint8_t lane_cnt;
+	uint8_t lane_assign;
+	struct msm_camera_csid_lut_params lut_params;
+};
+
+struct msm_camera_csiphy_params {
+	uint8_t lane_cnt;
+	uint8_t settle_cnt;
+	uint8_t lane_mask;
+};
+
+struct msm_camera_csi2_params {
+	struct msm_camera_csid_params csid_params;
+	struct msm_camera_csiphy_params csiphy_params;
+};
+#endif
 
 #ifndef CONFIG_MSM_CAMERA_V4L2
 #define VFE31_OUTPUT_MODE_PT (0x1 << 0)
@@ -267,6 +298,7 @@ struct msm_strobe_flash_ctrl {
 	int (*strobe_flash_charge)(int32_t, int32_t, uint32_t);
 };
 
+#ifndef CONFIG_MACH_APQ8064_ARIES
 enum cci_i2c_master_t {
 	MASTER_0,
 	MASTER_1,
@@ -354,6 +386,7 @@ struct msm_camera_cci_ctrl {
 		struct msm_camera_cci_gpio_cfg gpio_cfg;
 	} cfg;
 };
+#endif
 
 /* this structure is used in kernel */
 struct msm_queue_cmd {
@@ -368,7 +401,9 @@ struct msm_queue_cmd {
 	atomic_t on_heap;
 	struct timespec ts;
 	uint32_t error_code;
+#ifndef CONFIG_MACH_APQ8064_ARIES
 	uint32_t trans_code;
+#endif
 };
 
 struct msm_device_queue {
@@ -632,11 +667,20 @@ enum msm_bus_perf_setting {
 	S_STEREO_VIDEO,
 	S_STEREO_CAPTURE,
 	S_DEFAULT,
+#ifndef CONFIG_MACH_APQ8064_ARIES
 	S_LIVESHOT,
 	S_DUAL,
 	S_LOW_POWER,
+#endif
 	S_EXIT
 };
+
+#ifdef CONFIG_MACH_APQ8064_ARIES
+struct msm_cam_clk_info {
+	const char *clk_name;
+	long clk_rate;
+};
+#endif
 
 int msm_camio_enable(struct platform_device *dev);
 int msm_camio_vpe_clk_enable(uint32_t);
@@ -703,6 +747,8 @@ int msm_camera_config_gpio_table
 	(struct msm_camera_sensor_info *sinfo, int gpio_en);
 int msm_camera_request_gpio_table
 	(struct msm_camera_sensor_info *sinfo, int gpio_en);
+#ifndef CONFIG_MACH_APQ8064_ARIES
 void msm_camera_bus_scale_cfg(uint32_t bus_perf_client,
 		enum msm_bus_perf_setting perf_setting);
+#endif
 #endif
