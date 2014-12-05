@@ -65,7 +65,11 @@
 #define TABLA_MBHC_DEF_BUTTONS 8
 #define TABLA_MBHC_DEF_RLOADS 5
 
+#ifdef CONFIG_MACH_APQ8064_ARIES
+#define JACK_DETECT_GPIO PM8921_GPIO_PM_TO_SYS(37)
+#else
 #define JACK_DETECT_GPIO 38
+#endif
 
 /* Shared channel numbers for Slimbus ports that connect APQ to MDM. */
 enum {
@@ -107,6 +111,10 @@ static int rec_mode = INCALL_REC_MONO;
 static struct clk *codec_clk;
 static int clk_users;
 
+#ifdef CONFIG_MACH_APQ8064_ARIES
+static int msm_headset_gpios_configured;
+#endif
+
 static struct snd_soc_jack hs_jack;
 static struct snd_soc_jack button_jack;
 static atomic_t auxpcm_rsc_ref;
@@ -127,17 +135,53 @@ MODULE_PARM_DESC(apq8064_hs_detect_use_firmware, "Use firmware for headset "
 static int msm_enable_codec_ext_clk(struct snd_soc_codec *codec, int enable,
 				    bool dapm);
 
+#ifdef CONFIG_SND_SOC_WCD9310_MBHC_USEU_SWITCH
+#define XIAOMI_GPIO_US_EU_HS_SW 36
+static int us_eu_hs_sw_setup(int enable)
+{
+	int ret = 0;
+
+	if (enable) {
+		ret = gpio_direction_output(XIAOMI_GPIO_US_EU_HS_SW, 1);
+		if (ret)
+			pr_err("%s:Failed to configure (HIGH) GPIO %d\n",
+				__func__, XIAOMI_GPIO_US_EU_HS_SW);
+	} else {
+		ret = gpio_direction_output(XIAOMI_GPIO_US_EU_HS_SW, 0);
+		if (ret)
+			pr_err("%s:Failed to configure (LOW) GPIO %d\n",
+				__func__, XIAOMI_GPIO_US_EU_HS_SW);
+	}
+	return ret;
+}
+#endif
+
 static struct tabla_mbhc_config mbhc_cfg = {
 	.headset_jack = &hs_jack,
 	.button_jack = &button_jack,
 	.read_fw_bin = false,
 	.calibration = NULL,
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	.micbias = TABLA_MICBIAS1,
+#else
 	.micbias = TABLA_MICBIAS2,
+#endif
 	.mclk_cb_fn = msm_enable_codec_ext_clk,
 	.mclk_rate = TABLA_EXT_CLK_RATE,
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	.gpio = JACK_DETECT_GPIO,
+#else
 	.gpio = 0,
+#endif
 	.gpio_irq = 0,
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	.gpio_level_insert = 0,
+#ifdef CONFIG_SND_SOC_WCD9310_MBHC_USEU_SWITCH
+	.detection_setup = us_eu_hs_sw_setup,
+#endif
+#else
 	.gpio_level_insert = 1,
+#endif
 	.detect_extn_cable = false,
 };
 
@@ -489,6 +533,18 @@ static int msm_mclk_event(struct snd_soc_dapm_widget *w,
 	return 0;
 }
 
+#ifdef CONFIG_MACH_APQ8064_ARIES
+static const char *dynamic_micbias_text[] = {
+	"MB1", "MB2"};
+
+static const struct soc_enum dynamic_micbias_enum[] = {
+	SOC_ENUM_SINGLE_EXT(2, dynamic_micbias_text),
+};
+
+static const struct snd_kcontrol_new dynamic_micbias_mux =
+	SOC_DAPM_ENUM("DYN MICBIAS MUX", dynamic_micbias_enum);
+#endif
+
 static const struct snd_soc_dapm_widget apq8064_dapm_widgets[] = {
 
 	SND_SOC_DAPM_SUPPLY("MCLK",  SND_SOC_NOPM, 0, 0,
@@ -506,11 +562,16 @@ static const struct snd_soc_dapm_widget apq8064_dapm_widgets[] = {
 	 * Analog mic7 (Front Top) on Liquid.
 	 * Used as Handset mic on CDP.
 	 */
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	SND_SOC_DAPM_MIC("LINE0_OUT Mic", NULL),
+	SND_SOC_DAPM_MIC("LINE1_OUT Mic", NULL),
+#else
 	SND_SOC_DAPM_MIC("Analog mic7", NULL),
 
 	SND_SOC_DAPM_MIC("Headset Mic", NULL),
 	SND_SOC_DAPM_MIC("ANCRight Headset Mic", NULL),
 	SND_SOC_DAPM_MIC("ANCLeft Headset Mic", NULL),
+#endif
 
 #ifdef CONFIG_SND_SOC_DUAL_AMIC
 	SND_SOC_DAPM_MIC("Handset Mic", NULL),
@@ -524,6 +585,11 @@ static const struct snd_soc_dapm_widget apq8064_dapm_widgets[] = {
 	SND_SOC_DAPM_MIC("Digital Mic4", NULL),
 	SND_SOC_DAPM_MIC("Digital Mic5", NULL),
 	SND_SOC_DAPM_MIC("Digital Mic6", NULL),
+
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	/*********** MiTwo Specific Widgets **********/
+	SND_SOC_DAPM_MUX("DYN MICBIAS MUX", SND_SOC_NOPM, 0 , 0, &dynamic_micbias_mux),
+#endif
 };
 
 static const struct snd_soc_dapm_route apq8064_common_audio_map[] = {
@@ -537,11 +603,16 @@ static const struct snd_soc_dapm_route apq8064_common_audio_map[] = {
 #ifdef CONFIG_SND_SOC_TPA2028D
 	{"Ext Spk Top", NULL, "LINEOUT1"},
 #else
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	{"Ext Spk Top Pos", NULL, "LINEOUT1"},
+	{"Ext Spk Top Neg", NULL, "LINEOUT3"},
+#else
 	{"Ext Spk Bottom Pos", NULL, "LINEOUT1"},
 	{"Ext Spk Bottom Neg", NULL, "LINEOUT3"},
 
 	{"Ext Spk Top Pos", NULL, "LINEOUT2"},
 	{"Ext Spk Top Neg", NULL, "LINEOUT4"},
+#endif
 	{"Ext Spk Top", NULL, "LINEOUT5"},
 #endif
 	/************   Analog MIC Paths  ************/
@@ -554,16 +625,30 @@ static const struct snd_soc_dapm_route apq8064_common_audio_map[] = {
 	{"MIC BIAS3 External", NULL, "Handset SubMic"},
 #endif
 	/* Headset Mic */
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	/* LINE0_OUT: may use mic bias1/2 for this path */
+	{"AMIC2", NULL, "DYN MICBIAS MUX"},
+	{"DYN MICBIAS MUX", "MB1", "MIC BIAS1 External"},
+	{"DYN MICBIAS MUX", "MB2", "MIC BIAS2 External"},
+	{"MIC BIAS1 External", NULL, "LINE0_OUT Mic"},
+	{"MIC BIAS2 External", NULL, "LINE0_OUT Mic"},
+#else
 	{"AMIC2", NULL, "MIC BIAS2 External"},
 	{"MIC BIAS2 External", NULL, "Headset Mic"},
+#endif
 
 #ifndef CONFIG_SND_SOC_DUAL_AMIC
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	/* LINE1_OUT: no mic bias used for this path */
+	{"AMIC5", NULL, "LINE1_OUT Mic"},
+#else
 	/* Headset ANC microphones */
 	{"AMIC3", NULL, "MIC BIAS3 Internal1"},
 	{"MIC BIAS3 Internal1", NULL, "ANCRight Headset Mic"},
 
 	{"AMIC4", NULL, "MIC BIAS1 Internal2"},
 	{"MIC BIAS1 Internal2", NULL, "ANCLeft Headset Mic"},
+#endif
 #endif
 };
 
@@ -619,6 +704,17 @@ static const struct snd_soc_dapm_route apq8064_liquid_cdp_audio_map[] = {
 	{"AMIC1", NULL, "MIC BIAS1 External"},
 	{"MIC BIAS1 External", NULL, "Analog mic7"},
 
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	/* LINE0_OUT: may use mic bias1/2 for this path */
+	{"AMIC2", NULL, "DYN MICBIAS MUX"},
+	{"DYN MICBIAS MUX", "MB1", "MIC BIAS1 External"},
+	{"DYN MICBIAS MUX", "MB2", "MIC BIAS2 External"},
+	{"MIC BIAS1 External", NULL, "LINE0_OUT Mic"},
+	{"MIC BIAS2 External", NULL, "LINE0_OUT Mic"},
+
+	/* LINE1_OUT: no mic bias used for this path */
+	{"AMIC5", NULL, "LINE1_OUT Mic"},
+#endif
 
 	/************   Digital MIC Paths  ************/
 	/**
@@ -917,7 +1013,11 @@ static void *def_tabla_mbhc_cal(void)
 #undef S
 #define S(X, Y) ((TABLA_MBHC_CAL_PLUG_TYPE_PTR(tabla_cal)->X) = (Y))
 	S(v_no_mic, 30);
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	S(v_hs_max, 2700);
+#else
 	S(v_hs_max, 2400);
+#endif
 #undef S
 #define S(X, Y) ((TABLA_MBHC_CAL_BTN_DET_PTR(tabla_cal)->X) = (Y))
 	S(c[0], 62);
@@ -934,6 +1034,24 @@ static void *def_tabla_mbhc_cal(void)
 	btn_cfg = TABLA_MBHC_CAL_BTN_DET_PTR(tabla_cal);
 	btn_low = tabla_mbhc_cal_btn_det_mp(btn_cfg, TABLA_BTN_DET_V_BTN_LOW);
 	btn_high = tabla_mbhc_cal_btn_det_mp(btn_cfg, TABLA_BTN_DET_V_BTN_HIGH);
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	btn_low[0] = -75;
+	btn_high[0] = 150;
+	btn_low[1] = 151;
+	btn_high[1] = 330;
+	btn_low[2] = 331;
+	btn_high[2] = 655;
+	btn_low[3] = 21;
+	btn_high[3] = 62;
+	btn_low[4] = 154;
+	btn_high[4] = 181;
+	btn_low[5] = 182;
+	btn_high[5] = 218;
+	btn_low[6] = 219;
+	btn_high[6] = 254;
+	btn_low[7] = 63;
+	btn_high[7] = 104;
+#else
 	btn_low[0] = -50;
 	btn_high[0] = 10;
 	btn_low[1] = 11;
@@ -950,6 +1068,7 @@ static void *def_tabla_mbhc_cal(void)
 	btn_high[6] = 244;
 	btn_low[7] = 245;
 	btn_high[7] = 330;
+#endif
 	n_ready = tabla_mbhc_cal_btn_det_mp(btn_cfg, TABLA_BTN_DET_N_READY);
 	n_ready[0] = 80;
 	n_ready[1] = 68;
@@ -1326,6 +1445,9 @@ static int msm_audrx_init(struct snd_soc_pcm_runtime *rtd)
 	} else if ((SOCINFO_VERSION_MAJOR(revision) == 1 &&
 		    SOCINFO_VERSION_MINOR(revision) >= 1 &&
 		    (machine_is_apq8064_cdp() ||
+#ifdef CONFIG_MACH_APQ8064_ARIES
+		     machine_is_apq8064_mtp() ||
+#endif
 		     machine_is_apq8064_liquid())) ||
 		   SOCINFO_VERSION_MAJOR(revision) > 1) {
 		pr_debug("%s: MBHC mechanical switch available APQ8064 "
@@ -1335,8 +1457,13 @@ static int msm_audrx_init(struct snd_soc_pcm_runtime *rtd)
 
 	if (apq8064_hs_detect_use_gpio == 1) {
 		pr_debug("%s: Using MBHC mechanical switch\n", __func__);
-		mbhc_cfg.gpio = JACK_DETECT_GPIO;
-		mbhc_cfg.gpio_irq = gpio_to_irq(JACK_DETECT_GPIO);
+#ifdef CONFIG_MACH_APQ8064_ARIES
+		if (!mbhc_cfg.gpio)
+#endif
+		{
+			mbhc_cfg.gpio = JACK_DETECT_GPIO;
+			mbhc_cfg.gpio_irq = gpio_to_irq(JACK_DETECT_GPIO);
+		}
 		err = gpio_request(mbhc_cfg.gpio, "MBHC_HS_DETECT");
 		if (err < 0) {
 			pr_err("%s: gpio_request %d failed %d\n", __func__,
@@ -2240,6 +2367,79 @@ static struct snd_soc_card snd_soc_card_msm = {
 
 static struct platform_device *msm_snd_device;
 
+#ifdef CONFIG_MACH_APQ8064_ARIES
+static int msm_configure_headset_mic_gpios(void)
+{
+	int ret = 0;
+#if defined(MBHC_PM_GPIO_AV_SWITCH) || defined(MBHC_PM_GPIO_US_EURO_SWITCH)
+	struct pm_gpio param = {
+		.direction      = PM_GPIO_DIR_OUT,
+		.output_buffer  = PM_GPIO_OUT_BUF_CMOS,
+		.output_value   = 1,
+		.pull	   = PM_GPIO_PULL_NO,
+		.vin_sel	= PM_GPIO_VIN_S4,
+		.out_strength   = PM_GPIO_STRENGTH_MED,
+		.function       = PM_GPIO_FUNC_NORMAL,
+	};
+#endif
+
+#ifdef MBHC_PM_GPIO_AV_SWITCH
+	ret = gpio_request(PM8921_GPIO_PM_TO_SYS(23), "AV_SWITCH");
+	if (ret) {
+		pr_err("%s: Failed to request gpio %d\n", __func__,
+			PM8921_GPIO_PM_TO_SYS(23));
+		return ret;
+	}
+
+	ret = pm8xxx_gpio_config(PM8921_GPIO_PM_TO_SYS(23), &param);
+	if (ret)
+		pr_err("%s: Failed to configure gpio %d\n", __func__,
+			PM8921_GPIO_PM_TO_SYS(23));
+	else
+		gpio_direction_output(PM8921_GPIO_PM_TO_SYS(23), 0);
+#endif
+
+#ifdef MBHC_PM_GPIO_US_EURO_SWITCH
+	ret = gpio_request(PM8921_GPIO_PM_TO_SYS(35), "US_EURO_SWITCH");
+	if (ret) {
+		pr_err("%s: Failed to request gpio %d\n", __func__,
+			PM8921_GPIO_PM_TO_SYS(35));
+		gpio_free(PM8921_GPIO_PM_TO_SYS(23));
+		return ret;
+	}
+	ret = pm8xxx_gpio_config(PM8921_GPIO_PM_TO_SYS(35), &param);
+	if (ret)
+		pr_err("%s: Failed to configure gpio %d\n", __func__,
+			PM8921_GPIO_PM_TO_SYS(35));
+	else
+		gpio_direction_output(PM8921_GPIO_PM_TO_SYS(35), 0);
+#endif
+
+#ifdef CONFIG_SND_SOC_WCD9310_MBHC_USEU_SWITCH
+	ret = gpio_request(XIAOMI_GPIO_US_EU_HS_SW, "US_EURO_SWITCH");
+	if (ret)
+		pr_err("%s: Failed to request gpio %d\n", __func__,
+			XIAOMI_GPIO_US_EU_HS_SW);
+#endif
+
+	return ret;
+}
+static void msm_free_headset_mic_gpios(void)
+{
+	if (msm_headset_gpios_configured) {
+#ifdef MBHC_USE_AV_SWITCH
+		gpio_free(PM8921_GPIO_PM_TO_SYS(23));
+#endif
+#ifdef MBHC_USE_US_EURO_SWITCH
+		gpio_free(PM8921_GPIO_PM_TO_SYS(35));
+#endif
+#ifdef CONFIG_SND_SOC_WCD9310_MBHC_USEU_SWITCH
+		gpio_free(XIAOMI_GPIO_US_EU_HS_SW);
+#endif
+	}
+}
+#endif
+
 static int __init msm_audio_init(void)
 {
 	int ret;
@@ -2276,6 +2476,14 @@ static int __init msm_audio_init(void)
 		return ret;
 	}
 
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	if (msm_configure_headset_mic_gpios()) {
+		pr_err("%s Fail to configure headset mic gpios\n", __func__);
+		msm_headset_gpios_configured = 0;
+	} else
+		msm_headset_gpios_configured = 1;
+#endif
+
 	mutex_init(&cdc_mclk_mutex);
 	atomic_set(&auxpcm_rsc_ref, 0);
 	return ret;
@@ -2289,6 +2497,9 @@ static void __exit msm_audio_exit(void)
 		pr_err("%s: Not the right machine type\n", __func__);
 		return ;
 	}
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	msm_free_headset_mic_gpios();
+#endif
 	platform_device_unregister(msm_snd_device);
 	if (mbhc_cfg.gpio)
 		gpio_free(mbhc_cfg.gpio);

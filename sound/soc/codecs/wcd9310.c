@@ -103,13 +103,21 @@ struct tabla_codec_dai_data {
 
 #define TABLA_MBHC_BUTTON_MIN 0x8000
 
+#ifdef CONFIG_MACH_APQ8064_ARIES
+#define TABLA_MBHC_FAKE_INSERT_LOW 30
+#else
 #define TABLA_MBHC_FAKE_INSERT_LOW 10
+#endif
 #define TABLA_MBHC_FAKE_INSERT_HIGH 80
 #define TABLA_MBHC_FAKE_INS_HIGH_NO_GPIO 150
 
 #define TABLA_MBHC_STATUS_REL_DETECTION 0x0C
 
+#ifdef CONFIG_MACH_APQ8064_ARIES
+#define TABLA_MBHC_GPIO_REL_DEBOUNCE_TIME_MS 20
+#else
 #define TABLA_MBHC_GPIO_REL_DEBOUNCE_TIME_MS 50
+#endif
 
 #define TABLA_MBHC_FAKE_INS_DELTA_MV 200
 #define TABLA_MBHC_FAKE_INS_DELTA_SCALED_MV 300
@@ -2393,7 +2401,11 @@ static void tabla_codec_start_hs_polling(struct snd_soc_codec *codec)
 		pr_debug("Polling is not active, do not start polling\n");
 		return;
 	}
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	snd_soc_write(codec, TABLA_A_MBHC_SCALING_MUX_1, 0x88);
+#else
 	snd_soc_write(codec, TABLA_A_MBHC_SCALING_MUX_1, 0x84);
+#endif
 
 	if (tabla->no_mic_headset_override) {
 		pr_debug("%s setting button threshold to min", __func__);
@@ -2755,7 +2767,11 @@ static int tabla_codec_enable_micbias(struct snd_soc_dapm_widget *w,
 			TABLA_RELEASE_LOCK(tabla->codec_resource_lock);
 		}
 
+#ifdef CONFIG_MACH_APQ8064_ARIES
+		snd_soc_update_bits(codec, w->reg, 0x1E, 0x0A);
+#else
 		snd_soc_update_bits(codec, w->reg, 0x0E, 0x0A);
+#endif
 		tabla_codec_update_cfilt_usage(codec, cfilt_sel_val, 1);
 
 		if (strnstr(w->name, internal1_text, 30))
@@ -3002,6 +3018,9 @@ static int tabla_codec_enable_rx_bias(struct snd_soc_dapm_widget *w,
 	switch (event) {
 	case SND_SOC_DAPM_PRE_PMU:
 		tabla_enable_rx_bias(codec, 1);
+#ifdef CONFIG_MACH_APQ8064_ARIES
+		usleep_range(50000, 50000);
+#endif
 		break;
 	case SND_SOC_DAPM_POST_PMD:
 		tabla_enable_rx_bias(codec, 0);
@@ -5573,7 +5592,11 @@ static short tabla_codec_setup_hs_polling(struct snd_soc_codec *codec)
 	snd_soc_update_bits(codec, tabla->mbhc_bias_regs.ctl_reg, 0x1F, 0x16);
 
 	snd_soc_update_bits(codec, TABLA_A_CDC_MBHC_CLK_CTL, 0x2, 0x2);
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	snd_soc_write(codec, TABLA_A_MBHC_SCALING_MUX_1, 0x88);
+#else
 	snd_soc_write(codec, TABLA_A_MBHC_SCALING_MUX_1, 0x84);
+#endif
 
 	snd_soc_update_bits(codec, TABLA_A_TX_7_MBHC_EN, 0x80, 0x80);
 	snd_soc_update_bits(codec, TABLA_A_TX_7_MBHC_EN, 0x1F, 0x1C);
@@ -5637,7 +5660,11 @@ void tabla_set_and_turnoff_hph_padac(struct snd_soc_codec *codec)
 
 	snd_soc_update_bits(codec, TABLA_A_RX_HPH_CNP_EN, 0x30, 0x00);
 	snd_soc_update_bits(codec, TABLA_A_RX_HPH_L_DAC_CTL,
+#ifdef CONFIG_MACH_APQ8064_ARIES
+			    0x80, 0x00);
+#else
 			    0xC0, 0x00);
+#endif
 	snd_soc_update_bits(codec, TABLA_A_RX_HPH_R_DAC_CTL,
 			    0xC0, 0x00);
 	usleep_range(wg_time * 1000, wg_time * 1000);
@@ -5691,6 +5718,9 @@ static void tabla_clr_and_turnon_hph_padac(struct tabla_priv *tabla)
 static void tabla_codec_report_plug(struct snd_soc_codec *codec, int insertion,
 				    enum snd_jack_types jack_type)
 {
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	int rc = 0;
+#endif
 	struct tabla_priv *tabla = snd_soc_codec_get_drvdata(codec);
 	pr_debug("%s: enter insertion %d hph_status %x\n",
 		 __func__, insertion, tabla->hph_status);
@@ -5715,6 +5745,14 @@ static void tabla_codec_report_plug(struct snd_soc_codec *codec, int insertion,
 			}
 			pr_debug("%s: Reporting removal %d(%x)\n", __func__,
 				 jack_type, tabla->hph_status);
+#ifdef CONFIG_MACH_APQ8064_ARIES
+			if (tabla->mbhc_cfg.detection_setup) {
+				rc = tabla->mbhc_cfg.detection_setup(0);
+				if (rc)
+					pr_err("%s: disable detection setup"
+						" failed %d\n", __func__, rc);
+			}
+#endif
 			tabla_snd_soc_jack_report(tabla,
 						  tabla->mbhc_cfg.headset_jack,
 						  tabla->hph_status,
@@ -6120,7 +6158,11 @@ void tabla_mbhc_cal(struct snd_soc_codec *codec)
 			    cfilt_mode);
 	snd_soc_update_bits(codec, TABLA_A_BIAS_CENTRAL_BG_CTL, 0x02, bg_mode);
 
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	snd_soc_write(codec, TABLA_A_MBHC_SCALING_MUX_1, 0x88);
+#else
 	snd_soc_write(codec, TABLA_A_MBHC_SCALING_MUX_1, 0x84);
+#endif
 	usleep_range(100, 100);
 
 	wcd9xxx_enable_irq(codec->control_data, TABLA_IRQ_MBHC_POTENTIAL);
@@ -6900,6 +6942,9 @@ static enum tabla_mbhc_plug_type
 tabla_codec_get_plug_type(struct snd_soc_codec *codec, bool highhph)
 {
 	int i;
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	int rc = 0;
+#endif
 	bool gndswitch, vddioswitch;
 	int scaled;
 	struct tabla_mbhc_plug_type_cfg *plug_type_ptr;
@@ -6986,6 +7031,20 @@ tabla_codec_get_plug_type(struct snd_soc_codec *codec, bool highhph)
 			 "VDDIO %d, inval %d\n", __func__,
 			 i + 1, mb_v[i] & 0xffff, mic_mv[i], scaled, gndswitch,
 			 vddioswitch, inval);
+#ifdef CONFIG_MACH_APQ8064_ARIES
+		if (tabla->mbhc_cfg.detection_setup) {
+			rc = tabla->mbhc_cfg.detection_setup(0);
+			if (rc)
+				pr_err("%s: enable detection setup"
+					" failed %d\n", __func__, rc);
+			msleep(5);
+			rc = tabla->mbhc_cfg.detection_setup(1);
+			if (rc)
+				pr_err("%s: enable detection setup"
+					" failed %d\n", __func__, rc);
+			msleep(300);
+		}
+#endif
 		/* don't need to run further DCEs */
 		if (ahighv && inval)
 			break;
@@ -7155,6 +7214,9 @@ static void tabla_codec_decide_gpio_plug(struct snd_soc_codec *codec)
 {
 	enum tabla_mbhc_plug_type plug_type;
 	struct tabla_priv *tabla = snd_soc_codec_get_drvdata(codec);
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	int rc = 0;
+#endif
 
 	pr_debug("%s: enter\n", __func__);
 
@@ -7165,6 +7227,14 @@ static void tabla_codec_decide_gpio_plug(struct snd_soc_codec *codec)
 	if (tabla_hs_gpio_level_remove(tabla)) {
 		pr_debug("%s: GPIO value is low when determining plug\n",
 			 __func__);
+#ifdef CONFIG_MACH_APQ8064_ARIES
+		if (tabla->mbhc_cfg.detection_setup) {
+			rc = tabla->mbhc_cfg.detection_setup(0);
+			if (rc)
+				pr_err("%s: disable detection setup"
+					" failed %d\n", __func__, rc);
+		}
+#endif
 		return;
 	}
 
@@ -7188,6 +7258,9 @@ static void tabla_codec_decide_gpio_plug(struct snd_soc_codec *codec)
 /* called under codec_resource_lock acquisition */
 static void tabla_codec_detect_plug_type(struct snd_soc_codec *codec)
 {
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	int rc = 0;
+#endif
 	enum tabla_mbhc_plug_type plug_type;
 	struct tabla_priv *tabla = snd_soc_codec_get_drvdata(codec);
 	const struct tabla_mbhc_plug_detect_cfg *plug_det =
@@ -7206,9 +7279,18 @@ static void tabla_codec_detect_plug_type(struct snd_soc_codec *codec)
 	if (tabla->mbhc_cfg.gpio) {
 		/* Turn off the override */
 		tabla_turn_onoff_override(codec, false);
-		if (tabla_hs_gpio_level_remove(tabla))
+		if (tabla_hs_gpio_level_remove(tabla)) {
 			pr_debug("%s: GPIO value is low when determining "
 				 "plug\n", __func__);
+#ifdef CONFIG_MACH_APQ8064_ARIES
+			if (tabla->mbhc_cfg.detection_setup) {
+				rc = tabla->mbhc_cfg.detection_setup(0);
+				if (rc)
+					pr_err("%s: disable detection setup"
+						" failed %d\n", __func__, rc);
+			}
+#endif
+		}
 		else
 			tabla_codec_decide_gpio_plug(codec);
 		pr_debug("%s: leave\n", __func__);
@@ -7643,6 +7725,9 @@ void mbhc_insert_work(struct work_struct *work)
 
 static void tabla_hs_gpio_handler(struct snd_soc_codec *codec)
 {
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	int rc = 0;
+#endif
 	bool insert;
 	struct tabla_priv *tabla = snd_soc_codec_get_drvdata(codec);
 	struct wcd9xxx *core = dev_get_drvdata(codec->dev->parent);
@@ -7662,6 +7747,28 @@ static void tabla_hs_gpio_handler(struct snd_soc_codec *codec)
 	if (tabla_cancel_btn_work(tabla))
 		pr_debug("%s: button press is canceled\n", __func__);
 
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	/* US/EU switch
+	 * Seems the switch need >100ms to be powered on and
+	 * be functional.
+	 * Keep it powered on whenever a HeadSet/HeadPhone is in.
+	 * Try to optimize it later.
+	 */
+	if ((tabla->current_plug == PLUG_TYPE_NONE) &&
+	    tabla->mbhc_cfg.detection_setup) {
+		rc = tabla->mbhc_cfg.detection_setup(0);
+		if (rc)
+			pr_err("%s: enable detection setup"
+				" failed %d\n", __func__, rc);
+		msleep(10);
+		rc = tabla->mbhc_cfg.detection_setup(1);
+		if (rc)
+			pr_err("%s: enable detection setup"
+				" failed %d\n", __func__, rc);
+		msleep(300);
+	}
+#endif
+
 	insert = (gpio_get_value_cansleep(tabla->mbhc_cfg.gpio) ==
 		  tabla->mbhc_cfg.gpio_level_insert);
 	if ((tabla->current_plug == PLUG_TYPE_NONE) && insert) {
@@ -7677,6 +7784,13 @@ static void tabla_hs_gpio_handler(struct snd_soc_codec *codec)
 				    0x00);
 		snd_soc_update_bits(codec, TABLA_A_MBHC_HPH, 0x01, 0x00);
 		tabla_codec_detect_plug_type(codec);
+
+#ifdef CONFIG_MACH_APQ8064_ARIES
+		//Do the workaround for headset fast plugin-plugout
+		snd_soc_update_bits(codec, TABLA_A_CLK_BUFF_EN1, 0x05, 0x05);
+		snd_soc_update_bits(codec, TABLA_A_CDC_MBHC_VOLT_B2_CTL, 0xff, 0x0);
+		snd_soc_update_bits(codec, tabla->mbhc_bias_regs.mbhc_reg, 0x80, 0x80);
+#endif
 	} else if ((tabla->current_plug != PLUG_TYPE_NONE) && !insert) {
 		tabla->lpi_enabled = false;
 		wmb();
@@ -7722,8 +7836,27 @@ static void tabla_hs_gpio_handler(struct snd_soc_codec *codec)
 					    0x08, 0x00);
 			/* Turn off override */
 			tabla_turn_onoff_override(codec, false);
+
+#ifdef CONFIG_MACH_APQ8064_ARIES
+			if (tabla->mbhc_cfg.detection_setup) {
+				rc = tabla->mbhc_cfg.detection_setup(0);
+				if (rc)
+					pr_err("%s: disable detection setup"
+						" failed %d\n", __func__, rc);
+			}
+#endif
 		}
 	}
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	else if (!insert) {
+		if (tabla->mbhc_cfg.detection_setup) {
+			rc = tabla->mbhc_cfg.detection_setup(0);
+			if (rc)
+				pr_err("%s: disable detection setup"
+					" failed %d\n", __func__, rc);
+		}
+	}
+#endif
 
 	tabla->in_gpio_handler = false;
 	TABLA_RELEASE_LOCK(tabla->codec_resource_lock);
@@ -7867,6 +8000,11 @@ static int tabla_mbhc_init_and_calibrate(struct tabla_priv *tabla)
 				 TABLA_IRQ_HPH_PA_OCPR_FAULT);
 
 		if (tabla->mbhc_cfg.gpio) {
+#ifdef CONFIG_MACH_APQ8064_ARIES
+			/* set gpio_irq from gpio on the fly */
+			if (!tabla->mbhc_cfg.gpio_irq)
+				tabla->mbhc_cfg.gpio_irq = gpio_to_irq(tabla->mbhc_cfg.gpio);
+#endif
 			ret = request_threaded_irq(tabla->mbhc_cfg.gpio_irq,
 					       NULL,
 					       tabla_mechanical_plug_detect_irq,
@@ -8308,6 +8446,9 @@ static const struct tabla_reg_mask_val tabla_codec_reg_init_val[] = {
 
 	/* config DMIC clk to CLK_MODE_1 (3.072Mhz@12.88Mhz mclk) */
 	{TABLA_A_CDC_CLK_DMIC_CTL, 0x2A, 0x2A},
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	{TABLA_A_MICB_2_CTL, 0x10, 0x00},
+#endif
 
 };
 

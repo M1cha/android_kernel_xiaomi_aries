@@ -21,4 +21,5 @@ void __init apq8064_aries_init(void) {
 
 	xiaomi_add_backlight_devices();
 	xiaomi_add_mhl_devices();
+	xiaomi_add_sound_devices();
 }

@@ -179,6 +179,9 @@ struct tabla_mbhc_config {
 	bool detect_extn_cable;
 	/* swap_gnd_mic returns true if extern GND/MIC swap switch toggled */
 	bool (*swap_gnd_mic) (struct snd_soc_codec *);
+#ifdef CONFIG_MACH_APQ8064_ARIES
+	int (*detection_setup) (int enable);
+#endif
 };
 
 extern int tabla_hs_detect(struct snd_soc_codec *codec,
