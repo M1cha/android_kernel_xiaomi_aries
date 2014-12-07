@@ -10,6 +10,10 @@
  * GNU General Public License for more details.
  *
  */
+#include <linux/of.h>
+#include <linux/of_address.h>
+#include <linux/of_platform.h>
+#include <linux/of_irq.h>
 #include <linux/kernel.h>
 #include <linux/bitops.h>
 #include <linux/platform_device.h>
@@ -1953,6 +1957,12 @@ static void __init apq8064_map_io(void)
 		pr_err("socinfo_init() failed!\n");
 }
 
+static struct of_device_id irq_match[] __initdata  = {
+	{ .compatible = "qcom,msm-qgic2", .data = gic_of_init, },
+	//{ .compatible = "qcom,msm-gpio", .data = msm_gpio_of_init, },
+	{}
+};
+
 static void __init apq8064_init_irq(void)
 {
 	struct msm_mpm_device_data *data = NULL;
@@ -1962,8 +1972,7 @@ static void __init apq8064_init_irq(void)
 #endif
 
 	msm_mpm_irq_extn_init(data);
-	gic_init(0, GIC_PPI_START, MSM_QGIC_DIST_BASE,
-						(void *)MSM_QGIC_CPU_BASE);
+	of_irq_init(irq_match);
 }
 
 static struct platform_device msm8064_device_saw_regulator_core0 = {
@@ -3537,6 +3546,12 @@ static void __init apq8064_cdp_init(void)
 	}
 }
 
+static const char *apq8064_dt_match[] = {
+	"qcom,apq8064",
+	"qcom,apq8064-mtp",
+	NULL
+};
+
 MACHINE_START(APQ8064_CDP, "QCT APQ8064 CDP")
 	.map_io = apq8064_map_io,
 	.reserve = apq8064_reserve,
@@ -3563,6 +3578,7 @@ MACHINE_START(APQ8064_MTP, "QCT APQ8064 MTP")
 	.init_early = apq8064_allocate_memory_regions,
 	.init_very_early = apq8064_early_reserve,
 	.restart = msm_restart,
+	.dt_compat = apq8064_dt_match,
 MACHINE_END
 
 MACHINE_START(APQ8064_LIQUID, "QCT APQ8064 LIQUID")

@@ -44,6 +44,7 @@ endif
 
 # APQ8064
    zreladdr-$(CONFIG_ARCH_APQ8064)	:= 0x80208000
+   dtb-$(CONFIG_ARCH_APQ8064)		+= apq8064-mtp.dtb
 
 # MSM8974
    zreladdr-$(CONFIG_ARCH_MSM8974)	:= 0x00008000

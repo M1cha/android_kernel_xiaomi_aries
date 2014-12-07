@@ -25,6 +25,8 @@
 #include "devices.h"
 #include "board-8064.h"
 
+#define CONFIG_XIAOMI_EARJACK_UART
+
 #if defined(CONFIG_KS8851) || defined(CONFIG_KS8851_MODULE)
 static struct gpiomux_setting gpio_eth_config = {
 	.pull = GPIOMUX_PULL_NONE,
