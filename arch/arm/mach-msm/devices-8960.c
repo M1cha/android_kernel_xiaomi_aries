@@ -4609,26 +4609,6 @@ static struct resource sglte_resources[] = {
 	},
 };
 
-static struct resource msm_gpio_resources[] = {
-	{
-		.start	= TLMM_MSM_SUMMARY_IRQ,
-		.end	= TLMM_MSM_SUMMARY_IRQ,
-		.flags	= IORESOURCE_IRQ,
-	},
-};
-
-static struct msm_gpio_pdata msm8960_gpio_pdata = {
-	.ngpio = 152,
-};
-
-struct platform_device msm_gpio_device = {
-	.name			= "msmgpio",
-	.id			= -1,
-	.num_resources		= ARRAY_SIZE(msm_gpio_resources),
-	.resource		= msm_gpio_resources,
-	.dev.platform_data	= &msm8960_gpio_pdata,
-};
-
 struct platform_device mdm_sglte_device = {
 	.name		= "mdm2_modem",
 	.id		= -1,

@@ -1959,7 +1959,7 @@ static void __init apq8064_map_io(void)
 
 static struct of_device_id irq_match[] __initdata  = {
 	{ .compatible = "qcom,msm-qgic2", .data = gic_of_init, },
-	//{ .compatible = "qcom,msm-gpio", .data = msm_gpio_of_init, },
+	{ .compatible = "qcom,msm-gpio", .data = msm_gpio_of_init_legacy, },
 	{}
 };
 
@@ -3360,7 +3360,6 @@ static void __init apq8064_common_init(void)
 
 	if (socinfo_get_pmic_model() == PMIC_MODEL_PM8917)
 		apq8064_pm8917_pdata_fixup();
-	platform_device_register(&msm_gpio_device);
 	if (cpu_is_apq8064ab())
 		apq8064ab_update_krait_spm();
 	if (cpu_is_krait_v3()) {
@@ -3495,6 +3494,9 @@ static void __init apq8064_allocate_memory_regions(void)
 
 static void __init apq8064_cdp_init(void)
 {
+	of_platform_populate(NULL, NULL, NULL, NULL);
+	of_platform_populate(of_find_node_by_path("/soc"), NULL, NULL, NULL);
+
 	if (meminfo_init(SYS_MEMORY, SZ_256M) < 0)
 		pr_err("meminfo_init() failed!\n");
 #ifdef CONFIG_TOUCHSCREEN_CYTTSP_I2C_QC

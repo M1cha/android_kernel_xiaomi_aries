@@ -230,6 +230,9 @@ static inline int msm_gpio_install_direct_irq(unsigned gpio, unsigned irq,
 #ifdef CONFIG_OF
 int __init msm_gpio_of_init(struct device_node *node,
 			    struct device_node *parent);
+
+int __init msm_gpio_of_init_legacy(struct device_node *node,
+				   struct device_node *parent);
 #endif
 
 #endif /* __ASM_ARCH_MSM_GPIO_H */

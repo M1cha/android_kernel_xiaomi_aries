@@ -1665,9 +1665,9 @@ void __init apq8064_init_gpiomux(void)
 	int rc;
 	int platform_version = socinfo_get_platform_version();
 
-	rc = msm_gpiomux_init(NR_GPIO_IRQS);
+	rc = msm_gpiomux_init_dt();
 	if (rc) {
-		pr_err(KERN_ERR "msm_gpiomux_init failed %d\n", rc);
+		pr_err("%s failed %d\n", __func__, rc);
 		return;
 	}
 
