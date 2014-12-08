@@ -43,4 +43,9 @@
 		ngpio = <152>;
 		interrupts = <0 16 0>;
 	};
+
+	qcom,iris-fm {
+		compatible = "qcom,iris_fm";
+	};
+
 };

@@ -1593,11 +1593,6 @@ static struct platform_device msm_device_wcnss_wlan = {
 	.dev		= {.platform_data = &qcom_wcnss_pdata},
 };
 
-static struct platform_device msm_device_iris_fm __devinitdata = {
-	.name = "iris_fm",
-	.id   = -1,
-};
-
 #ifdef CONFIG_QSEECOM
 /* qseecom bus scaling */
 static struct msm_bus_vectors qseecom_clks_init_vectors[] = {
@@ -2499,7 +2494,6 @@ static struct platform_device *common_devices[] __initdata = {
 	&apq8064_device_hsusb_host,
 	&android_usb_device,
 	&msm_device_wcnss_wlan,
-	&msm_device_iris_fm,
 	&apq8064_fmem_device,
 #ifdef CONFIG_ANDROID_PMEM
 #ifndef CONFIG_MSM_MULTIMEDIA_USE_ION
