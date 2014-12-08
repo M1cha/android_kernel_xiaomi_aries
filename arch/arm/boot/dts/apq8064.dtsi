@@ -17,14 +17,6 @@
 	compatible = "qcom,apq8064";
 	interrupt-parent = <&intc>;
 
-	intc: interrupt-controller@2000000 {
-		compatible = "qcom,msm-qgic2";
-		interrupt-controller;
-		#interrupt-cells = <3>;
-		reg = <0x02000000 0x1000>,
-		      <0x02002000 0x1000>;
-	};
-
 	soc: soc { };
 };
 
@@ -33,14 +25,22 @@
 	#size-cells = <1>;
 	ranges;
 
+	intc: interrupt-controller@2000000 {
+		compatible = "qcom,msm-qgic2";
+		interrupt-controller;
+		#interrupt-cells = <3>;
+		reg = <0x02000000 0x1000>,
+		      <0x02002000 0x1000>;
+	};
+
 	msmgpio: gpio@fa102000 {
-	        compatible = "qcom,msm-gpio";
-	        gpio-controller;
-	        #gpio-cells = <2>;
-	        interrupt-controller;
-	        #interrupt-cells = <2>;
-	        reg = <0xfa102000 0x4000>;
-			ngpio = <152>;
-			interrupts = <0 16 0>;
+		compatible = "qcom,msm-gpio";
+		gpio-controller;
+		#gpio-cells = <2>;
+		interrupt-controller;
+		#interrupt-cells = <2>;
+		reg = <0xfa102000 0x4000>;
+		ngpio = <152>;
+		interrupts = <0 16 0>;
 	};
 };
