@@ -2161,7 +2161,7 @@ static int wlan_hdd_cfg80211_start_bss(hdd_adapter_t *pHostapdAdapter,
 }
 
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(3,4,0))
-static int wlan_hdd_cfg80211_add_beacon(struct wiphy *wiphy,
+static int __wlan_hdd_cfg80211_add_beacon(struct wiphy *wiphy,
                                         struct net_device *dev,
                                         struct beacon_parameters *params)
 {
@@ -2212,7 +2212,20 @@ static int wlan_hdd_cfg80211_add_beacon(struct wiphy *wiphy,
     return status;
 }
 
-static int wlan_hdd_cfg80211_set_beacon(struct wiphy *wiphy,
+static int wlan_hdd_cfg80211_add_beacon(struct wiphy *wiphy,
+                                        struct net_device *dev,
+                                        struct beacon_parameters *params)
+{
+    int ret;
+
+    vos_ssr_protect(__func__);
+    ret = __wlan_hdd_cfg80211_add_beacon(wiphy, dev, params);
+    vos_ssr_unprotect(__func__);
+
+    return ret;
+}
+
+static int __wlan_hdd_cfg80211_set_beacon(struct wiphy *wiphy,
                                         struct net_device *dev,
                                         struct beacon_parameters *params)
 {
@@ -2263,13 +2276,26 @@ static int wlan_hdd_cfg80211_set_beacon(struct wiphy *wiphy,
     return status;
 }
 
+static int wlan_hdd_cfg80211_set_beacon(struct wiphy *wiphy,
+                                        struct net_device *dev,
+                                        struct beacon_parameters *params)
+{
+    int ret;
+
+    vos_ssr_protect(__func__);
+    ret = __wlan_hdd_cfg80211_set_beacon(wiphy, dev, params);
+    vos_ssr_unprotect(__func__);
+
+    return ret;
+}
+
 #endif //(LINUX_VERSION_CODE < KERNEL_VERSION(3,4,0))
 
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(3,4,0))
-static int wlan_hdd_cfg80211_del_beacon(struct wiphy *wiphy,
+static int __wlan_hdd_cfg80211_del_beacon(struct wiphy *wiphy,
                                         struct net_device *dev)
 #else
-static int wlan_hdd_cfg80211_stop_ap (struct wiphy *wiphy,
+static int __wlan_hdd_cfg80211_stop_ap (struct wiphy *wiphy,
                                       struct net_device *dev)
 #endif
 {
@@ -2412,9 +2438,35 @@ static int wlan_hdd_cfg80211_stop_ap (struct wiphy *wiphy,
     return status;
 }
 
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(3,4,0))
+static int wlan_hdd_cfg80211_del_beacon(struct wiphy *wiphy,
+                                        struct net_device *dev)
+{
+    int ret;
+
+    vos_ssr_protect(__func__);
+    ret = __wlan_hdd_cfg80211_del_beacon(wiphy, dev);
+    vos_ssr_unprotect(__func__);
+
+    return ret;
+}
+#else
+static int wlan_hdd_cfg80211_stop_ap(struct wiphy *wiphy,
+                                      struct net_device *dev)
+{
+    int ret;
+
+    vos_ssr_protect(__func__);
+    ret = __wlan_hdd_cfg80211_stop_ap(wiphy, dev);
+    vos_ssr_unprotect(__func__);
+
+    return ret;
+}
+#endif
+
 #if (LINUX_VERSION_CODE > KERNEL_VERSION(3,3,0))
 
-static int wlan_hdd_cfg80211_start_ap(struct wiphy *wiphy,
+static int __wlan_hdd_cfg80211_start_ap(struct wiphy *wiphy,
                                       struct net_device *dev,
                                       struct cfg80211_ap_settings *params)
 {
@@ -2490,8 +2542,20 @@ static int wlan_hdd_cfg80211_start_ap(struct wiphy *wiphy,
     return status;
 }
 
+static int wlan_hdd_cfg80211_start_ap(struct wiphy *wiphy,
+                                      struct net_device *dev,
+                                      struct cfg80211_ap_settings *params)
+{
+    int ret;
 
-static int wlan_hdd_cfg80211_change_beacon(struct wiphy *wiphy,
+    vos_ssr_protect(__func__);
+    ret = __wlan_hdd_cfg80211_start_ap(wiphy, dev, params);
+    vos_ssr_unprotect(__func__);
+
+    return ret;
+}
+
+static int __wlan_hdd_cfg80211_change_beacon(struct wiphy *wiphy,
                                         struct net_device *dev,
                                         struct cfg80211_beacon_data *params)
 {
@@ -2542,8 +2606,20 @@ static int wlan_hdd_cfg80211_change_beacon(struct wiphy *wiphy,
     return status;
 }
 
-#endif //(LINUX_VERSION_CODE > KERNEL_VERSION(3,3,0))
+static int wlan_hdd_cfg80211_change_beacon(struct wiphy *wiphy,
+                                        struct net_device *dev,
+                                        struct cfg80211_beacon_data *params)
+{
+    int ret;
 
+    vos_ssr_protect(__func__);
+    ret = __wlan_hdd_cfg80211_change_beacon(wiphy, dev, params);
+    vos_ssr_unprotect(__func__);
+
+    return ret;
+}
+
+#endif //(LINUX_VERSION_CODE > KERNEL_VERSION(3,3,0))
 
 static int wlan_hdd_cfg80211_change_bss (struct wiphy *wiphy,
                                       struct net_device *dev,
@@ -4653,13 +4729,6 @@ static eHalStatus hdd_cfg80211_scan_done_callback(tHalHandle halHandle,
         goto allow_suspend;
     }
 
-    /*
-     * setting up 0, just in case.
-     */
-    req->n_ssids = 0;
-    req->n_channels = 0;
-    req->ie = 0;
-
     pAdapter->request = NULL;
     /* Scan is no longer pending */
     pScanInfo->mScanPending = VOS_FALSE;
@@ -5290,9 +5359,13 @@ int wlan_hdd_cfg80211_connect_start( hdd_adapter_t  *pAdapter,
          */
         if (WLAN_HDD_INFRA_STATION == pAdapter->device_mode ||
             WLAN_HDD_P2P_CLIENT == pAdapter->device_mode)
+        {
+            VOS_TRACE( VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO,
+                   "%s: Set HDD connState to eConnectionState_Connecting",
+                   __func__);
             hdd_connSetConnectionState(WLAN_HDD_GET_STATION_CTX_PTR(pAdapter),
                                                  eConnectionState_Connecting);
-
+        }
         status = sme_RoamConnect( WLAN_HDD_GET_HAL_CTX(pAdapter),
                             pAdapter->sessionId, pRoamProfile, &roamId);
 
@@ -6079,7 +6152,6 @@ static int wlan_hdd_cfg80211_connect( struct wiphy *wiphy,
     EXIT();
     return status;
 }
-
 
 /*
  * FUNCTION: wlan_hdd_cfg80211_disconnect
@@ -7750,6 +7822,8 @@ static int wlan_hdd_cfg80211_sched_scan_start(struct wiphy *wiphy,
     v_U32_t num_channels_allowed = WNI_CFG_VALID_CHANNEL_LIST_LEN;
     eHalStatus status = eHAL_STATUS_FAILURE;
     int ret = 0;
+    hdd_config_t *pConfig = NULL;
+    v_U32_t num_ignore_dfs_ch = 0;
 
     if (NULL == pAdapter)
     {
@@ -7768,6 +7842,7 @@ static int wlan_hdd_cfg80211_sched_scan_start(struct wiphy *wiphy,
         return -EINVAL;
     }
 
+    pConfig = pHddCtx->cfg_ini;
     hHal = WLAN_HDD_GET_HAL_CTX(pAdapter);
     if (NULL == hHal)
     {
@@ -7837,18 +7912,43 @@ static int wlan_hdd_cfg80211_sched_scan_start(struct wiphy *wiphy,
     }
     /* Checking each channel against allowed channel list */
     num_ch = 0;
-    for (i = 0; i < request->n_channels; i++)
+    if (request->n_channels)
     {
-        for (indx = 0; indx < num_channels_allowed; indx++)
+        char chList [(request->n_channels*5)+1];
+        int len;
+        for (i = 0; i < request->n_channels; i++)
         {
-            if (request->channels[i]->hw_value == channels_allowed[indx])
+            for (indx = 0; indx < num_channels_allowed; indx++)
             {
-                valid_ch[num_ch++] = request->channels[i]->hw_value;
-                break ;
+                if (request->channels[i]->hw_value == channels_allowed[indx])
+                {
+                    if ((!pConfig->enableDFSPnoChnlScan) &&
+                     (NV_CHANNEL_DFS == vos_nv_getChannelEnabledState(channels_allowed[indx])))
+                    {
+                        VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO,
+                        "%s : Dropping DFS channel : %d",
+                        __func__,channels_allowed[indx]);
+                        num_ignore_dfs_ch++;
+                        break;
+                    }
+                    valid_ch[num_ch++] = request->channels[i]->hw_value;
+                    len += snprintf(chList+len, 5, "%d ",
+                                     request->channels[i]->hw_value);
+                    break ;
+                }
             }
         }
-    }
+        hddLog(VOS_TRACE_LEVEL_INFO,"Channel-List:  %s ", chList);
 
+        /*If all channels are DFS and dropped, then ignore the PNO request*/
+        if (num_ignore_dfs_ch == request->n_channels)
+        {
+            VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO,
+             "%s : All requested channels are DFS channels", __func__);
+            ret = -EINVAL;
+            goto error;
+        }
+     }
     /* Filling per profile  params */
     for (i = 0; i < pPnoRequest->ucNetworksCount; i++)
     {
