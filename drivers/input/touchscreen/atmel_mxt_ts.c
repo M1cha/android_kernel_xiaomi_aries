@@ -315,7 +315,7 @@ enum mxt_device_state { INIT, APPMODE, BOOTLOADER };
 /* Touchscreen absolute values */
 #define MXT_MAX_AREA		0xff
 
-#define MXT_MAX_FINGER		4
+#define MXT_MAX_FINGER		16
 
 #define T7_DATA_SIZE		3
 #define T8_DATA_SIZE		10
