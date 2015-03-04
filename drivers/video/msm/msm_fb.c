@@ -3880,6 +3880,13 @@ static int msmfb_display_commit(struct fb_info *info,
 {
 	int ret;
 	struct mdp_display_commit disp_commit;
+	static int blon = 3;
+
+	if (blon) {
+		blon -= 1;
+		return 0;
+	}
+
 	ret = copy_from_user(&disp_commit, argp,
 			sizeof(disp_commit));
 	if (ret) {
