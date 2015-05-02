@@ -217,6 +217,14 @@ static int inode_alloc_security(struct inode *inode)
 	return 0;
 }
 
+static void inode_free_rcu(struct rcu_head *head)
+{
+	struct inode_security_struct *isec;
+
+	isec = container_of(head, struct inode_security_struct, rcu);
+	kmem_cache_free(sel_inode_cache, isec);
+}
+
 static void inode_free_security(struct inode *inode)
 {
 	struct inode_security_struct *isec = inode->i_security;
@@ -227,8 +235,16 @@ static void inode_free_security(struct inode *inode)
 		list_del_init(&isec->list);
 	spin_unlock(&sbsec->isec_lock);
 
-	inode->i_security = NULL;
-	kmem_cache_free(sel_inode_cache, isec);
+	/*
+	 * The inode may still be referenced in a path walk and
+	 * a call to selinux_inode_permission() can be made
+	 * after inode_free_security() is called. Ideally, the VFS
+	 * wouldn't do this, but fixing that is a much harder
+	 * job. For now, simply free the i_security via RCU, and
+	 * leave the current inode->i_security pointer intact.
+	 * The inode will be freed after the RCU grace period too.
+	 */
+	call_rcu(&isec->rcu, inode_free_rcu);
 }
 
 static int file_alloc_security(struct file *file)
@@ -401,8 +417,11 @@ static int sb_finish_set_opts(struct super_block *sb)
 	    sbsec->behavior > ARRAY_SIZE(labeling_behaviors))
 		sbsec->flags &= ~SE_SBLABELSUPP;
 
-	/* Special handling for sysfs. Is genfs but also has setxattr handler*/
-	if (strncmp(sb->s_type->name, "sysfs", sizeof("sysfs")) == 0)
+	/* Special handling. Is genfs but also has in-core setxattr handler*/
+	if (!strcmp(sb->s_type->name, "sysfs") ||
+	    !strcmp(sb->s_type->name, "pstore") ||
+	    !strcmp(sb->s_type->name, "debugfs") ||
+	    !strcmp(sb->s_type->name, "rootfs"))
 		sbsec->flags |= SE_SBLABELSUPP;
 
 	/* Initialize the root inode. */
@@ -419,6 +438,7 @@ next_inode:
 				list_entry(sbsec->isec_head.next,
 					   struct inode_security_struct, list);
 		struct inode *inode = isec->inode;
+		list_del_init(&isec->list);
 		spin_unlock(&sbsec->isec_lock);
 		inode = igrab(inode);
 		if (inode) {
@@ -427,7 +447,6 @@ next_inode:
 			iput(inode);
 		}
 		spin_lock(&sbsec->isec_lock);
-		list_del_init(&isec->list);
 		goto next_inode;
 	}
 	spin_unlock(&sbsec->isec_lock);
@@ -2077,6 +2096,13 @@ static int selinux_bprm_set_creds(struct linux_binprm *bprm)
 		new_tsec->sid = old_tsec->exec_sid;
 		/* Reset exec SID on execve. */
 		new_tsec->exec_sid = 0;
+
+		/*
+		 * Minimize confusion: if no_new_privs and a transition is
+		 * explicitly requested, then fail the exec.
+		 */
+		if (bprm->unsafe & LSM_UNSAFE_NO_NEW_PRIVS)
+			return -EPERM;
 	} else {
 		/* Check for a default transition on this program. */
 		rc = security_transition_sid(old_tsec->sid, isec->sid,
@@ -2090,7 +2116,8 @@ static int selinux_bprm_set_creds(struct linux_binprm *bprm)
 	ad.selinux_audit_data = &sad;
 	ad.u.path = bprm->file->f_path;
 
-	if (bprm->file->f_path.mnt->mnt_flags & MNT_NOSUID)
+	if ((bprm->file->f_path.mnt->mnt_flags & MNT_NOSUID) ||
+	    (bprm->unsafe & LSM_UNSAFE_NO_NEW_PRIVS))
 		new_tsec->sid = old_tsec->sid;
 
 	if (new_tsec->sid == old_tsec->sid) {
@@ -3046,6 +3073,46 @@ static void selinux_file_free_security(struct file *file)
 	file_free_security(file);
 }
 
+/*
+ * Check whether a task has the ioctl permission and cmd
+ * operation to an inode.
+ */
+int ioctl_has_perm(const struct cred *cred, struct file *file,
+		u32 requested, u16 cmd)
+{
+	struct common_audit_data ad;
+	struct file_security_struct *fsec = file->f_security;
+	struct inode *inode = file->f_path.dentry->d_inode;
+	struct inode_security_struct *isec = inode->i_security;
+	struct lsm_ioctlop_audit ioctl;
+	u32 ssid = cred_sid(cred);
+	struct selinux_audit_data sad = {0,};
+	int rc;
+
+	COMMON_AUDIT_DATA_INIT(&ad, IOCTL_OP);
+	ad.u.op = &ioctl;
+	ad.u.op->cmd = cmd;
+	ad.u.op->path = file->f_path;
+	ad.selinux_audit_data = &sad;
+
+	if (ssid != fsec->sid) {
+		rc = avc_has_perm(ssid, fsec->sid,
+				SECCLASS_FD,
+				FD__USE,
+				&ad);
+		if (rc)
+			goto out;
+	}
+
+	if (unlikely(IS_PRIVATE(inode)))
+		return 0;
+
+	rc = avc_has_operation(ssid, isec->sid, isec->sclass,
+			requested, cmd, &ad);
+out:
+	return rc;
+}
+
 static int selinux_file_ioctl(struct file *file, unsigned int cmd,
 			      unsigned long arg)
 {
@@ -3088,7 +3155,7 @@ static int selinux_file_ioctl(struct file *file, unsigned int cmd,
 	 * to the file's ioctl() function.
 	 */
 	default:
-		error = file_has_perm(cred, file, FILE__IOCTL);
+		error = ioctl_has_perm(cred, file, FILE__IOCTL, (u16) cmd);
 	}
 	return error;
 }

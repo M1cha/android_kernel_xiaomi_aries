@@ -31,6 +31,7 @@
 #include <linux/delay.h>
 #include <linux/mutex.h>
 #include <linux/rtc.h>
+#include <linux/wakelock.h>
 
 #define BMS_CONTROL		0x224
 #define BMS_S1_DELAY		0x225

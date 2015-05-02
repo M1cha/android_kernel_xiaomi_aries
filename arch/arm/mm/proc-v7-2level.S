@@ -55,14 +55,9 @@ ENTRY(cpu_v7_switch_mm)
 	and     r1, r1, #0xff
 	orr     r1, r1, r2                      @ insert the PID into r1
 #endif
-	mcr	p15, 0, r2, c13, c0, 1		@ set reserved context ID
+	mcr	p15, 0, r1, c13, c0, 1		@ set reserved context ID
 	isb
-1:	mcr	p15, 0, r0, c2, c0, 0		@ set TTB 0
-	isb
-#ifdef CONFIG_ARM_ERRATA_754322
-	dsb
-#endif
-	mcr	p15, 0, r1, c13, c0, 1		@ set context ID
+	mcr	p15, 0, r0, c2, c0, 0		@ set TTB 0
 	isb
 #endif
 	mov	pc, lr
