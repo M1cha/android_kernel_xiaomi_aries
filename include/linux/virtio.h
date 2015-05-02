@@ -194,22 +194,6 @@ static inline void virtqueue_disable_cb(struct virtqueue *vq)
 }
 
 /**
- * virtqueue_enable_cb - restart callbacks after disable_cb.
- * @vq: the struct virtqueue we're talking about.
- *
- * This re-enables callbacks; it returns "false" if there are pending
- * buffers in the queue, to detect a possible race between the driver
- * checking for more work, and enabling callbacks.
- *
- * Caller must ensure we don't call this with other virtqueue
- * operations at the same time (except where noted).
- */
-static inline bool virtqueue_enable_cb(struct virtqueue *vq)
-{
-	return vq->vq_ops->enable_cb(vq);
-}
-
-/**
  * virtqueue_enable_cb_delayed - restart callbacks after disable_cb.
  * @vq: the struct virtqueue we're talking about.
  *

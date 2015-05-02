@@ -1771,6 +1771,51 @@ free_interfaces:
 		goto free_interfaces;
 	}
 
+	/*
+	 * Initialize the new interface structures and the
+	 * hc/hcd/usbcore interface/endpoint state.
+	 */
+	for (i = 0; i < nintf; ++i) {
+		struct usb_interface_cache *intfc;
+		struct usb_interface *intf;
+		struct usb_host_interface *alt;
+
+		cp->interface[i] = intf = new_interfaces[i];
+		intfc = cp->intf_cache[i];
+		intf->altsetting = intfc->altsetting;
+		intf->num_altsetting = intfc->num_altsetting;
+		kref_get(&intfc->ref);
+
+		alt = usb_altnum_to_altsetting(intf, 0);
+
+		/* No altsetting 0?  We'll assume the first altsetting.
+		 * We could use a GetInterface call, but if a device is
+		 * so non-compliant that it doesn't have altsetting 0
+		 * then I wouldn't trust its reply anyway.
+		 */
+		if (!alt)
+			alt = &intf->altsetting[0];
+
+		intf->intf_assoc =
+			find_iad(dev, cp, alt->desc.bInterfaceNumber);
+		intf->cur_altsetting = alt;
+		usb_enable_interface(dev, intf, true);
+		intf->dev.parent = &dev->dev;
+		intf->dev.driver = NULL;
+		intf->dev.bus = &usb_bus_type;
+		intf->dev.type = &usb_if_device_type;
+		intf->dev.groups = usb_interface_groups;
+		intf->dev.dma_mask = dev->dev.dma_mask;
+		INIT_WORK(&intf->reset_ws, __usb_queue_reset_device);
+		intf->minor = -1;
+		device_initialize(&intf->dev);
+		pm_runtime_no_callbacks(&intf->dev);
+		dev_set_name(&intf->dev, "%d-%s:%d.%d",
+			dev->bus->busnum, dev->devpath,
+			configuration, alt->desc.bInterfaceNumber);
+	}
+	kfree(new_interfaces);
+
 	dev->actconfig = cp;
 	if (cp)
 		usb_notify_config_device(dev);
@@ -1794,49 +1839,6 @@ free_interfaces:
 	}
 	mutex_unlock(hcd->bandwidth_mutex);
 	usb_set_device_state(dev, USB_STATE_CONFIGURED);
-
-	/* Initialize the new interface structures and the
-	 * hc/hcd/usbcore interface/endpoint state.
-	 */
-	for (i = 0; i < nintf; ++i) {
-		struct usb_interface_cache *intfc;
-		struct usb_interface *intf;
-		struct usb_host_interface *alt;
-
-		cp->interface[i] = intf = new_interfaces[i];
-		intfc = cp->intf_cache[i];
-		intf->altsetting = intfc->altsetting;
-		intf->num_altsetting = intfc->num_altsetting;
-		intf->intf_assoc = find_iad(dev, cp, i);
-		kref_get(&intfc->ref);
-
-		alt = usb_altnum_to_altsetting(intf, 0);
-
-		/* No altsetting 0?  We'll assume the first altsetting.
-		 * We could use a GetInterface call, but if a device is
-		 * so non-compliant that it doesn't have altsetting 0
-		 * then I wouldn't trust its reply anyway.
-		 */
-		if (!alt)
-			alt = &intf->altsetting[0];
-
-		intf->cur_altsetting = alt;
-		usb_enable_interface(dev, intf, true);
-		intf->dev.parent = &dev->dev;
-		intf->dev.driver = NULL;
-		intf->dev.bus = &usb_bus_type;
-		intf->dev.type = &usb_if_device_type;
-		intf->dev.groups = usb_interface_groups;
-		intf->dev.dma_mask = dev->dev.dma_mask;
-		INIT_WORK(&intf->reset_ws, __usb_queue_reset_device);
-		intf->minor = -1;
-		device_initialize(&intf->dev);
-		pm_runtime_no_callbacks(&intf->dev);
-		dev_set_name(&intf->dev, "%d-%s:%d.%d",
-			dev->bus->busnum, dev->devpath,
-			configuration, alt->desc.bInterfaceNumber);
-	}
-	kfree(new_interfaces);
 
 	if (cp->string == NULL &&
 			!(dev->quirks & USB_QUIRK_CONFIG_INTF_STRINGS))
