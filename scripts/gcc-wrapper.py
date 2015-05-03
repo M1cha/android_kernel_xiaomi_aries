@@ -57,7 +57,7 @@ allowed_warnings = set([
    "LegalizeDAG.cpp:3646",
    "IRBuilder.h:844",
    "DataLayout.cpp:193",
-   "transport.c:653",
+   "transport.c:660",
    "xt_socket.c:307",
    "xt_socket.c:161",
    "inet_hashtables.h:356",

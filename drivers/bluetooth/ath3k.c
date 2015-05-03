@@ -61,17 +61,38 @@ static struct usb_device_id ath3k_table[] = {
 	{ USB_DEVICE(0x0CF3, 0x3000) },
 
 	/* Atheros AR3011 with sflash firmware*/
+	{ USB_DEVICE(0x0489, 0xE027) },
+	{ USB_DEVICE(0x0489, 0xE03D) },
+	{ USB_DEVICE(0x0930, 0x0215) },
 	{ USB_DEVICE(0x0CF3, 0x3002) },
 
 	/* Atheros AR9285 Malbec with sflash firmware */
 	{ USB_DEVICE(0x03F0, 0x311D) },
 
 	/* Atheros AR3012 with sflash firmware*/
+	{ USB_DEVICE(0x0489, 0xe04d) },
+	{ USB_DEVICE(0x0489, 0xe04e) },
+	{ USB_DEVICE(0x0489, 0xe057) },
+	{ USB_DEVICE(0x0489, 0xe056) },
+	{ USB_DEVICE(0x0489, 0xe078) },
+	{ USB_DEVICE(0x04c5, 0x1330) },
+	{ USB_DEVICE(0x04CA, 0x3004) },
+	{ USB_DEVICE(0x04CA, 0x3005) },
+	{ USB_DEVICE(0x04CA, 0x3006) },
+	{ USB_DEVICE(0x04CA, 0x3008) },
+	{ USB_DEVICE(0x04CA, 0x3010) },
+	{ USB_DEVICE(0x0930, 0x0219) },
+	{ USB_DEVICE(0x0930, 0x0227) },
+	{ USB_DEVICE(0x0b05, 0x17d0) },
 	{ USB_DEVICE(0x0CF3, 0x0036) },
 	{ USB_DEVICE(0x0CF3, 0x3004) },
 
 	/* Atheros AR5BBU12 with sflash firmware */
 	{ USB_DEVICE(0x0489, 0xE02C) },
+
+	/* Atheros AR5BBU22 with sflash firmware */
+	{ USB_DEVICE(0x0489, 0xE036) },
+	{ USB_DEVICE(0x0489, 0xE03C) },
 
 	{ }	/* Terminating entry */
 };
@@ -84,6 +105,20 @@ MODULE_DEVICE_TABLE(usb, ath3k_table);
 static struct usb_device_id ath3k_blist_tbl[] = {
 
 	/* Atheros AR3012 with sflash firmware*/
+	{ USB_DEVICE(0x0489, 0xe04e), .driver_info = BTUSB_ATH3012 },
+	{ USB_DEVICE(0x0489, 0xe04d), .driver_info = BTUSB_ATH3012 },
+	{ USB_DEVICE(0x0489, 0xe056), .driver_info = BTUSB_ATH3012 },
+	{ USB_DEVICE(0x0489, 0xe057), .driver_info = BTUSB_ATH3012 },
+	{ USB_DEVICE(0x0489, 0xe078), .driver_info = BTUSB_ATH3012 },
+	{ USB_DEVICE(0x04c5, 0x1330), .driver_info = BTUSB_ATH3012 },
+	{ USB_DEVICE(0x04ca, 0x3004), .driver_info = BTUSB_ATH3012 },
+	{ USB_DEVICE(0x04ca, 0x3005), .driver_info = BTUSB_ATH3012 },
+	{ USB_DEVICE(0x04ca, 0x3006), .driver_info = BTUSB_ATH3012 },
+	{ USB_DEVICE(0x04ca, 0x3008), .driver_info = BTUSB_ATH3012 },
+	{ USB_DEVICE(0x04ca, 0x3010), .driver_info = BTUSB_ATH3012 },
+	{ USB_DEVICE(0x0930, 0x0219), .driver_info = BTUSB_ATH3012 },
+	{ USB_DEVICE(0x0930, 0x0227), .driver_info = BTUSB_ATH3012 },
+	{ USB_DEVICE(0x0b05, 0x17d0), .driver_info = BTUSB_ATH3012 },
 	{ USB_DEVICE(0x0CF3, 0x0036), .driver_info = BTUSB_ATH3012 },
 	{ USB_DEVICE(0x0cf3, 0x3004), .driver_info = BTUSB_ATH3012 },
 
@@ -93,6 +128,8 @@ static struct usb_device_id ath3k_blist_tbl[] = {
 #define USB_REQ_DFU_DNLOAD	1
 #define BULK_SIZE		4096
 #define FW_HDR_SIZE		20
+#define TIMEGAP_USEC_MIN	50
+#define TIMEGAP_USEC_MAX	100
 
 static int ath3k_load_firmware(struct usb_device *udev,
 				const struct firmware *firmware)
@@ -123,6 +160,9 @@ static int ath3k_load_firmware(struct usb_device *udev,
 	count -= 20;
 
 	while (count) {
+		/* workaround the compatibility issue with xHCI controller*/
+		usleep_range(TIMEGAP_USEC_MIN, TIMEGAP_USEC_MAX);
+
 		size = min_t(uint, count, BULK_SIZE);
 		pipe = usb_sndbulkpipe(udev, 0x02);
 		memcpy(send_buf, firmware->data + sent, size);
@@ -199,6 +239,9 @@ static int ath3k_load_fwfile(struct usb_device *udev,
 	count -= size;
 
 	while (count) {
+		/* workaround the compatibility issue with xHCI controller*/
+		usleep_range(TIMEGAP_USEC_MIN, TIMEGAP_USEC_MAX);
+
 		size = min_t(uint, count, BULK_SIZE);
 		pipe = usb_sndbulkpipe(udev, 0x02);
 
