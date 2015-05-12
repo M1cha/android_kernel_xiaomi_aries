@@ -329,10 +329,10 @@ static irqreturn_t mdm_vddmin_change(int irq, void *dev_id)
 	value = gpio_get_value(
 	   vddmin_res->mdm2ap_vddmin_gpio);
 	if (value == 0)
-		pr_info("External Modem id %d entered Vddmin\n",
+		pr_debug("External Modem id %d entered Vddmin\n",
 				mdev->mdm_data.device_id);
 	else
-		pr_info("External Modem id %d exited Vddmin\n",
+		pr_debug("External Modem id %d exited Vddmin\n",
 				mdev->mdm_data.device_id);
 handled:
 	return IRQ_HANDLED;
