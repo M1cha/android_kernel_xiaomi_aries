@@ -306,11 +306,12 @@ static struct pm8xxx_misc_platform_data apq8064_pm8921_misc_pdata = {
 #endif
 #define PM8921_LC_LED_LOW_CURRENT	1	/* I = 1mA */
 #define PM8XXX_LED_PWM_PERIOD		1000
-#ifdef CONFIG_MACH_APQ8064_ARIES
-#define PM8XXX_LED_PWM_DUTY_MS		30
-#else
-#define PM8XXX_LED_PWM_DUTY_MS		20
-#endif
+#define PM8XXX_LED_PWM_DUTY_MS		50
+#define PM8XXX_LED_PWM_DUTY_PCTS  16
+#define PM8XXX_LED_PWM_START_IDX0 16
+#define PM8XXX_LED_PWM_START_IDX1 32
+#define PM8XXX_LED_PWM_START_IDX2 48
+
 /**
  * PM8XXX_PWM_CHANNEL_NONE shall be used when LED shall not be
  * driven using PWM feature.
@@ -319,17 +320,14 @@ static struct pm8xxx_misc_platform_data apq8064_pm8921_misc_pdata = {
 
 static struct led_info pm8921_led_info[] = {
 	[0] = {
-		.name			= "led:red",
-		.default_trigger	= "battery-charging",
+		.name			= "red",
 	},
 	[1] = {
-		.name			= "led:green",
-		.default_trigger	= "battery-full",
+		.name			= "green",
 	},
 #ifdef CONFIG_MACH_APQ8064_ARIES
 	[2] = {
-		.name			= "led:blue",
-		.default_trigger	= "dc-online",
+		.name			= "blue",
 	},
 #endif
 };
@@ -339,37 +337,32 @@ static struct led_platform_data pm8921_led_core_pdata = {
 	.leds = pm8921_led_info,
 };
 
-#ifdef CONFIG_MACH_APQ8064_ARIES
-static int pm8921_led0_pwm_duty_pcts[60] = {
-	0, 0, 0, 1, 1, 2, 3, 4, 5, 6,
-	7, 9, 10, 12, 13, 15, 16, 18, 19, 21,
-	22, 24, 25, 26, 27, 28, 28, 29, 29, 30,
-	30, 30, 29, 29, 28, 28, 27, 26, 25, 24,
-	22, 21, 19, 18, 16, 15, 13, 12, 10, 9,
-	7, 6, 5, 4, 3, 2, 1, 1, 0, 0
-};
-#else
-static int pm8921_led0_pwm_duty_pcts[56] = {
-	1, 4, 8, 12, 16, 20, 24, 28, 32, 36,
-	40, 44, 46, 52, 56, 60, 64, 68, 72, 76,
-	80, 84, 88, 92, 96, 100, 100, 100, 98, 95,
-	92, 88, 84, 82, 78, 74, 70, 66, 62, 58,
-	58, 54, 50, 48, 42, 38, 34, 30, 26, 22,
-	14, 10, 6, 4, 1
-};
-#endif
+static int pm8921_led0_pwm_duty_pcts[PM8XXX_LED_PWM_DUTY_PCTS] = {0,};
+static int pm8921_led1_pwm_duty_pcts[PM8XXX_LED_PWM_DUTY_PCTS] = {0,};
+static int pm8921_led2_pwm_duty_pcts[PM8XXX_LED_PWM_DUTY_PCTS] = {0,};
 
-/*
- * Note: There is a bug in LPG module that results in incorrect
- * behavior of pattern when LUT index 0 is used. So effectively
- * there are 63 usable LUT entries.
- */
 static struct pm8xxx_pwm_duty_cycles pm8921_led0_pwm_duty_cycles = {
 	.duty_pcts = (int *)&pm8921_led0_pwm_duty_pcts,
-	.num_duty_pcts = ARRAY_SIZE(pm8921_led0_pwm_duty_pcts),
+	.num_duty_pcts = PM8XXX_LED_PWM_DUTY_PCTS,
 	.duty_ms = PM8XXX_LED_PWM_DUTY_MS,
-	.start_idx = 1,
+	.start_idx = PM8XXX_LED_PWM_START_IDX0,
 };
+
+static struct pm8xxx_pwm_duty_cycles pm8921_led1_pwm_duty_cycles = {
+	.duty_pcts = (int *)&pm8921_led1_pwm_duty_pcts,
+	.num_duty_pcts = PM8XXX_LED_PWM_DUTY_PCTS,
+	.duty_ms = PM8XXX_LED_PWM_DUTY_MS,
+	.start_idx = PM8XXX_LED_PWM_START_IDX1,
+};
+
+#ifdef CONFIG_MACH_APQ8064_ARIES
+static struct pm8xxx_pwm_duty_cycles pm8921_led2_pwm_duty_cycles = {
+	.duty_pcts = (int *)&pm8921_led2_pwm_duty_pcts,
+	.num_duty_pcts = PM8XXX_LED_PWM_DUTY_PCTS,
+	.duty_ms = PM8XXX_LED_PWM_DUTY_MS,
+	.start_idx = PM8XXX_LED_PWM_START_IDX2,
+};
+#endif
 
 static struct pm8xxx_led_config pm8921_led_configs[] = {
 	[0] = {
@@ -394,7 +387,7 @@ static struct pm8xxx_led_config pm8921_led_configs[] = {
 		.pwm_channel = 4,
 #endif
 		.pwm_period_us = PM8XXX_LED_PWM_PERIOD,
-		.pwm_duty_cycles = &pm8921_led0_pwm_duty_cycles,
+		.pwm_duty_cycles = &pm8921_led1_pwm_duty_cycles,
 	},
 #ifdef CONFIG_MACH_APQ8064_ARIES
 	[2] = {
@@ -403,7 +396,7 @@ static struct pm8xxx_led_config pm8921_led_configs[] = {
 		.max_current = PM8921_LC_LED_MAX_CURRENT,
 		.pwm_channel = 4,
 		.pwm_period_us = PM8XXX_LED_PWM_PERIOD,
-		.pwm_duty_cycles = &pm8921_led0_pwm_duty_cycles,
+		.pwm_duty_cycles = &pm8921_led2_pwm_duty_cycles,
 	},
 #endif
 };
@@ -412,6 +405,7 @@ static struct pm8xxx_led_platform_data apq8064_pm8921_leds_pdata = {
 		.led_core = &pm8921_led_core_pdata,
 		.configs = pm8921_led_configs,
 		.num_configs = ARRAY_SIZE(pm8921_led_configs),
+		.use_pwm = 1,
 };
 
 static struct pm8xxx_adc_amux apq8064_pm8921_adc_channels_data[] = {
