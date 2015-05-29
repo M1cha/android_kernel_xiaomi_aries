@@ -14,6 +14,7 @@
 #include <linux/init.h>
 #include <linux/bug.h>
 #include <linux/mfd/pm8xxx/pm8xxx-adc.h>
+#include <mach/board_xiaomi.h>
 
 #include "board-aries.h"
 #include "board-aries-pmic.h"
@@ -25,6 +26,7 @@ void __init apq8064_aries_init(void) {
 	apq8064_aries_init_fb();
 	apq8064_init_input();
 
+	xiaomi_add_ramconsole_devices();
 	xiaomi_add_backlight_devices();
 	xiaomi_add_mhl_devices();
 	xiaomi_add_sound_devices();

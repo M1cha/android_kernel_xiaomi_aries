@@ -82,6 +82,10 @@
 #include <mach/msm_iomap.h>
 #include <mach/msm_serial_hs.h>
 
+#ifdef CONFIG_MACH_XIAOMI
+#include <mach/board_xiaomi.h>
+#endif
+
 #ifdef CONFIG_MACH_APQ8064_ARIES
 #include "xiaomi/aries/board-aries.h"
 #endif
@@ -753,6 +757,9 @@ static void __init apq8064_reserve(void)
 	apq8064_set_display_params(prim_panel_name, ext_panel_name,
 		ext_resolution);
 	msm_reserve();
+#ifdef CONFIG_MACH_XIAOMI
+	xiaomi_reserve();
+#endif
 }
 
 static void __init apq8064_early_reserve(void)
