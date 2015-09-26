@@ -652,7 +652,14 @@ void __init dump_machine_table(void)
 
 int __init arm_add_memory(u64 start, u64 size)
 {
+	struct membank *bank = &meminfo.bank[meminfo.nr_banks];
 	u64 aligned_start;
+
+	if (meminfo.nr_banks >= NR_BANKS) {
+		pr_crit("NR_BANKS too low, ignoring memory at 0x%08llx\n",
+			(long long)start);
+		return -EINVAL;
+	}
 
 	/*
 	 * Ensure that start/size are aligned to a page boundary.
@@ -694,17 +701,17 @@ int __init arm_add_memory(u64 start, u64 size)
 		aligned_start = PHYS_OFFSET;
 	}
 
-	start = aligned_start;
-	size = size & ~(phys_addr_t)(PAGE_SIZE - 1);
+	bank->start = aligned_start;
+	bank->size = size & ~(phys_addr_t)(PAGE_SIZE - 1);
 
 	/*
 	 * Check whether this memory region has non-zero size or
 	 * invalid node number.
 	 */
-	if (size == 0)
+	if (bank->size == 0)
 		return -EINVAL;
 
-	memblock_add(start, size);
+	meminfo.nr_banks++;
 	return 0;
 }
 
@@ -712,7 +719,6 @@ int __init arm_add_memory(u64 start, u64 size)
  * Pick out the memory size.  We look for mem=size@start,
  * where start and size are "size[KkMm]"
  */
-
 static int __init early_mem(char *p)
 {
 	static int usermem __initdata = 0;
@@ -727,8 +733,7 @@ static int __init early_mem(char *p)
 	 */
 	if (usermem == 0) {
 		usermem = 1;
-		memblock_remove(memblock_start_of_DRAM(),
-			memblock_end_of_DRAM() - memblock_start_of_DRAM());
+		meminfo.nr_banks = 0;
 	}
 
 	start = PHYS_OFFSET;
@@ -873,6 +878,13 @@ static void __init reserve_crashkernel(void)
 static inline void reserve_crashkernel(void) {}
 #endif /* CONFIG_KEXEC */
 
+static int __init meminfo_cmp(const void *_a, const void *_b)
+{
+	const struct membank *a = _a, *b = _b;
+	long cmp = bank_pfn_start(a) - bank_pfn_start(b);
+	return cmp < 0 ? -1 : cmp > 0 ? 1 : 0;
+}
+
 void __init hyp_mode_check(void)
 {
 #ifdef CONFIG_ARM_VIRT_EXT
@@ -918,10 +930,12 @@ void __init setup_arch(char **cmdline_p)
 	if (mdesc->init_very_early)
 		mdesc->init_very_early();
 
+	sort(&meminfo.bank, meminfo.nr_banks, sizeof(meminfo.bank[0]), meminfo_cmp, NULL);
+
 	early_paging_init(mdesc, lookup_processor_type(read_cpuid_id()));
 	setup_dma_zone(mdesc);
 	sanity_check_meminfo();
-	arm_memblock_init(mdesc);
+	arm_memblock_init(&meminfo, mdesc);
 
 	paging_init(mdesc);
 	request_standard_resources(mdesc);

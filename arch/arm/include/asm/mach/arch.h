@@ -14,6 +14,7 @@
 #include <linux/reboot.h>
 
 struct tag;
+struct meminfo;
 struct pt_regs;
 struct smp_operations;
 #ifdef CONFIG_SMP
@@ -49,7 +50,8 @@ struct machine_desc {
 	void			(*l2c_write_sec)(unsigned long, unsigned);
 	struct smp_operations	*smp;		/* SMP operations	*/
 	bool			(*smp_init)(void);
-	void			(*fixup)(struct tag *, char **);
+	void			(*fixup)(struct tag *, char **,
+					 struct meminfo *);
 	void			(*dt_fixup)(void);
 	void			(*init_meminfo)(void);
 	void			(*reserve)(void);/* reserve mem blocks	*/
