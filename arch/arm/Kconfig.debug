@@ -388,41 +388,6 @@ choice
 		  Say Y here if you want kernel low-level debugging support
 		  on MMP UART3.
 
-	config DEBUG_MSM_UART
-		bool "Kernel low-level debugging messages via MSM UART"
-		depends on ARCH_MSM
-		help
-		  Say Y here if you want the debug print routines to direct
-		  their output to the serial port on MSM devices.
-
-		  ARCH                DEBUG_UART_PHYS   DEBUG_UART_BASE   #
-		  MSM7X00A, QSD8X50   0xa9a00000        0xe1000000        UART1
-		  MSM7X00A, QSD8X50   0xa9b00000        0xe1000000        UART2
-		  MSM7X00A, QSD8X50   0xa9c00000        0xe1000000        UART3
-
-		  MSM7X30             0xaca00000        0xe1000000        UART1
-		  MSM7X30             0xacb00000        0xe1000000        UART2
-		  MSM7X30             0xacc00000        0xe1000000        UART3
-
-		  Please adjust DEBUG_UART_PHYS and DEBUG_UART_BASE configuration
-		  options based on your needs.
-
-	config DEBUG_QCOM_UARTDM
-		bool "Kernel low-level debugging messages via QCOM UARTDM"
-		depends on ARCH_QCOM
-		help
-		  Say Y here if you want the debug print routines to direct
-		  their output to the serial port on Qualcomm devices.
-
-		  ARCH      DEBUG_UART_PHYS   DEBUG_UART_BASE
-		  APQ8084   0xf995e000        0xfa75e000
-		  MSM8X60   0x19c40000        0xf0040000
-		  MSM8960   0x16440000        0xf0040000
-		  MSM8974   0xf991e000        0xfa71e000
-
-		  Please adjust DEBUG_UART_PHYS and DEBUG_UART_BASE configuration
-		  options based on your needs.
-
 	config DEBUG_MVEBU_UART
 		bool "Kernel low-level debugging messages via MVEBU UART (old bootloaders)"
 		depends on ARCH_MVEBU
