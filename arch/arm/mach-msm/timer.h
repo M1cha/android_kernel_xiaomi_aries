@@ -16,6 +16,7 @@
 
 extern struct sys_timer msm_timer;
 
+void msm_timer_init(void);
 uint32_t msm_timer_get_sclk_ticks(void);
 int msm_timer_init_time_sync(void (*timeout)(void));
 #ifndef CONFIG_ARM_ARCH_TIMER

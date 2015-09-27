@@ -615,7 +615,7 @@ MPD_ALGO_PARAM(hp_dw_max_ms, hp_latencies.hp_dw_max_ms);
 MPD_ALGO_PARAM(hp_dw_ms, hp_latencies.hp_dw_ms);
 MPD_ALGO_PARAM(hp_dw_count, hp_latencies.hp_dw_count);
 
-static int __devinit msm_mpd_probe(struct platform_device *pdev)
+static int msm_mpd_probe(struct platform_device *pdev)
 {
 	struct kobject *module_kobj = NULL;
 	int ret = 0;
@@ -682,7 +682,7 @@ done:
 	return ret;
 }
 
-static int __devexit msm_mpd_remove(struct platform_device *pdev)
+static int msm_mpd_remove(struct platform_device *pdev)
 {
 	platform_set_drvdata(pdev, NULL);
 
@@ -691,7 +691,7 @@ static int __devexit msm_mpd_remove(struct platform_device *pdev)
 
 static struct platform_driver msm_mpd_driver = {
 	.probe	= msm_mpd_probe,
-	.remove	= __devexit_p(msm_mpd_remove),
+	.remove	= msm_mpd_remove,
 	.driver	= {
 		.name	= "msm_mpdecision",
 		.owner	= THIS_MODULE,

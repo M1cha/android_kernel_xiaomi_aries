@@ -22,7 +22,7 @@
 #include <linux/irq.h>
 #include <linux/slab.h>
 #include <linux/spinlock.h>
-#include <asm/hardware/gic.h>
+#include <linux/irqchip/arm-gic.h>
 #include <mach/msm_iomap.h>
 #include <mach/gpio.h>
 

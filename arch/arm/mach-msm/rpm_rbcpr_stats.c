@@ -360,7 +360,7 @@ static const struct file_operations msm_rpmrbcpr_fops = {
 	.llseek   = no_llseek,
 };
 
-static  int __devinit msm_rpmrbcpr_probe(struct platform_device *pdev)
+static  int msm_rpmrbcpr_probe(struct platform_device *pdev)
 {
 	struct dentry *dent;
 	struct msm_rpmrbcpr_platform_data *pdata;
@@ -381,7 +381,7 @@ static  int __devinit msm_rpmrbcpr_probe(struct platform_device *pdev)
 	return ret;
 }
 
-static int __devexit msm_rpmrbcpr_remove(struct platform_device *pdev)
+static int msm_rpmrbcpr_remove(struct platform_device *pdev)
 {
 	struct dentry *dent;
 
@@ -394,7 +394,7 @@ static int __devexit msm_rpmrbcpr_remove(struct platform_device *pdev)
 
 static struct platform_driver msm_rpmrbcpr_driver = {
 	.probe  = msm_rpmrbcpr_probe,
-	.remove = __devexit_p(msm_rpmrbcpr_remove),
+	.remove = msm_rpmrbcpr_remove,
 	.driver = {
 		.name = "msm_rpm_rbcpr",
 		.owner = THIS_MODULE,

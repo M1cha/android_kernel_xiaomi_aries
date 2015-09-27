@@ -1084,10 +1084,10 @@ static ssize_t smem_log_write(struct file *fp, const char __user *buf,
 		if (*token != '\0') {
 			D(KERN_ERR "%s: ", __func__);
 			D_DUMP_BUFFER("", strlen(token), token);
-			ret = strict_strtoul(token, 0, &res);
+			ret = kstrtoul(token, 0, &res);
 			if (ret) {
 				printk(KERN_ERR "ERROR: %s:%i got bad char "
-				       "at strict_strtoul\n",
+				       "at kstrtoul\n",
 				       __func__, __LINE__-4);
 				return -EINVAL;
 			}

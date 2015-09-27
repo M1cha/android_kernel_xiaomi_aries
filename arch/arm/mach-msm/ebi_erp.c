@@ -124,7 +124,7 @@ static irqreturn_t msm_ebi_irq(int irq, void *dev_id)
 	return IRQ_HANDLED;
 }
 
-static int __devinit msm_ebi_erp_probe(struct platform_device *pdev)
+static int msm_ebi_erp_probe(struct platform_device *pdev)
 {
 	struct resource *r;
 	struct msm_ebi_erp_data *drvdata;
@@ -178,7 +178,7 @@ static int msm_ebi_erp_remove(struct platform_device *pdev)
 
 static struct platform_driver msm_ebi_erp_driver = {
 	.probe = msm_ebi_erp_probe,
-	.remove = __devexit_p(msm_ebi_erp_remove),
+	.remove = msm_ebi_erp_remove,
 	.driver = {
 		.name = MODULE_NAME,
 		.owner = THIS_MODULE,

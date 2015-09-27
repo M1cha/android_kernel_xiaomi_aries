@@ -28,7 +28,7 @@
 #include <linux/device.h>
 #include <linux/platform_device.h>
 #include <linux/slab.h>
-#include <asm/hardware/gic.h>
+#include <linux/irqchip/arm-gic.h>
 #include <mach/msm_iomap.h>
 #include <mach/rpm.h>
 
@@ -869,12 +869,12 @@ static struct attribute_group driver_attr_group = {
 	.attrs = driver_attributes,
 };
 
-static int __devinit msm_rpm_probe(struct platform_device *pdev)
+static int msm_rpm_probe(struct platform_device *pdev)
 {
 	return sysfs_create_group(&pdev->dev.kobj, &driver_attr_group);
 }
 
-static int __devexit msm_rpm_remove(struct platform_device *pdev)
+static int msm_rpm_remove(struct platform_device *pdev)
 {
 	sysfs_remove_group(&pdev->dev.kobj, &driver_attr_group);
 	return 0;
@@ -882,7 +882,7 @@ static int __devexit msm_rpm_remove(struct platform_device *pdev)
 
 static struct platform_driver msm_rpm_platform_driver = {
 	.probe = msm_rpm_probe,
-	.remove = __devexit_p(msm_rpm_remove),
+	.remove = msm_rpm_remove,
 	.driver = {
 		.name = "msm_rpm",
 		.owner = THIS_MODULE,

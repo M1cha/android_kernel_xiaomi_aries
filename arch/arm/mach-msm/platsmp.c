@@ -16,7 +16,6 @@
 #include <linux/io.h>
 #include <linux/regulator/krait-regulator.h>
 
-#include <asm/hardware/gic.h>
 #include <asm/cacheflush.h>
 #include <asm/cputype.h>
 #include <asm/mach-types.h>
@@ -40,7 +39,7 @@ extern void msm_secondary_startup(void);
  * control for which core is the next to come out of the secondary
  * boot "holding pen".
  */
-volatile int pen_release = -1;
+extern volatile int pen_release;
 
 /*
  * Write pen_release in a way that is guaranteed to be visible to all
@@ -60,13 +59,6 @@ static DEFINE_SPINLOCK(boot_lock);
 void __cpuinit platform_secondary_init(unsigned int cpu)
 {
 	WARN_ON(msm_platform_secondary_init(cpu));
-
-	/*
-	 * if any interrupts are already enabled for the primary
-	 * core (e.g. timer irq), then they will not have been enabled
-	 * for us: do so
-	 */
-	gic_secondary_init(0);
 
 	/*
 	 * let the primary processor know we're out of the
@@ -246,7 +238,7 @@ int __cpuinit boot_secondary(unsigned int cpu, struct task_struct *idle)
 	 * the boot monitor to read the system wide flags register,
 	 * and branch to the address found there.
 	 */
-	gic_raise_softirq(cpumask_of(cpu), 1);
+	arch_send_wakeup_ipi_mask(cpumask_of(cpu));
 
 	timeout = jiffies + (1 * HZ);
 	while (time_before(jiffies, timeout)) {
@@ -281,8 +273,6 @@ void __init smp_init_cpus(void)
 
 	for (i = 0; i < ncores; i++)
 		set_cpu_possible(i, true);
-
-	set_smp_cross_call(gic_raise_softirq);
 }
 
 void __init platform_smp_prepare_cpus(unsigned int max_cpus)

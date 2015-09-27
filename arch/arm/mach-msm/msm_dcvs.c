@@ -1316,7 +1316,7 @@ err:
 }
 late_initcall(msm_dcvs_late_init);
 
-static int __devinit dcvs_probe(struct platform_device *pdev)
+static int dcvs_probe(struct platform_device *pdev)
 {
 	if (pdev->dev.platform_data)
 		dcvs_pdata = pdev->dev.platform_data;

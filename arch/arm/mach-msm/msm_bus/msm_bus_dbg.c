@@ -435,7 +435,7 @@ static ssize_t  msm_bus_dbg_update_request_write(struct file *file,
 			cldata = cldata;
 			strsep(&chid, " ");
 			if (chid) {
-				ret = strict_strtoul(chid, 10, &index);
+				ret = kstrtoul(chid, 10, &index);
 				if (ret) {
 					MSM_BUS_DBG("Index conversion"
 						" failed\n");

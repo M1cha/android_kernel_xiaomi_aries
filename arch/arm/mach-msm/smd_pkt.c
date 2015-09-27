@@ -206,7 +206,7 @@ static ssize_t open_timeout_store(struct device *d,
 			__func__);
 		return -EINVAL;
 	}
-	if (!strict_strtoul(buf, 10, &tmp)) {
+	if (!kstrtoul(buf, 10, &tmp)) {
 		smd_pkt_devp[i]->open_modem_wait = tmp;
 		return n;
 	} else {

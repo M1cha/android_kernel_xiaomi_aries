@@ -16,7 +16,6 @@
 #include <linux/cpu.h>
 #include <linux/smp.h>
 #include <linux/sysfs.h>
-#include <linux/sysdev.h>
 
 #include <mach/scm.h>
 
@@ -76,15 +75,14 @@ int cpu_config_on_each_cpu(bool enable)
 	return schedule_on_each_cpu(func);
 }
 
-static ssize_t show_cpuctl(struct sysdev_class *class,
-		struct sysdev_class_attribute *attr, char *buf)
+static ssize_t show_cpuctl(struct device *dev,
+		struct device_attribute *attr, char *buf)
 {
-	return snprintf(buf, PAGE_SIZE, "%d\n", query_cpu_config());
+	return sprintf(buf, "%d\n", query_cpu_config());
 }
 
-static ssize_t store_cpuctl(struct sysdev_class *class,
-		struct sysdev_class_attribute *attr, const char *buf,
-		size_t count)
+static ssize_t store_cpuctl(struct device *dev, struct device_attribute *attr,
+		const char *buf, size_t count)
 {
 	unsigned val;
 	int ret;
@@ -99,11 +97,10 @@ static ssize_t store_cpuctl(struct sysdev_class *class,
 	return count;
 }
 
-static SYSDEV_CLASS_ATTR(cpuctl, 0600, show_cpuctl, store_cpuctl);
+static DEVICE_ATTR(cpuctl, 0600, show_cpuctl, store_cpuctl);
 
 static int __init init_scm_cpu(void)
 {
-	return sysfs_create_file(&cpu_subsys.dev_root->kobj,
-			&attr_cpuctl.attr);
+	return device_create_file(cpu_subsys.dev_root, &dev_attr_cpuctl);
 }
 module_init(init_scm_cpu);

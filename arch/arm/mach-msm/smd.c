@@ -227,7 +227,7 @@ module_param_named(debug_mask, msm_smd_debug_mask,
 static unsigned last_heap_free = 0xffffffff;
 
 static inline void smd_write_intr(unsigned int val,
-				const void __iomem *addr);
+				void __iomem *addr);
 
 #if defined(CONFIG_ARCH_MSM7X30)
 #define MSM_TRIG_A2M_SMD_INT     \
@@ -373,7 +373,7 @@ static DEFINE_MUTEX(smd_module_init_notifier_lock);
 static void smd_module_init_notify(uint32_t state, void *data);
 
 static inline void smd_write_intr(unsigned int val,
-				const void __iomem *addr)
+				void __iomem *addr)
 {
 	wmb();
 	__raw_writel(val, addr);
@@ -3496,7 +3496,7 @@ smem_areas_alloc_fail:
 	return err_ret;
 }
 
-static int __devinit msm_smd_probe(struct platform_device *pdev)
+static int msm_smd_probe(struct platform_device *pdev)
 {
 	int ret;
 

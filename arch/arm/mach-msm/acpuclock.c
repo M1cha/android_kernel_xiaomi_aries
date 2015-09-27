@@ -63,7 +63,7 @@ unsigned long acpuclk_wait_for_irq(void)
 	return rate;
 }
 
-void __devinit acpuclk_register(struct acpuclk_data *data)
+void acpuclk_register(struct acpuclk_data *data)
 {
 	acpuclk_data = data;
 }

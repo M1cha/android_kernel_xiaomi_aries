@@ -32,6 +32,7 @@
 #include <linux/uaccess.h>
 #include <linux/io.h>
 #include <linux/msm_dsps.h>
+#include <linux/interrupt.h>
 
 #include <mach/irqs.h>
 #include <mach/peripheral-loader.h>
@@ -858,7 +859,7 @@ static struct subsys_desc dsps_ssrops = {
  * platform driver
  *
  */
-static int __devinit dsps_probe(struct platform_device *pdev)
+static int dsps_probe(struct platform_device *pdev)
 {
 	int ret;
 
@@ -958,7 +959,7 @@ alloc_err:
 	return -ENODEV;
 }
 
-static int __devexit dsps_remove(struct platform_device *pdev)
+static int dsps_remove(struct platform_device *pdev)
 {
 	pr_debug("%s.\n", __func__);
 

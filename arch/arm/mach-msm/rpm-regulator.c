@@ -1605,11 +1605,12 @@ static struct vreg *rpm_vreg_get_vreg(int id)
 	return vreg;
 }
 
-static int __devinit
+static int
 rpm_vreg_init_regulator(const struct rpm_regulator_init_data *pdata,
 			struct device *dev)
 {
 	struct regulator_desc *rdesc = NULL;
+	struct regulator_config regconfig = { 0 };
 	struct regulator_dev *rdev;
 	struct vreg *vreg;
 	unsigned pin_ctrl;
@@ -1711,7 +1712,11 @@ rpm_vreg_init_regulator(const struct rpm_regulator_init_data *pdata,
 	if (rc)
 		goto bail;
 
-	rdev = regulator_register(rdesc, dev, &(pdata->init_data), vreg, NULL);
+	regconfig.dev = dev;
+	regconfig.init_data = &(pdata->init_data);
+	regconfig.driver_data = vreg;
+
+	rdev = regulator_register(rdesc, &regconfig);
 	if (IS_ERR(rdev)) {
 		rc = PTR_ERR(rdev);
 		pr_err("regulator_register failed: %s, rc=%d\n",
@@ -1752,7 +1757,7 @@ static void rpm_vreg_set_point_init(void)
 	}
 }
 
-static int __devinit rpm_vreg_probe(struct platform_device *pdev)
+static int rpm_vreg_probe(struct platform_device *pdev)
 {
 	struct rpm_regulator_platform_data *platform_data;
 	static struct rpm_regulator_consumer_mapping *prev_consumer_map;
@@ -1873,7 +1878,7 @@ remove_regulators:
 	return rc;
 }
 
-static int __devexit rpm_vreg_remove(struct platform_device *pdev)
+static int rpm_vreg_remove(struct platform_device *pdev)
 {
 	struct rpm_regulator_platform_data *platform_data;
 	int i, id;
@@ -1900,7 +1905,7 @@ static int __devexit rpm_vreg_remove(struct platform_device *pdev)
 
 static struct platform_driver rpm_vreg_driver = {
 	.probe = rpm_vreg_probe,
-	.remove = __devexit_p(rpm_vreg_remove),
+	.remove = rpm_vreg_remove,
 	.driver = {
 		.name = RPM_REGULATOR_DEV_NAME,
 		.owner = THIS_MODULE,

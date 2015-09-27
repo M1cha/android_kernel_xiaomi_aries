@@ -16,8 +16,6 @@
 #include <linux/string.h>
 #include <linux/delay.h>
 
-#include <asm/system.h>
-
 #include <mach/msm_iomap.h>
 #include <mach/remote_spinlock.h>
 #include <mach/dal.h>
