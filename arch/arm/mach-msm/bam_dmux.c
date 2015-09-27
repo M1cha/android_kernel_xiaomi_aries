@@ -1329,7 +1329,7 @@ static void bam_mux_rx_notify(struct sps_event_notify *notify)
 					" not disabled\n", __func__, ret);
 				break;
 			}
-			INIT_COMPLETION(shutdown_completion);
+			reinit_completion(&shutdown_completion);
 			grab_wakelock();
 			polling_mode = 1;
 			/*
@@ -1369,7 +1369,7 @@ static int debug_ul_pkt_cnt(char *buf, int max)
 	int n = 0;
 
 	spin_lock_irqsave(&bam_tx_pool_spinlock, flags);
-	__list_for_each(p, &bam_tx_pool) {
+	list_for_each(p, &bam_tx_pool) {
 		++n;
 	}
 	spin_unlock_irqrestore(&bam_tx_pool_spinlock, flags);
@@ -1457,7 +1457,7 @@ static void notify_all(int event, unsigned long data)
 			bam_ch[i].notify(bam_ch[i].priv, event, data);
 	}
 
-	__list_for_each(temp, &bam_other_notify_funcs) {
+	list_for_each(temp, &bam_other_notify_funcs) {
 		func = container_of(temp, struct outside_notify_func,
 								list_node);
 		func->notify(func->priv, event, data);
@@ -1520,11 +1520,11 @@ static inline void ul_powerdown(void)
 
 	if (a2_pc_disabled) {
 		wait_for_dfab = 1;
-		INIT_COMPLETION(dfab_unvote_completion);
+		reinit_completion(&dfab_unvote_completion);
 		release_wakelock();
 	} else {
 		wait_for_ack = 1;
-		INIT_COMPLETION(ul_wakeup_ack_completion);
+		reinit_completion(&ul_wakeup_ack_completion);
 		power_vote(0);
 	}
 	bam_is_connected = 0;
@@ -1740,7 +1740,7 @@ static void ul_wakeup(void)
 			return;
 		}
 	}
-	INIT_COMPLETION(ul_wakeup_ack_completion);
+	reinit_completion(&ul_wakeup_ack_completion);
 	power_vote(1);
 	BAM_DMUX_LOG("%s waiting for wakeup ack\n", __func__);
 	ret = wait_for_completion_timeout(&ul_wakeup_ack_completion,
@@ -1848,7 +1848,7 @@ static void disconnect_to_bam(void)
 	ul_powerdown_finish();
 
 	/* tear down BAM connection */
-	INIT_COMPLETION(bam_connection_completion);
+	reinit_completion(&bam_connection_completion);
 
 	/* in_ssr documentation/assumptions found in restart_notifier_cb */
 	if (!power_management_only_mode) {
@@ -2485,10 +2485,10 @@ static int bam_dmux_probe(struct platform_device *pdev)
 		}
 	}
 
-	init_completion(&ul_wakeup_ack_completion);
-	init_completion(&bam_connection_completion);
-	init_completion(&dfab_unvote_completion);
-	init_completion(&shutdown_completion);
+	reinit_completion(&ul_wakeup_ack_completion);
+	reinit_completion(&bam_connection_completion);
+	reinit_completion(&dfab_unvote_completion);
+	reinit_completion(&shutdown_completion);
 	complete_all(&shutdown_completion);
 	INIT_DELAYED_WORK(&ul_timeout_work, ul_timeout);
 	wake_lock_init(&bam_wakelock, WAKE_LOCK_SUSPEND, "bam_dmux_wakelock");
