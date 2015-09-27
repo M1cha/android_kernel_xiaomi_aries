@@ -1,4 +1,4 @@
-/* Copyright (c) 2010-2011, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2012, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -10,17 +10,17 @@
  * GNU General Public License for more details.
  */
 
-#ifndef __RTC_PM8XXX_H__
-#define __RTC_PM8XXX_H__
+#ifndef _Q6_AUDIO_H_
+#define _Q6_AUDIO_H_
 
-#define PM8XXX_RTC_DEV_NAME     "rtc-pm8xxx"
-/**
- * struct pm8xxx_rtc_pdata - RTC driver platform data
- * @rtc_write_enable: variable stating RTC write capability
- */
-struct pm8xxx_rtc_platform_data {
-	bool rtc_write_enable;
-	bool rtc_alarm_powerup;
-};
+#include <mach/qdsp6v2/apr.h>
 
-#endif /* __RTC_PM8XXX_H__ */
+int q6audio_get_port_index(u16 port_id);
+
+int q6audio_convert_virtual_to_portid(u16 port_id);
+
+int q6audio_validate_port(u16 port_id);
+
+int q6audio_get_port_id(u16 port_id);
+
+#endif

@@ -1,4 +1,4 @@
-/* Copyright (c) 2010-2011, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2011, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -10,17 +10,15 @@
  * GNU General Public License for more details.
  */
 
-#ifndef __RTC_PM8XXX_H__
-#define __RTC_PM8XXX_H__
+#ifndef __QCOM_CRYPTO_DEVICE__H
+#define __QCOM_CRYPTO_DEVICE__H
 
-#define PM8XXX_RTC_DEV_NAME     "rtc-pm8xxx"
-/**
- * struct pm8xxx_rtc_pdata - RTC driver platform data
- * @rtc_write_enable: variable stating RTC write capability
- */
-struct pm8xxx_rtc_platform_data {
-	bool rtc_write_enable;
-	bool rtc_alarm_powerup;
+struct msm_ce_hw_support {
+	uint32_t ce_shared;
+	uint32_t shared_ce_resource;
+	uint32_t hw_key_support;
+	uint32_t sha_hmac;
+	void *bus_scale_table;
 };
 
-#endif /* __RTC_PM8XXX_H__ */
+#endif /* __QCOM_CRYPTO_DEVICE__H */

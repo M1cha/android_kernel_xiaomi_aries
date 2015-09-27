@@ -10,17 +10,30 @@
  * GNU General Public License for more details.
  */
 
-#ifndef __RTC_PM8XXX_H__
-#define __RTC_PM8XXX_H__
+#ifndef __PMIC8XXX_VIBRATOR_H__
+#define __PMIC8XXX_VIBRATOR_H__
 
-#define PM8XXX_RTC_DEV_NAME     "rtc-pm8xxx"
-/**
- * struct pm8xxx_rtc_pdata - RTC driver platform data
- * @rtc_write_enable: variable stating RTC write capability
- */
-struct pm8xxx_rtc_platform_data {
-	bool rtc_write_enable;
-	bool rtc_alarm_powerup;
+#define PM8XXX_VIBRATOR_DEV_NAME "pm8xxx-vib"
+
+enum pm8xxx_vib_en_mode {
+	PM8XXX_VIB_MANUAL,
+	PM8XXX_VIB_DTEST1,
+	PM8XXX_VIB_DTEST2,
+	PM8XXX_VIB_DTEST3
 };
 
-#endif /* __RTC_PM8XXX_H__ */
+struct pm8xxx_vib_config {
+	u16			drive_mV;
+	u8			active_low;
+	enum pm8xxx_vib_en_mode	enable_mode;
+};
+
+struct pm8xxx_vibrator_platform_data {
+	int initial_vibrate_ms;
+	int max_timeout_ms;
+	int level_mV;
+};
+
+int pm8xxx_vibrator_config(struct pm8xxx_vib_config *vib_config);
+
+#endif /* __PMIC8XXX_VIBRATOR_H__ */

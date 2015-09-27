@@ -1,4 +1,4 @@
-/* Copyright (c) 2010-2011, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2010, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -8,19 +8,16 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
+ *
  */
+#ifndef __LINUX_MSM_SMD_PKT_H
+#define __LINUX_MSM_SMD_PKT_H
 
-#ifndef __RTC_PM8XXX_H__
-#define __RTC_PM8XXX_H__
+#include <linux/ioctl.h>
 
-#define PM8XXX_RTC_DEV_NAME     "rtc-pm8xxx"
-/**
- * struct pm8xxx_rtc_pdata - RTC driver platform data
- * @rtc_write_enable: variable stating RTC write capability
- */
-struct pm8xxx_rtc_platform_data {
-	bool rtc_write_enable;
-	bool rtc_alarm_powerup;
-};
+#define SMD_PKT_IOCTL_MAGIC (0xC2)
 
-#endif /* __RTC_PM8XXX_H__ */
+#define SMD_PKT_IOCTL_BLOCKING_WRITE \
+	_IOR(SMD_PKT_IOCTL_MAGIC, 0, unsigned int)
+
+#endif /* __LINUX_MSM_SMD_PKT_H */
