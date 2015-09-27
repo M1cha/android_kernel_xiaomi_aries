@@ -373,7 +373,7 @@ static void init_watchdog_work(struct work_struct *work)
 		}
 
 		msm_wdog_fiq_setup(stack);
-		gic_set_irq_secure(msm_wdog_irq);
+		//gic_set_irq_secure(msm_wdog_irq);
 	} else {
 		percpu_pdata = alloc_percpu(struct msm_watchdog_pdata *);
 		if (!percpu_pdata) {

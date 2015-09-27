@@ -453,7 +453,6 @@ static struct gpiomux_setting sx150x_active_cfg = {
 	.pull = GPIOMUX_PULL_NONE,
 };
 
-#ifdef CONFIG_USB_EHCI_MSM_HSIC
 static struct gpiomux_setting cyts_sleep_sus_cfg = {
 	.func = GPIOMUX_FUNC_GPIO,
 	.drv = GPIOMUX_DRV_6MA,
@@ -511,6 +510,7 @@ static struct msm_gpiomux_config cyts_gpio_alt_config[] __initdata = {
 	},
 };
 
+#ifdef CONFIG_USB_EHCI_MSM_HSIC
 static struct gpiomux_setting hsic_act_cfg = {
 	.func = GPIOMUX_FUNC_1,
 	.drv = GPIOMUX_DRV_8MA,
