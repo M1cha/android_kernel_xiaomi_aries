@@ -71,7 +71,7 @@ static inline void platform_do_lowpower(unsigned int cpu, int *spurious)
 	}
 }
 
-int platform_cpu_kill(unsigned int cpu)
+int msm_cpu_kill(unsigned int cpu)
 {
 	int ret = 0;
 
@@ -86,7 +86,7 @@ int platform_cpu_kill(unsigned int cpu)
  *
  * Called with IRQs disabled
  */
-void platform_cpu_die(unsigned int cpu)
+void __ref msm_cpu_die(unsigned int cpu)
 {
 	int spurious = 0;
 
