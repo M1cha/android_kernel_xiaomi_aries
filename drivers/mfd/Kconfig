@@ -433,7 +433,7 @@ config MFD_PM8921_CORE
 	  This will build a module called "pm8921-core".
 
 config MFD_PM8XXX_IRQ
-	bool "Qualcomm PM8xxx IRQ features"
+	bool "Support for Qualcomm PM8xxx IRQ features"
 	depends on MFD_PM8XXX
 	default y if MFD_PM8XXX
 	help
@@ -441,6 +441,14 @@ config MFD_PM8XXX_IRQ
 
 	  This is required to use certain other PM 8xxx features, such as GPIO
 	  and MPP.
+
+config MFD_PM8821_IRQ
+	bool "Support for Qualcomm PM8821 IRQ features"
+	default y if MFD_PM8821_CORE
+	help
+	  This is the IRQ driver for Qualcomm PM 8821 PMIC chips.
+
+	  This is required to use certain other PM 8821 features, such as MPPs.
 
 config MFD_RDC321X
 	tristate "RDC R-321x southbridge"
