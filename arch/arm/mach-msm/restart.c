@@ -232,7 +232,7 @@ void set_kernel_crash_magic_number(void)
 }
 #endif /* CONFIG_LGE_CRASH_HANDLER */
 
-void msm_restart(char mode, const char *cmd)
+void msm_restart(enum reboot_mode mode, const char *cmd)
 {
 
 #ifdef CONFIG_MSM_DLOAD_MODE

@@ -29,10 +29,12 @@
 #include <linux/regulator/consumer.h>
 #include <linux/slab.h>
 #include <linux/types.h>
+#include <linux/interrupt.h>
 #include <asm/mach/pci.h>
 #include <mach/gpiomux.h>
 #include <mach/hardware.h>
 #include <mach/msm_iomap.h>
+#include <mach/gpio-msm.h>
 
 #include "pcie.h"
 
@@ -515,7 +517,7 @@ static int __init msm_pcie_setup(int nr, struct pci_sys_data *sys)
 	/* enable pcie power; wait 3ms for clock to stabilize */
 	gpio_set_value_cansleep(dev->gpio[MSM_PCIE_GPIO_PWR_EN].num,
 				dev->gpio[MSM_PCIE_GPIO_PWR_EN].on);
-	usleep(3000);
+	usleep_range(3000, 3000);
 
 	/*
 	 * de-assert PCIe PARF reset;
@@ -602,7 +604,7 @@ static int __init msm_pcie_map_irq(const struct pci_dev *dev, u8 slot, u8 pin)
 
 static struct hw_pci msm_pci __initdata = {
 	.nr_controllers = 1,
-	.swizzle = pci_std_swizzle,
+	.swizzle = pci_common_swizzle,
 	.setup = msm_pcie_setup,
 	.scan = msm_pcie_scan_bus,
 	.map_irq = msm_pcie_map_irq,
@@ -698,7 +700,7 @@ static int __init msm_pcie_init(void)
 subsys_initcall(msm_pcie_init);
 
 /* RC do not represent the right class; set it to PCI_CLASS_BRIDGE_PCI */
-static void __devinit msm_pcie_fixup_early(struct pci_dev *dev)
+static void msm_pcie_fixup_early(struct pci_dev *dev)
 {
 	PCIE_DBG("hdr_type %d\n", dev->hdr_type);
 	if (dev->hdr_type == 1)
@@ -711,7 +713,7 @@ DECLARE_PCI_FIXUP_EARLY(PCIE_VENDOR_ID_RCP, PCIE_DEVICE_ID_RCP,
 static void msm_pcie_fixup_suspend(struct pci_dev *dev)
 {
 	PCIE_DBG("enabling wake_n\n");
-	if (dev->pcie_type == PCI_EXP_TYPE_ROOT_PORT)
+	if (pci_pcie_type(dev) == PCI_EXP_TYPE_ROOT_PORT)
 		enable_irq(msm_pcie_dev.wake_n);
 }
 DECLARE_PCI_FIXUP_SUSPEND(PCIE_VENDOR_ID_RCP, PCIE_DEVICE_ID_RCP,
@@ -721,7 +723,7 @@ DECLARE_PCI_FIXUP_SUSPEND(PCIE_VENDOR_ID_RCP, PCIE_DEVICE_ID_RCP,
 static void msm_pcie_fixup_resume(struct pci_dev *dev)
 {
 	PCIE_DBG("disabling wake_n\n");
-	if (dev->pcie_type == PCI_EXP_TYPE_ROOT_PORT)
+	if (pci_pcie_type(dev) == PCI_EXP_TYPE_ROOT_PORT)
 		disable_irq(msm_pcie_dev.wake_n);
 }
 DECLARE_PCI_FIXUP_RESUME(PCIE_VENDOR_ID_RCP, PCIE_DEVICE_ID_RCP,
@@ -733,7 +735,7 @@ DECLARE_PCI_FIXUP_RESUME(PCIE_VENDOR_ID_RCP, PCIE_DEVICE_ID_RCP,
  * from msm_pcie_dev.axi_bar_start; correct the device resource structure here;
  * address translation unit handles the required translations
  */
-static void __devinit msm_pcie_fixup_final(struct pci_dev *dev)
+static void msm_pcie_fixup_final(struct pci_dev *dev)
 {
 	int i;
 	struct resource *res;

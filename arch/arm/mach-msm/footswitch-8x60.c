@@ -480,6 +480,7 @@ static struct footswitch footswitches[] = {
 static int footswitch_probe(struct platform_device *pdev)
 {
 	struct footswitch *fs;
+	struct regulator_config config = { 0 };
 	struct regulator_init_data *init_data;
 	struct fs_driver_data *driver_data;
 	struct fs_clk_data *clock;
@@ -520,8 +521,11 @@ static int footswitch_probe(struct platform_device *pdev)
 	regval &= ~RETENTION_BIT;
 	writel_relaxed(regval, fs->gfs_ctl_reg);
 
-	fs->rdev = regulator_register(&fs->desc, &pdev->dev,
-							init_data, fs, NULL);
+	config.dev = &pdev->dev;
+	config.init_data = init_data;
+	config.driver_data = fs;
+
+	fs->rdev = regulator_register(&fs->desc, &config);
 	if (IS_ERR(footswitches[pdev->id].rdev)) {
 		pr_err("regulator_register(\"%s\") failed\n",
 			fs->desc.name);
@@ -538,7 +542,7 @@ err:
 	return rc;
 }
 
-static int __devexit footswitch_remove(struct platform_device *pdev)
+static int footswitch_remove(struct platform_device *pdev)
 {
 	struct footswitch *fs = &footswitches[pdev->id];
 	struct fs_clk_data *clock;
@@ -552,7 +556,7 @@ static int __devexit footswitch_remove(struct platform_device *pdev)
 
 static struct platform_driver footswitch_driver = {
 	.probe		= footswitch_probe,
-	.remove		= __devexit_p(footswitch_remove),
+	.remove		= footswitch_remove,
 	.driver		= {
 		.name		= "footswitch-8x60",
 		.owner		= THIS_MODULE,

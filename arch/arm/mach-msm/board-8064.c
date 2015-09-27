@@ -40,9 +40,9 @@
 #include <linux/i2c/sx150x.h>
 #include <asm/mach-types.h>
 #include <asm/mach/arch.h>
-#include <asm/hardware/gic.h>
 #include <asm/mach/mmc.h>
 #include <linux/platform_data/qcom_wcnss_device.h>
+#include <linux/irqchip/arm-gic.h>
 
 #include <mach/board.h>
 #include <mach/msm_iomap.h>
@@ -1557,7 +1557,7 @@ static struct platform_device msm_device_wcnss_wlan = {
 	.dev		= {.platform_data = &qcom_wcnss_pdata},
 };
 
-static struct platform_device msm_device_iris_fm __devinitdata = {
+static struct platform_device msm_device_iris_fm = {
 	.name = "iris_fm",
 	.id   = -1,
 };
@@ -1930,8 +1930,8 @@ static void __init apq8064_init_irq(void)
 #endif
 
 	msm_mpm_irq_extn_init(data);
-	gic_init(0, GIC_PPI_START, MSM_QGIC_DIST_BASE,
-						(void *)MSM_QGIC_CPU_BASE);
+	gic_init_bases(0, GIC_PPI_START, MSM_QGIC_DIST_BASE,
+						(void *)MSM_QGIC_CPU_BASE, 0, NULL);
 }
 
 static struct platform_device msm8064_device_saw_regulator_core0 = {
@@ -2329,7 +2329,7 @@ static void __init mpq8064_pcie_init(void)
 	}
 }
 
-static struct platform_device apq8064_device_ext_5v_vreg __devinitdata = {
+static struct platform_device apq8064_device_ext_5v_vreg = {
 	.name	= GPIO_REGULATOR_DEV_NAME,
 	.id	= PM8921_MPP_PM_TO_SYS(7),
 	.dev	= {
@@ -2338,7 +2338,7 @@ static struct platform_device apq8064_device_ext_5v_vreg __devinitdata = {
 	},
 };
 
-static struct platform_device apq8064_device_ext_mpp8_vreg __devinitdata = {
+static struct platform_device apq8064_device_ext_mpp8_vreg = {
 	.name	= GPIO_REGULATOR_DEV_NAME,
 	.id	= PM8921_MPP_PM_TO_SYS(8),
 	.dev	= {
@@ -2347,7 +2347,7 @@ static struct platform_device apq8064_device_ext_mpp8_vreg __devinitdata = {
 	},
 };
 
-static struct platform_device apq8064_device_ext_3p3v_vreg __devinitdata = {
+static struct platform_device apq8064_device_ext_3p3v_vreg = {
 	.name	= GPIO_REGULATOR_DEV_NAME,
 	.id	= APQ8064_EXT_3P3V_REG_EN_GPIO,
 	.dev	= {
@@ -2356,7 +2356,7 @@ static struct platform_device apq8064_device_ext_3p3v_vreg __devinitdata = {
 	},
 };
 
-static struct platform_device apq8064_device_ext_ts_sw_vreg __devinitdata = {
+static struct platform_device apq8064_device_ext_ts_sw_vreg = {
 	.name	= GPIO_REGULATOR_DEV_NAME,
 	.id	= PM8921_GPIO_PM_TO_SYS(23),
 	.dev	= {
@@ -2365,7 +2365,7 @@ static struct platform_device apq8064_device_ext_ts_sw_vreg __devinitdata = {
 	},
 };
 
-static struct platform_device apq8064_device_rpm_regulator __devinitdata = {
+static struct platform_device apq8064_device_rpm_regulator = {
 	.name	= "rpm-regulator",
 	.id	= 0,
 	.dev	= {
@@ -2374,7 +2374,7 @@ static struct platform_device apq8064_device_rpm_regulator __devinitdata = {
 };
 
 static struct platform_device
-apq8064_pm8921_device_rpm_regulator __devinitdata = {
+apq8064_pm8921_device_rpm_regulator = {
 	.name	= "rpm-regulator",
 	.id	= 1,
 	.dev	= {
@@ -2554,7 +2554,7 @@ static struct platform_device *cdp_devices[] __initdata = {
 };
 
 static struct platform_device
-mpq8064_device_ext_1p2_buck_vreg __devinitdata = {
+mpq8064_device_ext_1p2_buck_vreg = {
 	.name	= GPIO_REGULATOR_DEV_NAME,
 	.id	= SX150X_GPIO(4, 2),
 	.dev	= {
@@ -2564,7 +2564,7 @@ mpq8064_device_ext_1p2_buck_vreg __devinitdata = {
 };
 
 static struct platform_device
-mpq8064_device_ext_1p8_buck_vreg __devinitdata = {
+mpq8064_device_ext_1p8_buck_vreg = {
 	.name	= GPIO_REGULATOR_DEV_NAME,
 	.id	= SX150X_GPIO(4, 4),
 	.dev	= {
@@ -2574,7 +2574,7 @@ mpq8064_device_ext_1p8_buck_vreg __devinitdata = {
 };
 
 static struct platform_device
-mpq8064_device_ext_2p2_buck_vreg __devinitdata = {
+mpq8064_device_ext_2p2_buck_vreg = {
 	.name	= GPIO_REGULATOR_DEV_NAME,
 	.id	= SX150X_GPIO(4, 14),
 	.dev	= {
@@ -2584,7 +2584,7 @@ mpq8064_device_ext_2p2_buck_vreg __devinitdata = {
 };
 
 static struct platform_device
-mpq8064_device_ext_5v_buck_vreg __devinitdata = {
+mpq8064_device_ext_5v_buck_vreg = {
 	.name	= GPIO_REGULATOR_DEV_NAME,
 	.id	= SX150X_GPIO(4, 3),
 	.dev	= {
@@ -2594,7 +2594,7 @@ mpq8064_device_ext_5v_buck_vreg __devinitdata = {
 };
 
 static struct platform_device
-mpq8064_device_ext_3p3v_ldo_vreg __devinitdata = {
+mpq8064_device_ext_3p3v_ldo_vreg = {
 	.name	= GPIO_REGULATOR_DEV_NAME,
 	.id	= SX150X_GPIO(4, 15),
 	.dev	= {
@@ -3433,8 +3433,7 @@ MACHINE_START(APQ8064_CDP, "QCT APQ8064 CDP")
 	.map_io = apq8064_map_io,
 	.reserve = apq8064_reserve,
 	.init_irq = apq8064_init_irq,
-	.handle_irq = gic_handle_irq,
-	.timer = &msm_timer,
+	.init_time = msm_timer_init,
 	.init_machine = apq8064_cdp_init,
 	.init_early = apq8064_allocate_memory_regions,
 	.init_very_early = apq8064_early_reserve,
@@ -3445,8 +3444,7 @@ MACHINE_START(APQ8064_MTP, "QCT APQ8064 MTP")
 	.map_io = apq8064_map_io,
 	.reserve = apq8064_reserve,
 	.init_irq = apq8064_init_irq,
-	.handle_irq = gic_handle_irq,
-	.timer = &msm_timer,
+	.init_time = msm_timer_init,
 	.init_machine = apq8064_cdp_init,
 	.init_early = apq8064_allocate_memory_regions,
 	.init_very_early = apq8064_early_reserve,
@@ -3457,8 +3455,7 @@ MACHINE_START(APQ8064_LIQUID, "QCT APQ8064 LIQUID")
 	.map_io = apq8064_map_io,
 	.reserve = apq8064_reserve,
 	.init_irq = apq8064_init_irq,
-	.handle_irq = gic_handle_irq,
-	.timer = &msm_timer,
+	.init_time = msm_timer_init,
 	.init_machine = apq8064_cdp_init,
 	.init_early = apq8064_allocate_memory_regions,
 	.init_very_early = apq8064_early_reserve,
@@ -3469,8 +3466,7 @@ MACHINE_START(MPQ8064_CDP, "QCT MPQ8064 CDP")
 	.map_io = apq8064_map_io,
 	.reserve = apq8064_reserve,
 	.init_irq = apq8064_init_irq,
-	.handle_irq = gic_handle_irq,
-	.timer = &msm_timer,
+	.init_time = msm_timer_init,
 	.init_machine = apq8064_cdp_init,
 	.init_early = apq8064_allocate_memory_regions,
 	.init_very_early = apq8064_early_reserve,
@@ -3481,8 +3477,7 @@ MACHINE_START(MPQ8064_HRD, "QCT MPQ8064 HRD")
 	.map_io = apq8064_map_io,
 	.reserve = apq8064_reserve,
 	.init_irq = apq8064_init_irq,
-	.handle_irq = gic_handle_irq,
-	.timer = &msm_timer,
+	.init_time = msm_timer_init,
 	.init_machine = apq8064_cdp_init,
 	.init_early = apq8064_allocate_memory_regions,
 	.init_very_early = apq8064_early_reserve,
@@ -3493,8 +3488,7 @@ MACHINE_START(MPQ8064_DTV, "QCT MPQ8064 DTV")
 	.map_io = apq8064_map_io,
 	.reserve = apq8064_reserve,
 	.init_irq = apq8064_init_irq,
-	.handle_irq = gic_handle_irq,
-	.timer = &msm_timer,
+	.init_time = msm_timer_init,
 	.init_machine = apq8064_cdp_init,
 	.init_early = apq8064_allocate_memory_regions,
 	.init_very_early = apq8064_early_reserve,

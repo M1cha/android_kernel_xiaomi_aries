@@ -308,7 +308,7 @@ static struct pil_reset_ops pil_gss_ops_trusted = {
 	.proxy_unvote = remove_gss_proxy_votes,
 };
 
-static int __devinit pil_gss_probe(struct platform_device *pdev)
+static int pil_gss_probe(struct platform_device *pdev)
 {
 	struct gss_data *drv;
 	struct resource *res;
@@ -366,7 +366,7 @@ static int __devinit pil_gss_probe(struct platform_device *pdev)
 	return 0;
 }
 
-static int __devexit pil_gss_remove(struct platform_device *pdev)
+static int pil_gss_remove(struct platform_device *pdev)
 {
 	struct gss_data *drv = platform_get_drvdata(pdev);
 	msm_pil_unregister(drv->pil);
@@ -375,7 +375,7 @@ static int __devexit pil_gss_remove(struct platform_device *pdev)
 
 static struct platform_driver pil_gss_driver = {
 	.probe = pil_gss_probe,
-	.remove = __devexit_p(pil_gss_remove),
+	.remove = pil_gss_remove,
 	.driver = {
 		.name = "pil_gss",
 		.owner = THIS_MODULE,

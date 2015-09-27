@@ -21,6 +21,7 @@
 #include <linux/spinlock.h>
 #include <linux/cpu.h>
 #include <linux/hrtimer.h>
+#include <linux/slab.h>
 #include <mach/rpm.h>
 #include <mach/msm_iomap.h>
 #include <asm/mach-types.h>

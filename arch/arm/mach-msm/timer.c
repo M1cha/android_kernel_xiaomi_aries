@@ -24,11 +24,11 @@
 #include <linux/io.h>
 #include <linux/percpu.h>
 #include <linux/mm.h>
+#include <linux/irqchip/arm-gic.h>
+#include <linux/sched_clock.h>
 
 #include <asm/localtimer.h>
 #include <asm/mach/time.h>
-#include <asm/hardware/gic.h>
-#include <asm/sched_clock.h>
 #include <asm/smp_plat.h>
 #include <asm/user_accessible_timer.h>
 #include <mach/msm_iomap.h>
@@ -215,16 +215,16 @@ static uint32_t msm_read_timer_count(struct msm_clock *clock, int global)
 		global*global_timer_offset;
 
 	if (!(clock->flags & MSM_CLOCK_FLAGS_UNSTABLE_COUNT))
-		return __raw_readl_no_log(addr);
+		return __raw_readl(addr);
 
-	t1 = __raw_readl_no_log(addr);
-	t2 = __raw_readl_no_log(addr);
+	t1 = __raw_readl(addr);
+	t2 = __raw_readl(addr);
 	if ((t2-t1) <= 1)
 		return t2;
 	while (1) {
-		t1 = __raw_readl_no_log(addr);
-		t2 = __raw_readl_no_log(addr);
-		t3 = __raw_readl_no_log(addr);
+		t1 = __raw_readl(addr);
+		t2 = __raw_readl(addr);
+		t3 = __raw_readl(addr);
 		cpu_relax();
 		if ((t3-t2) <= 1)
 			return t3;
@@ -305,7 +305,7 @@ static int msm_timer_set_next_event(unsigned long cycles,
 		/* read the counter four extra times to make sure write posts
 		   before reading the time */
 		for (i = 0; i < 4; i++)
-			__raw_readl_no_log(clock->regbase + TIMER_COUNT_VAL);
+			__raw_readl(clock->regbase + TIMER_COUNT_VAL);
 	}
 	now = msm_read_timer_count(clock, LOCAL_TIMER);
 	clock_state->last_set = now;
@@ -420,11 +420,11 @@ uint32_t msm_timer_get_sclk_ticks(void)
 	tmp /= (loop_zero_count-1);
 
 	while (loop_zero_count--) {
-		t1 = __raw_readl_no_log(MSM_RPM_MPM_BASE + MPM_SCLK_COUNT_VAL);
+		t1 = __raw_readl(MSM_RPM_MPM_BASE + MPM_SCLK_COUNT_VAL);
 		do {
 			udelay(1);
 			t2 = t1;
-			t1 = __raw_readl_no_log(
+			t1 = __raw_readl(
 				MSM_RPM_MPM_BASE + MPM_SCLK_COUNT_VAL);
 		} while ((t2 != t1) && --loop_count);
 
@@ -933,25 +933,26 @@ int __init msm_timer_init_time_sync(void (*timeout)(void))
 
 #endif
 
-static u32 notrace msm_read_sched_clock(void)
+static u64 notrace msm_read_sched_clock(void)
 {
 	struct msm_clock *clock = &msm_clocks[msm_global_timer];
 	struct clocksource *cs = &clock->clocksource;
 	return cs->read(NULL);
 }
 
-int read_current_timer(unsigned long *timer_val)
+static struct delay_timer msm_delay_timer;
+
+static unsigned long msm_read_current_timer(void)
 {
 	struct msm_clock *dgt = &msm_clocks[MSM_CLOCK_DGT];
-	*timer_val = msm_read_timer_count(dgt, GLOBAL_TIMER);
-	return 0;
+	return msm_read_timer_count(dgt, GLOBAL_TIMER);
 }
 
 static void __init msm_sched_clock_init(void)
 {
 	struct msm_clock *clock = &msm_clocks[msm_global_timer];
 
-	setup_sched_clock(msm_read_sched_clock, 32 - clock->shift, clock->freq);
+	sched_clock_register(msm_read_sched_clock, 32 - clock->shift, clock->freq);
 }
 
 #ifdef CONFIG_LOCAL_TIMERS
@@ -990,7 +991,7 @@ int __cpuinit local_timer_setup(struct clock_event_device *evt)
 		clockevent_delta2ns(0xf0000000 >> clock->shift, evt);
 	evt->min_delta_ns = clockevent_delta2ns(4, evt);
 
-	*__this_cpu_ptr(clock->percpu_evt) = evt;
+	*raw_cpu_ptr(clock->percpu_evt) = evt;
 
 	clockevents_register_device(evt);
 	enable_percpu_irq(evt->irq, IRQ_TYPE_EDGE_RISING);
@@ -1010,7 +1011,7 @@ static struct local_timer_ops msm_lt_ops = {
 };
 #endif /* CONFIG_LOCAL_TIMERS */
 
-static void __init msm_timer_init(void)
+void __init msm_timer_init(void)
 {
 	int i;
 	int res;
@@ -1133,7 +1134,7 @@ static void __init msm_timer_init(void)
 				continue;
 			}
 
-			*__this_cpu_ptr(clock->percpu_evt) = ce;
+			*raw_cpu_ptr(clock->percpu_evt) = ce;
 			res = request_percpu_irq(ce->irq, msm_timer_interrupt,
 						 ce->name, clock->percpu_evt);
 			if (!res)
@@ -1177,7 +1178,9 @@ static void __init msm_timer_init(void)
 	if (is_smp()) {
 		__raw_writel(1,
 			msm_clocks[MSM_CLOCK_DGT].regbase + TIMER_ENABLE);
-		set_delay_fn(read_current_timer_delay_loop);
+		msm_delay_timer.freq = dgt->freq;
+		msm_delay_timer.read_current_timer = &msm_read_current_timer;
+		register_current_timer_delay(&msm_delay_timer);
 	}
 #endif
 
@@ -1185,7 +1188,3 @@ static void __init msm_timer_init(void)
 	local_timer_register(&msm_lt_ops);
 #endif
 }
-
-struct sys_timer msm_timer = {
-	.init = msm_timer_init
-};

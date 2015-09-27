@@ -28,6 +28,7 @@
 #include <linux/delay.h>
 #include <linux/platform_device.h>
 #include <linux/of_platform.h>
+#include <linux/irqchip/arm-gic.h>
 #include <mach/msm_iomap.h>
 #include <mach/socinfo.h>
 #include <mach/system.h>
@@ -35,7 +36,6 @@
 #include <mach/socinfo.h>
 #include <mach/msm-krait-l2-accessors.h>
 #include <asm/cacheflush.h>
-#include <asm/hardware/gic.h>
 #include <asm/pgtable.h>
 #include <asm/pgalloc.h>
 #include <asm/hardware/cache-l2x0.h>
@@ -1122,7 +1122,7 @@ void __init msm_pm_set_tz_retention_flag(unsigned int flag)
 	msm_pm_retention_tz_call = flag;
 }
 
-static int __devinit msm_pc_debug_probe(struct platform_device *pdev)
+static int msm_pc_debug_probe(struct platform_device *pdev)
 {
 	struct resource *res = NULL;
 	int i ;
@@ -1152,7 +1152,7 @@ static struct of_device_id msm_pc_debug_table[] = {
 	{.compatible = "qcom,pc-cntr"},
 	{},
 };
-static int __devinit msm_cpu_status_probe(struct platform_device *pdev)
+static int msm_cpu_status_probe(struct platform_device *pdev)
 {
 	struct msm_pm_sleep_status_data *pdata;
 	char *key;

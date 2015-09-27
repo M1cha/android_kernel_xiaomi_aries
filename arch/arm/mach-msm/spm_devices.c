@@ -125,7 +125,7 @@ static int msm_spm_dev_set_low_power_mode(struct msm_spm_device *dev,
 	return ret;
 }
 
-static int __devinit msm_spm_dev_init(struct msm_spm_device *dev,
+static int msm_spm_dev_init(struct msm_spm_device *dev,
 		struct msm_spm_platform_data *data)
 {
 	int i, ret = -ENOMEM;
@@ -272,7 +272,7 @@ int __init msm_spm_l2_init(struct msm_spm_platform_data *data)
 }
 #endif
 
-static int __devinit msm_spm_dev_probe(struct platform_device *pdev)
+static int msm_spm_dev_probe(struct platform_device *pdev)
 {
 	int ret = 0;
 	int cpu = 0;

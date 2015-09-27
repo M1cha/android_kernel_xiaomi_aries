@@ -33,7 +33,6 @@
 #include <linux/completion.h>
 #include <linux/err.h>
 #endif
-#include <linux/android_pmem.h>
 #include <mach/msm_iomap.h>
 #include <mach/socinfo.h>
 #include <linux/sched.h>
@@ -381,6 +380,7 @@ int msm_get_memory_type_from_name(const char *memtype_name)
 	return -EINVAL;
 }
 
+#ifdef CONFIG_OF
 static int reserve_memory_type(const char *mem_name,
 				struct memtype_reserve *reserve_table,
 				int size)
@@ -482,6 +482,7 @@ mem_remove:
 out:
 	return 0;
 }
+#endif
 
 unsigned long get_ddr_size(void)
 {

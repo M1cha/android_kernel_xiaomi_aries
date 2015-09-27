@@ -22,6 +22,7 @@
 #include <mach/board.h>
 #include <mach/gpiomux.h>
 #include <mach/socinfo.h>
+#include <mach/gpio-msm.h>
 #include "devices.h"
 #include "board-8064.h"
 

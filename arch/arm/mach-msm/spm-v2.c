@@ -476,7 +476,7 @@ void msm_spm_drv_reinit(struct msm_spm_driver_data *dev)
 	mb();
 }
 
-int __devinit msm_spm_drv_init(struct msm_spm_driver_data *dev,
+int msm_spm_drv_init(struct msm_spm_driver_data *dev,
 		struct msm_spm_platform_data *data)
 {
 	int i;

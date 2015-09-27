@@ -25,7 +25,6 @@
 #include <linux/interrupt.h>
 #include <linux/reboot.h>
 #include <asm/fiq.h>
-#include <asm/hardware/gic.h>
 #include <mach/msm_iomap.h>
 #include <asm/mach-types.h>
 #include <asm/cacheflush.h>

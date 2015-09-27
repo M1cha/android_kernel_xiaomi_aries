@@ -21,7 +21,6 @@
 #include <linux/avtimer.h>
 #include <asm/clkdev.h>
 #include <mach/kgsl.h>
-#include <linux/android_pmem.h>
 #include <mach/irqs-8960.h>
 #include <mach/dma.h>
 #include <linux/dma-mapping.h>
@@ -41,6 +40,7 @@
 #include <sound/apr_audio.h>
 #include <mach/msm_tsif.h>
 #include <mach/msm_serial_hs_lite.h>
+#include <mach/gpio-msm.h>
 #include "clock.h"
 #include "devices.h"
 #include "devices-msm8x60.h"

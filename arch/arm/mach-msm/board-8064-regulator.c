@@ -554,7 +554,7 @@ VREG_CONSUMERS(BOOST) = {
 
 /* GPIO regulator constraints */
 struct gpio_regulator_platform_data
-apq8064_gpio_regulator_pdata[] __devinitdata = {
+apq8064_gpio_regulator_pdata[] = {
 	/*        ID      vreg_name gpio_label   gpio                  supply */
 	GPIO_VREG(EXT_5V, "ext_5v", "ext_5v_en", PM8921_MPP_PM_TO_SYS(7), NULL),
 	GPIO_VREG(EXT_3P3V, "ext_3p3v", "ext_3p3v_en",
@@ -566,7 +566,7 @@ apq8064_gpio_regulator_pdata[] __devinitdata = {
 };
 
 struct gpio_regulator_platform_data
-mpq8064_gpio_regulator_pdata[] __devinitdata = {
+mpq8064_gpio_regulator_pdata[] = {
 	GPIO_VREG(AVC_1P2V, "avc_1p2v", "avc_1p2v_en", SX150X_GPIO(4, 2), NULL),
 	GPIO_VREG(AVC_1P8V, "avc_1p8v", "avc_1p8v_en", SX150X_GPIO(4, 4), NULL),
 	GPIO_VREG(AVC_2P2V, "avc_2p2v", "avc_2p2v_en",
@@ -591,7 +591,7 @@ struct regulator_init_data msm8064_saw_regulator_pdata_8821_s1 =
 
 /* PM8921 regulator constraints */
 struct pm8xxx_regulator_platform_data
-msm8064_pm8921_regulator_pdata[] __devinitdata = {
+msm8064_pm8921_regulator_pdata[] = {
 	/*
 	 *		ID   name always_on pd min_uV   max_uV   en_t supply
 	 *	system_uA reg_ID
@@ -606,7 +606,7 @@ msm8064_pm8921_regulator_pdata[] __devinitdata = {
 
 /* PM8917 regulator constraints */
 struct pm8xxx_regulator_platform_data
-msm8064_pm8917_regulator_pdata[] __devinitdata = {
+msm8064_pm8917_regulator_pdata[] = {
 	/*
 	 *		ID   name always_on pd min_uV   max_uV   en_t supply
 	 *	system_uA reg_ID
@@ -638,7 +638,7 @@ msm8064_pm8917_regulator_pdata[] __devinitdata = {
 };
 
 static struct rpm_regulator_init_data
-apq8064_rpm_regulator_init_data[] __devinitdata = {
+apq8064_rpm_regulator_init_data[] = {
 	/*	ID a_on pd ss min_uV   max_uV  supply sys_uA  freq  fm  ss_fm */
 	RPM_SMPS(S1, 1, 1, 0, 1225000, 1225000, NULL, 100000, 3p20, NONE, NONE),
 	RPM_SMPS(S2, 0, 1, 0, 1300000, 1300000, NULL,      0, 1p60, NONE, NONE),
@@ -685,7 +685,7 @@ apq8064_rpm_regulator_init_data[] __devinitdata = {
 };
 
 static struct rpm_regulator_init_data
-apq8064_rpm_regulator_pm8921_init_data[] __devinitdata = {
+apq8064_rpm_regulator_pm8921_init_data[] = {
 	/*     ID  a_on pd ss                   supply */
 	RPM_VS(LVS2, 0, 1, 0,                   "8921_s1"),
 
@@ -693,9 +693,9 @@ apq8064_rpm_regulator_pm8921_init_data[] __devinitdata = {
 	RPM_NCP(NCP, 0,    0, 1800000, 1800000, "8921_l6", 1p60),
 };
 
-int msm8064_pm8921_regulator_pdata_len __devinitdata =
+int msm8064_pm8921_regulator_pdata_len =
 	ARRAY_SIZE(msm8064_pm8921_regulator_pdata);
-int msm8064_pm8917_regulator_pdata_len __devinitdata =
+int msm8064_pm8917_regulator_pdata_len =
 	ARRAY_SIZE(msm8064_pm8917_regulator_pdata);
 
 #define RPM_REG_MAP(_id, _sleep_also, _voter, _supply, _dev_name) \
@@ -707,7 +707,7 @@ int msm8064_pm8917_regulator_pdata_len __devinitdata =
 		.dev_name = _dev_name, \
 	}
 static struct rpm_regulator_consumer_mapping
-	      msm_rpm_regulator_consumer_mapping[] __devinitdata = {
+	      msm_rpm_regulator_consumer_mapping[] = {
 	RPM_REG_MAP(LVS7, 0, 1, "krait0_hfpll", "acpuclk-8064"),
 	RPM_REG_MAP(LVS7, 0, 2, "krait1_hfpll", "acpuclk-8064"),
 	RPM_REG_MAP(LVS7, 0, 4, "krait2_hfpll", "acpuclk-8064"),
@@ -723,7 +723,7 @@ static struct rpm_regulator_consumer_mapping
 	RPM_REG_MAP(S3,   0, 5, "krait3_dig",   "acpuclk-8064"),
 };
 
-struct rpm_regulator_platform_data apq8064_rpm_regulator_pdata __devinitdata = {
+struct rpm_regulator_platform_data apq8064_rpm_regulator_pdata = {
 	.init_data		  = apq8064_rpm_regulator_init_data,
 	.num_regulators		  = ARRAY_SIZE(apq8064_rpm_regulator_init_data),
 	.version		  = RPM_VREG_VERSION_8960,
@@ -736,7 +736,7 @@ struct rpm_regulator_platform_data apq8064_rpm_regulator_pdata __devinitdata = {
 
 /* Regulators that are only present when using PM8921 */
 struct rpm_regulator_platform_data
-apq8064_rpm_regulator_pm8921_pdata __devinitdata = {
+apq8064_rpm_regulator_pm8921_pdata = {
 	.init_data		  = apq8064_rpm_regulator_pm8921_init_data,
 	.num_regulators	= ARRAY_SIZE(apq8064_rpm_regulator_pm8921_init_data),
 	.version		  = RPM_VREG_VERSION_8960,

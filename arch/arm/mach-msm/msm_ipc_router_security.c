@@ -43,7 +43,7 @@ struct security_rule {
 	uint32_t instance_id;
 	unsigned reserved;
 	int num_group_info;
-	gid_t *group_id;
+	kgid_t *group_id;
 };
 
 static DECLARE_RWSEM(security_rules_lock_lha4);
@@ -83,7 +83,7 @@ void signal_irsc_completion(void)
 int check_permissions(void)
 {
 	int rc = 0;
-	if (!current_euid() || in_egroup_p(AID_NET_RAW))
+	if (uid_eq(current_euid(), GLOBAL_ROOT_UID) || in_egroup_p(AID_NET_RAW))
 		rc = 1;
 	return rc;
 }
@@ -107,7 +107,7 @@ int msm_ipc_config_sec_rules(void *arg)
 	size_t group_info_sz;
 	int ret;
 
-	if (current_euid())
+	if (!uid_eq(current_euid(), GLOBAL_ROOT_UID))
 		return -EPERM;
 
 	ret = copy_from_user(&sec_rules_arg, (void *)arg,
@@ -278,7 +278,7 @@ int msm_ipc_check_send_permissions(void *data)
 	struct security_rule *rule = (struct security_rule *)data;
 
 	/* Source/Sender is Root user */
-	if (!current_euid())
+	if (uid_eq(current_euid(), GLOBAL_ROOT_UID))
 		return 1;
 
 	/* Destination has no rules defined, possibly a client. */

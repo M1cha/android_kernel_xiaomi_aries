@@ -37,8 +37,6 @@
 
 #define PCIE20_MSI_CTRL_MAX 8
 
-static DECLARE_BITMAP(msi_irq_in_use, NR_PCIE_MSI_IRQS);
-
 static irqreturn_t handle_wake_irq(int irq, void *data)
 {
 	PCIE_DBG("\n");
@@ -121,21 +119,6 @@ void __exit msm_pcie_irq_deinit(struct msm_pcie_dev_t *dev)
 	free_irq(dev->wake_n, dev);
 }
 
-void msm_pcie_destroy_irq(unsigned int irq)
-{
-	int pos = irq - MSM_PCIE_MSI_INT(0);
-
-	dynamic_irq_cleanup(irq);
-	clear_bit(pos, msi_irq_in_use);
-}
-
-/* hookup to linux pci msi framework */
-void arch_teardown_msi_irq(unsigned int irq)
-{
-	PCIE_DBG("irq %d deallocated\n", irq);
-	msm_pcie_destroy_irq(irq);
-}
-
 static void msm_pcie_msi_nop(struct irq_data *d)
 {
 	return;
@@ -150,32 +133,20 @@ static struct irq_chip pcie_msi_chip = {
 	.irq_unmask = unmask_msi_irq,
 };
 
-static int msm_pcie_create_irq(void)
-{
-	int irq, pos;
-
-again:
-	pos = find_first_zero_bit(msi_irq_in_use, NR_PCIE_MSI_IRQS);
-	irq = MSM_PCIE_MSI_INT(pos);
-	if (irq >= (MSM_PCIE_MSI_INT(0) + NR_PCIE_MSI_IRQS))
-		return -ENOSPC;
-
-	if (test_and_set_bit(pos, msi_irq_in_use))
-		goto again;
-
-	dynamic_irq_init(irq);
-	return irq;
-}
-
 /* hookup to linux pci msi framework */
 int arch_setup_msi_irq(struct pci_dev *pdev, struct msi_desc *desc)
 {
 	int irq;
 	struct msi_msg msg;
 
-	irq = msm_pcie_create_irq();
+	irq = irq_alloc_desc_from(MSM_PCIE_MSI_INT(0), -1);
 	if (irq < 0)
 		return irq;
+
+	if (irq >= (MSM_PCIE_MSI_INT(0) + NR_PCIE_MSI_IRQS)) {
+		irq_free_desc(irq);
+		return -ENOSPC;
+	}
 
 	PCIE_DBG("irq %d allocated\n", irq);
 
