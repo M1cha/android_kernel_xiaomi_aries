@@ -99,6 +99,8 @@ void gic_init_bases(unsigned int, int, void __iomem *, void __iomem *,
 		    u32 offset, struct device_node *);
 void gic_cascade_irq(unsigned int gic_nr, unsigned int irq);
 void gic_cpu_if_down(void);
+bool gic_is_irq_pending(unsigned int irq);
+void gic_clear_irq_pending(unsigned int irq);
 
 static inline void gic_init(unsigned int nr, int start,
 			    void __iomem *dist , void __iomem *cpu)

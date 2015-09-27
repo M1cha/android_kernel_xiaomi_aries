@@ -41,6 +41,12 @@ void cpu_maps_update_begin(void)
 }
 EXPORT_SYMBOL(cpu_notifier_register_begin);
 
+int cpu_maps_is_updating(void)
+{
+	return mutex_is_locked(&cpu_add_remove_lock);
+}
+EXPORT_SYMBOL(cpu_maps_is_updating);
+
 void cpu_maps_update_done(void)
 {
 	mutex_unlock(&cpu_add_remove_lock);

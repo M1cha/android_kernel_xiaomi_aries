@@ -160,6 +160,7 @@ static inline void __unregister_cpu_notifier(struct notifier_block *nb)
 int cpu_up(unsigned int cpu);
 void notify_cpu_starting(unsigned int cpu);
 extern void cpu_maps_update_begin(void);
+int cpu_maps_is_updating(void);
 extern void cpu_maps_update_done(void);
 
 #define cpu_notifier_register_begin	cpu_maps_update_begin
@@ -190,6 +191,11 @@ static inline void __unregister_cpu_notifier(struct notifier_block *nb)
 
 static inline void cpu_maps_update_begin(void)
 {
+}
+
+static inline int cpu_maps_is_updating(void)
+{
+	return 0;
 }
 
 static inline void cpu_maps_update_done(void)
