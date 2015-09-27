@@ -165,7 +165,7 @@ static enum hrtimer_restart msm_mpd_rq_avg_poll_timer(struct hrtimer *timer)
 	msm_mpd.next_update = ktime_add_ns(curr_time,
 			(msm_mpd.rq_avg_poll_ms * NSEC_PER_MSEC));
 
-	sched_get_nr_running_avg(&nr, &nr_iowait);
+	//sched_get_nr_running_avg(&nr, &nr_iowait);
 
 	if ((nr_iowait >= msm_mpd.iowait_threshold_pct) && (nr < last_nr))
 		nr = last_nr;

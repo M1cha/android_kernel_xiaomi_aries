@@ -30,7 +30,9 @@
 #include <asm/mach/time.h>
 #include <asm/sched_clock.h>
 #include <asm/smp_plat.h>
+#ifdef CONFIG_USE_USER_ACCESSIBLE_TIMERS
 #include <asm/user_accessible_timer.h>
+#endif
 #include <mach/msm_iomap.h>
 #include <mach/irqs.h>
 #include <mach/socinfo.h>
@@ -1164,6 +1166,7 @@ void __init msm_timer_init(void)
 	}
 	msm_sched_clock_init();
 
+#ifdef CONFIG_USE_USER_ACCESSIBLE_TIMERS
 	if (use_user_accessible_timers()) {
 		if (cpu_is_msm8960() || cpu_is_msm8930() || cpu_is_apq8064()) {
 			struct msm_clock *gtclock = &msm_clocks[MSM_CLOCK_GPT];
@@ -1173,6 +1176,7 @@ void __init msm_timer_init(void)
 			set_user_accessible_timer_flag(true);
 		}
 	}
+#endif
 
 #ifdef ARCH_HAS_READ_CURRENT_TIMER
 	if (is_smp()) {

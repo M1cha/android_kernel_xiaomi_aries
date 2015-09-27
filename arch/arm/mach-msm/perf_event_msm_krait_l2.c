@@ -1,3 +1,4 @@
+#if 0
 /*
  * Copyright (c) 2011, 2012 The Linux Foundation. All rights reserved.
  *
@@ -580,3 +581,4 @@ static int __init register_krait_l2_pmu_driver(void)
 	return platform_driver_register(&krait_l2_pmu_driver);
 }
 device_initcall(register_krait_l2_pmu_driver);
+#endif

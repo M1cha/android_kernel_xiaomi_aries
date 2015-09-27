@@ -1,3 +1,4 @@
+#if 0
 /* Copyright (c) 2010-2014, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
@@ -130,3 +131,4 @@ static int __init msm_pmu_init(void)
 }
 
 arch_initcall(msm_pmu_init);
+#endif

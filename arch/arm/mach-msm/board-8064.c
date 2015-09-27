@@ -1296,6 +1296,8 @@ static struct i2c_board_info isa1200_board_info[] __initdata = {
 		.platform_data = &isa1200_1_pdata,
 	},
 };
+
+#ifdef CONFIG_TOUCHSCREEN_ATMEL_MXT
 /* configuration data for mxt1386e using V2.1 firmware */
 static const u8 mxt1386e_config_data_v2_1[] = {
 	/* T6 Object */
@@ -1404,6 +1406,8 @@ static struct i2c_board_info mxt_device_info[] __initdata = {
 		.irq = MSM_GPIO_TO_INT(MXT_TS_GPIO_IRQ),
 	},
 };
+#endif
+
 #define CYTTSP_TS_GPIO_IRQ		6
 #define CYTTSP_TS_GPIO_SLEEP		33
 #define CYTTSP_TS_GPIO_SLEEP_ALT	12
@@ -3046,12 +3050,14 @@ static struct i2c_registry apq8064_i2c_devices[] __initdata = {
 		smb349_charger_i2c_info,
 		ARRAY_SIZE(smb349_charger_i2c_info)
 	},
+#ifdef CONFIG_TOUCHSCREEN_ATMEL_MXT
 	{
 		I2C_SURF | I2C_LIQUID,
 		APQ_8064_GSBI3_QUP_I2C_BUS_ID,
 		mxt_device_info,
 		ARRAY_SIZE(mxt_device_info),
 	},
+#endif
 	{
 		I2C_FFA,
 		APQ_8064_GSBI3_QUP_I2C_BUS_ID,
@@ -3266,7 +3272,7 @@ static void __init apq8064_common_init(void)
 		pr_err("socinfo_init() failed!\n");
 	BUG_ON(msm_rpm_init(&apq8064_rpm_data));
 	BUG_ON(msm_rpmrs_levels_init(&msm_rpmrs_data));
-	regulator_suppress_info_printing();
+	//regulator_suppress_info_printing();
 	if (socinfo_get_pmic_model() == PMIC_MODEL_PM8917)
 		configure_apq8064_pm8917_power_grid();
 	platform_device_register(&apq8064_device_rpm_regulator);
