@@ -27,8 +27,10 @@
 #include <asm/mach/arch.h>
 #include <asm/mach/map.h>
 #include <asm/mach/flash.h>
+#include <mach/system.h>
 #include <mach/vreg.h>
 #include <mach/board.h>
+#include <mach/proc_comm.h>
 
 #include <asm/io.h>
 #include <asm/delay.h>
@@ -39,7 +41,6 @@
 
 #include "gpio_chip.h"
 #include "board-sapphire.h"
-#include "proc_comm.h"
 #include "devices.h"
 
 void msm_init_irq(void);
@@ -53,7 +54,7 @@ static struct platform_device *devices[] __initdata = {
 	&msm_device_uart3,
 };
 
-void msm_timer_init(void);
+extern struct sys_timer msm_timer;
 
 static void __init sapphire_init_irq(void)
 {
@@ -100,11 +101,6 @@ static void __init sapphire_map_io(void)
 	msm_clock_init();
 }
 
-static void __init sapphire_init_late(void)
-{
-	smd_debugfs_init();
-}
-
 MACHINE_START(SAPPHIRE, "sapphire")
 /* Maintainer: Brian Swetland <swetland@google.com> */
 	.atag_offset    = 0x100,
@@ -112,6 +108,5 @@ MACHINE_START(SAPPHIRE, "sapphire")
 	.map_io         = sapphire_map_io,
 	.init_irq       = sapphire_init_irq,
 	.init_machine   = sapphire_init,
-	.init_late      = sapphire_init_late,
-	.init_time	= msm_timer_init,
+	.timer          = &msm_timer,
 MACHINE_END

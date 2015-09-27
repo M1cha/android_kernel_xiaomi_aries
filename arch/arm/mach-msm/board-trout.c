@@ -31,18 +31,18 @@
 
 #include "devices.h"
 #include "board-trout.h"
-#include "common.h"
 
 extern int trout_init_mmc(unsigned int);
 
 static struct platform_device *devices[] __initdata = {
-	&msm_device_gpio_7201,
 	&msm_device_uart3,
 	&msm_device_smd,
 	&msm_device_nand,
 	&msm_device_hsusb,
 	&msm_device_i2c,
 };
+
+extern struct sys_timer msm_timer;
 
 static void __init trout_init_early(void)
 {
@@ -98,11 +98,6 @@ static void __init trout_map_io(void)
 	msm_clock_init(msm_clocks_7x01a, msm_num_clocks_7x01a);
 }
 
-static void __init trout_init_late(void)
-{
-	smd_debugfs_init();
-}
-
 MACHINE_START(TROUT, "HTC Dream")
 	.atag_offset	= 0x100,
 	.fixup		= trout_fixup,
@@ -110,6 +105,5 @@ MACHINE_START(TROUT, "HTC Dream")
 	.init_early	= trout_init_early,
 	.init_irq	= trout_init_irq,
 	.init_machine	= trout_init,
-	.init_late	= trout_init_late,
-	.init_time	= msm7x01_timer_init,
+	.timer		= &msm_timer,
 MACHINE_END
