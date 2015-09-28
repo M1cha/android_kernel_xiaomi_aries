@@ -29,6 +29,7 @@
 #include <linux/idr.h>
 #include <linux/notifier.h>
 #include <linux/err.h>
+#include <linux/scatterlist.h>
 
 static struct kset *iommu_group_kset;
 static struct ida iommu_group_ida;
@@ -642,7 +643,7 @@ void iommu_set_fault_handler(struct iommu_domain *domain,
 }
 EXPORT_SYMBOL_GPL(iommu_set_fault_handler);
 
-struct iommu_domain *iommu_domain_alloc(struct bus_type *bus)
+struct iommu_domain *iommu_domain_alloc(struct bus_type *bus, int flags)
 {
 	struct iommu_domain *domain;
 	int ret;
@@ -656,7 +657,7 @@ struct iommu_domain *iommu_domain_alloc(struct bus_type *bus)
 
 	domain->ops = bus->iommu_ops;
 
-	ret = domain->ops->domain_init(domain);
+	ret = domain->ops->domain_init(domain, flags);
 	if (ret)
 		goto out_free;
 
@@ -900,6 +901,39 @@ void iommu_domain_window_disable(struct iommu_domain *domain, u32 wnd_nr)
 	return domain->ops->domain_window_disable(domain, wnd_nr);
 }
 EXPORT_SYMBOL_GPL(iommu_domain_window_disable);
+
+int iommu_map_range(struct iommu_domain *domain, unsigned int iova,
+		    struct scatterlist *sg, unsigned int len, int prot)
+{
+	if (unlikely(domain->ops->map_range == NULL))
+		return -ENODEV;
+
+	BUG_ON(iova & (~PAGE_MASK));
+
+	return domain->ops->map_range(domain, iova, sg, len, prot);
+}
+EXPORT_SYMBOL_GPL(iommu_map_range);
+
+int iommu_unmap_range(struct iommu_domain *domain, unsigned int iova,
+		      unsigned int len)
+{
+	if (unlikely(domain->ops->unmap_range == NULL))
+		return -ENODEV;
+
+	BUG_ON(iova & (~PAGE_MASK));
+
+	return domain->ops->unmap_range(domain, iova, len);
+}
+EXPORT_SYMBOL_GPL(iommu_unmap_range);
+
+phys_addr_t iommu_get_pt_base_addr(struct iommu_domain *domain)
+{
+	if (unlikely(domain->ops->get_pt_base_addr == NULL))
+		return 0;
+
+	return domain->ops->get_pt_base_addr(domain);
+}
+EXPORT_SYMBOL_GPL(iommu_get_pt_base_addr);
 
 static int __init iommu_init(void)
 {
