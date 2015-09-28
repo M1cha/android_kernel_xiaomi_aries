@@ -145,8 +145,8 @@ static void smd_tty_read(unsigned long param)
 				pr_err("%s: BT_IDX read in reset %d \n", __func__, n);
 			if ((n != BT_ACL_IDX) && (n != BT_CMD_IDX)) {
 			/* signal TTY clients using TTY_BREAK */
-				tty_insert_flip_char(tty, 0x00, TTY_BREAK);
-				tty_flip_buffer_push(tty);
+				tty_insert_flip_char(tty->port, 0x00, TTY_BREAK);
+				tty_flip_buffer_push(tty->port);
 				break;
 			}
 		}
@@ -159,7 +159,7 @@ static void smd_tty_read(unsigned long param)
 		if (avail > MAX_TTY_BUF_SIZE)
 			avail = MAX_TTY_BUF_SIZE;
 
-		avail = tty_prepare_flip_string(tty, &ptr, avail);
+		avail = tty_prepare_flip_string(tty->port, &ptr, avail);
 		if (avail <= 0) {
 			mod_timer(&info->buf_req_timer,
 					jiffies + msecs_to_jiffies(30));
@@ -178,7 +178,7 @@ static void smd_tty_read(unsigned long param)
 		pr_debug("%s: lock wakelock %s\n", __func__, info->wake_lock.name);
 #endif
 		wake_lock_timeout(&info->wake_lock, HZ / 2);
-		tty_flip_buffer_push(tty);
+		tty_flip_buffer_push(tty->port);
 	}
 
 	/* XXX only when writable and necessary */
@@ -223,11 +223,11 @@ static void smd_tty_notify(void *priv, unsigned event)
 			unsigned int n = info->tty->index;
 			if (n == BT_CMD_IDX) {
 				pr_err("%s:  BT_CMD_IDX Sending hardware error event to stack\n", __func__);
-				tty_prepare_flip_string(info->tty, &ptr, 0x03);
+				tty_prepare_flip_string(info->tty->port, &ptr, 0x03);
 				ptr[0] = 0x10;
 				ptr[1] = 0x01;
 				ptr[2] = 0x0A;
-				tty_flip_buffer_push(info->tty);
+				tty_flip_buffer_push(info->tty->port);
 			}
 		}
 		spin_lock_irqsave(&info->reset_lock, flags);
