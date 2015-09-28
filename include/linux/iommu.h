@@ -112,6 +112,8 @@ struct iommu_ops {
 	/* Get the numer of window per domain */
 	u32 (*domain_get_windows)(struct iommu_domain *domain);
 
+	phys_addr_t (*get_pt_base_addr)(struct iommu_domain *domain);
+
 	unsigned long pgsize_bitmap;
 };
 
@@ -213,6 +215,8 @@ static inline int report_iommu_fault(struct iommu_domain *domain,
 
 	return ret;
 }
+
+extern phys_addr_t iommu_get_pt_base_addr(struct iommu_domain *domain);
 
 #else /* CONFIG_IOMMU_API */
 
@@ -372,6 +376,10 @@ static inline int iommu_domain_set_attr(struct iommu_domain *domain,
 	return -EINVAL;
 }
 
+static inline phys_addr_t iommu_get_pt_base_addr(struct iommu_domain *domain)
+{
+	return 0;
+}
 #endif /* CONFIG_IOMMU_API */
 
 #endif /* __LINUX_IOMMU_H */
