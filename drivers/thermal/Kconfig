@@ -169,4 +169,36 @@ config INTEL_POWERCLAMP
 	  enforce idle time which results in more package C-state residency. The
 	  user interface is exposed via generic thermal framework.
 
+config THERMAL_TSENS8960
+	tristate "Qualcomm 8960 Tsens Temperature Alarm"
+	depends on THERMAL
+	help
+	  This enables the thermal sysfs driver for the Tsens device. It shows
+	  up in Sysfs as a thermal zone with mutiple trip points. Disabling the
+	  thermal zone device via the mode file results in disabling the sensor.
+	  Also able to set threshold temperature for both hot and cold and update
+	  when a threshold is reached.
+
+config THERMAL_PM8XXX
+	tristate "Qualcomm PMIC PM8xxx Temperature Alarm"
+	depends on THERMAL
+	depends on MFD_PM8XXX
+	help
+	  This enables a thermal Sysfs driver for the PMIC PM8xxx devices. It
+	  shows up in Sysfs as a thermal zone with multiple trip points.
+	  Enabling the thermal zone device via the mode file results in
+	  shifting over temperature shutdown control of the PMIC from hardware
+	  to software.
+
+config THERMAL_MONITOR
+	bool "Monitor thermal state and limit CPU Frequency"
+	depends on THERMAL_TSENS8960 || THERMAL_TSENS8974
+	depends on CPU_FREQ_MSM
+	default n
+	help
+	  This enables thermal monitoring capability in the kernel in the
+	  absence of a system wide thermal monitoring entity or until such an
+	  entity starts running in the userspace. Monitors TSENS temperature
+	  and limits the max frequency of the cores.
+
 endif

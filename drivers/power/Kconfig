@@ -362,6 +362,54 @@ config BATTERY_GOLDFISH
 	  Say Y to enable support for the battery and AC power in the
 	  Goldfish emulator.
 
+config ISL9519_CHARGER
+	tristate "isl9519 charger"
+	depends on (BATTERY_MSM8X60 || PM8921_CHARGER)
+	depends on I2C
+	default n
+	help
+	  The isl9519q charger chip from intersil is connected to an external
+	  charger cable and is preferred way of charging the battery because
+	  of its high current rating.
+	  Choose Y if you are compiling for Qualcomm's msm8x60 surf/ffa board.
+
+config SMB349_CHARGER
+	tristate "smb349 charger"
+	depends on I2C
+	help
+	  Say Y to enable support for the SMB349 switching mode based charger
+	  and sysfs. The driver supports controlling charger-enable and
+	  current limiting capabilities. The driver also lets the
+	  SMB349 be operated as a slave device via the power supply
+	  framework.
+
+config PM8921_CHARGER
+	tristate "PM8921 Charger driver"
+	depends on MFD_PM8921_CORE
+	help
+	  Say Y here to enable support for pm8921 chip charger subdevice
+
+config PM8XXX_CCADC
+	tristate "PM8XXX battery current adc driver"
+	depends on MFD_PM8921_CORE
+	help
+	  Say Y here to enable support for pm8921 chip bms subdevice
+
+config PM8921_BMS
+	select PM8XXX_CCADC
+	tristate "PM8921 Battery Monitoring System driver"
+	depends on MFD_PM8921_CORE
+	help
+	  Say Y here to enable support for pm8921 chip bms subdevice
+
+config BATTERY_BCL
+	tristate "Battery Current Limit driver"
+	help
+	  Say Y here to enable support for battery current limit
+	  device. The BCL driver will poll BMS if
+	  thermal daemon enables BCL.
+	  It will notify thermal daemon if IBat crosses Imax threshold.
+
 source "drivers/power/reset/Kconfig"
 
 endif # POWER_SUPPLY

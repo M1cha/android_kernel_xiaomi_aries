@@ -87,6 +87,10 @@ obj-$(CONFIG_MCP_UCB1200)	+= ucb1x00-core.o
 obj-$(CONFIG_MFD_SMSC)        += smsc-ece1099.o
 obj-$(CONFIG_MCP_UCB1200_TS)	+= ucb1x00-ts.o
 
+obj-$(CONFIG_WCD9310_CODEC)       += wcd9xxx-core.o wcd9xxx-irq.o wcd9xxx-slimslave.o
+obj-$(CONFIG_WCD9304_CODEC)       += wcd9xxx-core.o wcd9xxx-irq.o wcd9xxx-slimslave.o
+obj-$(CONFIG_WCD9320_CODEC)       += wcd9xxx-core.o wcd9xxx-irq.o wcd9xxx-slimslave.o
+
 ifeq ($(CONFIG_SA1100_ASSABET),y)
 obj-$(CONFIG_MCP_UCB1200)	+= ucb1x00-assabet.o
 endif
@@ -140,9 +144,19 @@ obj-$(CONFIG_MFD_SI476X_CORE)	+= si476x-core.o
 
 obj-$(CONFIG_MFD_CS5535)	+= cs5535-mfd.o
 obj-$(CONFIG_MFD_OMAP_USB_HOST)	+= omap-usb-host.o omap-usb-tll.o
-obj-$(CONFIG_MFD_PM8921_CORE) 	+= pm8921-core.o ssbi.o
+obj-$(CONFIG_PMIC8058)		+= pmic8058.o
+obj-$(CONFIG_PMIC8901)		+= pmic8901.o
+obj-$(CONFIG_MFD_PM8921_CORE) 	+= pm8921-core.o
+obj-$(CONFIG_MFD_PM8821_CORE) 	+= pm8821-core.o
+obj-$(CONFIG_MFD_PM8018_CORE) 	+= pm8018-core.o
+obj-$(CONFIG_MFD_PM8038_CORE) 	+= pm8038-core.o
 obj-$(CONFIG_MFD_PM8XXX_IRQ) 	+= pm8xxx-irq.o
 obj-$(CONFIG_MFD_PM8821_IRQ) 	+= pm8821-irq.o
+obj-$(CONFIG_MFD_PM8XXX_DEBUG) 	+= pm8xxx-debug.o
+obj-$(CONFIG_MFD_PM8XXX_PWM) 	+= pm8xxx-pwm.o
+obj-$(CONFIG_MFD_PM8XXX_MISC) 	+= pm8xxx-misc.o
+obj-$(CONFIG_MFD_PM8XXX_SPK) 	+= pm8xxx-spk.o
+obj-$(CONFIG_MFD_PM8XXX_BATT_ALARM) 	+= pm8xxx-batt-alarm.o
 obj-$(CONFIG_TPS65911_COMPARATOR)	+= tps65911-comparator.o
 obj-$(CONFIG_MFD_TPS65090)	+= tps65090.o
 obj-$(CONFIG_MFD_AAT2870_CORE)	+= aat2870-core.o

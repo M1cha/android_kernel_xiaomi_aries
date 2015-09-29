@@ -54,6 +54,8 @@ source "drivers/spi/Kconfig"
 
 source "drivers/ssbi/Kconfig"
 
+source "drivers/slimbus/Kconfig"
+
 source "drivers/hsi/Kconfig"
 
 source "drivers/pps/Kconfig"
