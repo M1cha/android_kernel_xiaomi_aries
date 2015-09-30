@@ -2540,7 +2540,6 @@ static struct platform_device *common_devices[] __initdata = {
 	&apq8064_iommu_domain_device,
 	&msm_tsens_device,
 	&apq8064_cache_dump_device,
-	&msm_8064_device_tspp,
 #ifdef CONFIG_BATTERY_BCL
 	&battery_bcl_device,
 #endif
@@ -3397,12 +3396,12 @@ static void __init apq8064_cdp_init(void)
 	if (machine_is_mpq8064_cdp() || machine_is_mpq8064_hrd() ||
 		machine_is_mpq8064_dtv()) {
 		enable_avc_i2c_bus();
-		msm_rotator_set_split_iommu_domain();
+		//msm_rotator_set_split_iommu_domain();
 		platform_add_devices(mpq_devices, ARRAY_SIZE(mpq_devices));
 		mpq8064_pcie_init();
 	} else {
 		ethernet_init();
-		msm_rotator_set_split_iommu_domain();
+		//msm_rotator_set_split_iommu_domain();
 		platform_add_devices(cdp_devices, ARRAY_SIZE(cdp_devices));
 		spi_register_board_info(spi_board_info,
 						ARRAY_SIZE(spi_board_info));

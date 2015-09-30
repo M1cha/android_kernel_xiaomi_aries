@@ -363,8 +363,8 @@ static void init_watchdog_work(struct work_struct *work)
 		if (ret)
 			return;
 	} else if (appsbark_fiq) {
-		claim_fiq(&wdog_fh);
-		set_fiq_handler(&msm_wdog_fiq_start, msm_wdog_fiq_length);
+		//claim_fiq(&wdog_fh);
+		//set_fiq_handler(&msm_wdog_fiq_start, msm_wdog_fiq_length);
 		stack = (void *)__get_free_pages(GFP_KERNEL, THREAD_SIZE_ORDER);
 		if (!stack) {
 			pr_info("No free pages available - %s fails\n",
