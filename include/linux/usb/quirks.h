@@ -30,6 +30,8 @@
    descriptor */
 #define USB_QUIRK_DELAY_INIT		0x00000040
 
+#define USB_QUIRK_OTG_PET		0x00000080
+
 /* device generates spurious wakeup, ignore remote wakeup capability */
 #define USB_QUIRK_IGNORE_REMOTE_WAKEUP	0x00000200
 

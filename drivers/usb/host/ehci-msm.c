@@ -1,6 +1,6 @@
 /* ehci-msm.c - HSUSB Host Controller Driver Implementation
  *
- * Copyright (c) 2008-2011, Code Aurora Forum. All rights reserved.
+ * Copyright (c) 2008-2015, The Linux Foundation. All rights reserved.
  *
  * Partly derived from ehci-fsl.c and ehci-hcd.c
  * Copyright (c) 2000-2004 by David Brownell
@@ -59,7 +59,7 @@ static int ehci_msm_reset(struct usb_hcd *hcd)
 	/* bursts of unspecified length. */
 	writel(0, USB_AHBBURST);
 	/* Use the AHB transactor */
-	writel(0, USB_AHBMODE);
+	writel_relaxed(0x08, USB_AHBMODE);
 	/* Disable streaming mode and select host mode */
 	writel(0x13, USB_USBMODE);
 
@@ -111,7 +111,7 @@ static int ehci_msm_probe(struct platform_device *pdev)
 	phy = devm_usb_get_phy(&pdev->dev, USB_PHY_TYPE_USB2);
 	if (IS_ERR(phy)) {
 		dev_err(&pdev->dev, "unable to find transceiver\n");
-		ret = -ENODEV;
+		ret = -EPROBE_DEFER;
 		goto put_hcd;
 	}
 
@@ -147,6 +147,7 @@ static int ehci_msm_remove(struct platform_device *pdev)
 	pm_runtime_disable(&pdev->dev);
 	pm_runtime_set_suspended(&pdev->dev);
 
+	hcd->phy = NULL;
 	otg_set_host(phy->otg, NULL);
 
 	/* FIXME: need to call usb_remove_hcd() here? */
@@ -156,7 +157,31 @@ static int ehci_msm_remove(struct platform_device *pdev)
 	return 0;
 }
 
-#ifdef CONFIG_PM
+#ifdef CONFIG_PM_RUNTIME
+static int ehci_msm_runtime_idle(struct device *dev)
+{
+	dev_dbg(dev, "ehci runtime idle\n");
+	return 0;
+}
+
+static int ehci_msm_runtime_suspend(struct device *dev)
+{
+	dev_dbg(dev, "ehci runtime suspend\n");
+	/*
+	 * Notify OTG about suspend.  It takes care of
+	 * putting the hardware in LPM.
+	 */
+	return usb_phy_set_suspend(phy, 1);
+}
+
+static int ehci_msm_runtime_resume(struct device *dev)
+{
+	dev_dbg(dev, "ehci runtime resume\n");
+	return usb_phy_set_suspend(phy, 0);
+}
+#endif
+
+#ifdef CONFIG_PM_SLEEP
 static int ehci_msm_pm_suspend(struct device *dev)
 {
 	struct usb_hcd *hcd = dev_get_drvdata(dev);
@@ -164,7 +189,9 @@ static int ehci_msm_pm_suspend(struct device *dev)
 
 	dev_dbg(dev, "ehci-msm PM suspend\n");
 
-	return ehci_suspend(hcd, do_wakeup);
+	ehci_suspend(hcd, do_wakeup);
+
+	return usb_phy_set_suspend(phy, 1);
 }
 
 static int ehci_msm_pm_resume(struct device *dev)
@@ -174,16 +201,14 @@ static int ehci_msm_pm_resume(struct device *dev)
 	dev_dbg(dev, "ehci-msm PM resume\n");
 	ehci_resume(hcd, false);
 
-	return 0;
+	return usb_phy_set_suspend(phy, 0);
 }
-#else
-#define ehci_msm_pm_suspend	NULL
-#define ehci_msm_pm_resume	NULL
 #endif
 
 static const struct dev_pm_ops ehci_msm_dev_pm_ops = {
-	.suspend         = ehci_msm_pm_suspend,
-	.resume          = ehci_msm_pm_resume,
+	SET_SYSTEM_SLEEP_PM_OPS(ehci_msm_pm_suspend, ehci_msm_pm_resume)
+	SET_RUNTIME_PM_OPS(ehci_msm_runtime_suspend, ehci_msm_runtime_resume,
+				ehci_msm_runtime_idle)
 };
 
 static struct platform_driver ehci_msm_driver = {

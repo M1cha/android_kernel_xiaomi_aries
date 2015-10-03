@@ -108,6 +108,7 @@ struct usb_request {
 
 	int			status;
 	unsigned		actual;
+	unsigned		udc_priv;
 };
 
 /*-------------------------------------------------------------------------*/
@@ -176,6 +177,7 @@ struct usb_ep {
 	u8			address;
 	const struct usb_endpoint_descriptor	*desc;
 	const struct usb_ss_ep_comp_descriptor	*comp_desc;
+	bool			endless;
 };
 
 /*-------------------------------------------------------------------------*/
@@ -533,10 +535,17 @@ struct usb_gadget {
 	unsigned			b_hnp_enable:1;
 	unsigned			a_hnp_support:1;
 	unsigned			a_alt_hnp_support:1;
+	unsigned			host_request:1;
+	unsigned			otg_srp_reqd:1;
 	const char			*name;
 	struct device			dev;
 	unsigned			out_epnum;
 	unsigned			in_epnum;
+	u8				usb_core_id;
+	bool				streaming_enabled;
+	bool				remote_wakeup;
+	u32				xfer_isr_count;
+	u32				extra_buf_alloc;
 };
 
 static inline void set_gadget_data(struct usb_gadget *gadget, void *data)
